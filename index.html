@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <link href="css/styles.css" rel="stylesheet" />
+    <script data-main="js/main" src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.js"></script>
+  </head>
+
+  <body>
+    <div id="canvas" tabindex="1">
+    </div>
+    <div>
+      <!-- form not submitted, just there to get correct behaviours from jquery -->
+      <form id="noform">
+        <div>
+          <label for="import">File to import</label>
+          <input id="import" type="file"/>
+        </div>
+        <div>
+          <button id="refocus">Refocus</button>
+        </div>
+      </form>
+      <div>
+        Cursor: <span id="cursor"></span>
+      </div>
+      <div>
+        Vertex: <span id="vertex"></span>
+      </div>
+      <div>
+        Net: <span id="network"></span>
+      </div>
+    </div>
+  </body>
+</html>

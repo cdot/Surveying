@@ -1,0 +1,15 @@
+{
+  "name": "surveying",
+  "version": "1.0.0",
+  "description": "Management and manipulation of underwater survey data",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Crawford Currie",
+  "license": "MIT",
+  "dependencies": {
+    "browser-xml2js": "^0.4.19",
+    "three": "^0.110.0"
+  }
+}

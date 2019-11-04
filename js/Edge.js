@@ -17,6 +17,21 @@ define("js/Edge", ["three"], function(Three) {
             p2.addEdge(this);
         }
 
+        get p1() {
+            return this.mP1;
+        }
+
+        get p2() {
+            return this.mP2;
+        }
+        
+        makeDOM(doc) {
+            let el = doc.createElement("edge");
+            el.setAttribute("p1", this.mP1.id);
+            el.setAttribute("p2", this.mP2.id);
+            return el;
+        }
+        
         /**
          * Get the Object3D used to display this edge
          */
@@ -39,6 +54,16 @@ define("js/Edge", ["three"], function(Three) {
         needsUpdate() {
             if (this.mGeometry)
                 this.mGeometry.verticesNeedUpdate = true;
+        }
+
+        scale(s) {
+            // Closeness for click test
+            this.mDot2 = 4 * s * s;
+        }
+        
+        projectRay(ray) {
+            // TODO:
+            return null;
         }
     }
 

@@ -1,13 +1,12 @@
-define("js/LoadCSV", ["three", "js/Vertex", "js/Network"], function(Three, Vertex, Network) {
+define("js/Loaders/Text/csv", ["three", "js/Vertex", "js/Network"], function(Three, Vertex, Network) {
 
     /**
-     * Load a point series from a CSV file into a group.
+     * Load a point series from a CSV file into a network.
      * Column headings Time, Lat, Long, and Depth are expected
-     * @param superNet Network to load this sub-network into as a group
      */
     return data => {
         requirejs(["jquery-csv"], function() {
-            let group = new Network("csv");
+            let network = new Network("csv");
             let data = $.csv.toArrays(resource);
             let heads;
             let rows = [];
@@ -29,13 +28,13 @@ define("js/LoadCSV", ["three", "js/Vertex", "js/Network"], function(Three, Verte
                     }
                     let point = new Three.Vector3(r.Lat, r.Long, r.Depth);
                     let v = new Vertex(r.Time, point);
-                    group.addVertex(v);
+                    network.addVertex(v);
                     if (last_vertex)
-                        group.addEdge(new Edge(last_vertex, v));
+                        network.addEdge(new Edge(last_vertex, v));
                     last_vertex = v;
                 }
             }
-            superNet.addGroup(group);
+            superNet.addSubnet(network);
         });
     };
 });

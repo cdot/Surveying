@@ -1,5 +1,8 @@
-define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Group", "js/Network", "jquery"], function(Three, Vertex, Edge, Group, Network) {
+define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Network", "jquery"], function(Three, Vertex, Edge, Network) {
 
+    /**
+     * Add interactive display and manipulation to a top-level Network
+     */
     class NetworkScene extends Network {
 
         /**
@@ -10,7 +13,8 @@ define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Group", "js/Netw
             this.mScene = new Three.Scene();
             this.mScene.background = new Three.Color(0xFFFFFF);
             this.mRenderer = renderer;
-
+            this.mDot2 = 1;
+        
             this.cursorGeom = new Three.Geometry();
             this.cursorP0 = new Three.Vector3(0, 0, 0);
             this.cursorP1 = new Three.Vector3(0, 0, 1);
@@ -20,7 +24,17 @@ define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Group", "js/Netw
                 this.cursorGeom, new Three.LineBasicMaterial({color: 0xFFFFFF}));
             this.mScene.add(rayLine);
         }
-        
+
+        // @Override Network
+        get tag() {
+            return "survey";
+        }
+
+        /**
+         * Map a canvas point into a 3D line projecting into the scene
+         * @param pt Object {x: y: }
+         * @return {Three.Line} ray
+         */
         canvas2ray(pt) {
             if (!this.mCamera)
                 return null;
@@ -48,32 +62,24 @@ define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Group", "js/Netw
             return new Three.Line3(pos, tgt);
         }
 
+        /**
+         * Return a promise to load the network by parsing data that
+         * was read from the given file.
+         * The file extension is used to determine which loader to use.
+         * @param {String} data file contents
+         * @param {String} fn filename (or other identifier)
+         */
         load(fn, data) {
-            let promise;
-            if (/^<\?xml/i.test(data)) {
-                let dom = new DOMParser().parseFromString(data, "text/xml");
-                let type = dom.firstChild;
-                while (type.nodeType !== 1)
-                    type = type.nextSibling;
-                type = type.tagName.toUpperCase();
-                promise = new Promise(resolve => {
-                    requirejs(["js/Load" + type], Loader => {
-                        resolve(Loader(dom));
-                    });
+            let type = fn.replace(/^.*\./, "").toLowerCase();
+            return new Promise(resolve => {
+                requirejs(["js/Loaders/" + type], Loader => {
+                    resolve(new Loader(fn, data).load());
                 });
-            } else if (/\.csv$/i.test(fn)) {
-                promise = new Promise(resolve => {
-                    requirejs(["js/Load" + type], Loader => {
-                        resolve(Loader(data));
-                    });
-                });
-            } else
-                throw "Unhandled " + fn;
-            
-            return promise.then(groups => {
-                for (let group of groups) {
-                    this.addGroup(group);
-                    group.addToScene(this.mScene);
+            })
+            .then(nets => {
+                for (let net of nets) {
+                    this.addSubnet(net);
+                    net.addToScene(this.mScene);
                 }
                 this.refocus();
             });
@@ -92,7 +98,7 @@ define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Group", "js/Netw
             this.mZoomBox.min.y += dy;
             this.mZoomBox.max.y -= dy;
             
-            console.log("Zoom", this.mZoomBox.min, this.mZoomBox.max);
+            //console.log("Zoom", this.mZoomBox.min, this.mZoomBox.max);
 
             let dot = (this.mZoomBox.max.x - this.mZoomBox.min.x) / 200;
             this.scale(dot);
@@ -106,16 +112,18 @@ define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Group", "js/Netw
             this.mRenderer.render(this.mScene, this.mCamera);          
         }
 
-        centre(pt) {
+        panBy(delta) {
+            this.mZoomBox.min.x += delta.x;
+            this.mZoomBox.max.x += delta.x;
+            this.mZoomBox.min.y += delta.y;
+            this.mZoomBox.max.y += delta.y;
+            this.zoom(1);
+        }
+        
+        centreAt(pt) {
             let cx = (this.mZoomBox.max.x + this.mZoomBox.min.x) / 2;
             let cy = (this.mZoomBox.max.y + this.mZoomBox.min.y) / 2;
-            let dx = pt.x - cx;
-            let dy = pt.y - cy;
-            this.mZoomBox.min.x += dx;
-            this.mZoomBox.max.x += dx;
-            this.mZoomBox.min.y += dy;
-            this.mZoomBox.max.y += dy;
-            this.zoom(1);
+            this.panBy({x: pt.x - cx, y: pt.y - cy});
         }
         
         // Refocus the camera on the entire scene

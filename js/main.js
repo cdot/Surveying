@@ -11,7 +11,7 @@ requirejs.config({
     }
 });
 
-requirejs(["three", "js/NetworkScene", "jquery", "jquery-mousewheel"], function(Three, NetworkScene) {
+requirejs(["three", "js/NetworkScene", "js/Selection", "jquery", "jquery-mousewheel"], function(Three, NetworkScene, Selection) {
     $(function(){
         let $canvas = $("#canvas");
         canvasRect = $canvas[0].getBoundingClientRect();
@@ -24,6 +24,10 @@ requirejs(["three", "js/NetworkScene", "jquery", "jquery-mousewheel"], function(
 
         let network, camera;
 
+        /**
+         * Convert an event on the canvas into a ray
+         * @param e event
+         */
         function event2ray(e) {
             if (!network) return null;
             let ray = network.canvas2ray({
@@ -34,75 +38,111 @@ requirejs(["three", "js/NetworkScene", "jquery", "jquery-mousewheel"], function(
                 $("#cursor").text(ray.start.x + ", " + ray.start.y);
             return ray;
         }
+/*
 
-        let hit; // ref to dragged object
-        let mousePosition = new Three.Vector3(); // mouse position in 3-space
+One click to select object, second click to deselect - need select range
+Hold and drag on an object moves the object
+Hold and drag when no object selected pans
+
+mode: selecting (nothing else going on)
+panning: dragging the scene
+dragging: dragging an object (vertex or network)
+
+ */
         let mouse_down; // button flags
-        let onvertex =- null;
-        
+        let selection = new Selection();
+        let dragging = false;
+        let lastPt;
+
         $("#noform").on("submit", () => false);
                
         $canvas.on("keydown", function(e) {
-            if (mouse_down && e.keyCode == 37) { // left
+            /*if (mouse_down && e.keyCode == 37) { // left
                 hit.draggable.rotate(hit.vertex.current, Math.PI / 180);
             } else if (mouse_down && e.keyCode == 39) { // right
                 hit.draggable.rotate(hit.vertex.current, -Math.PI / 180);
-            } else if (e.key === "d" && onvertex) {
-                console.log("Delete", onvertex);
-                network.removeVertex(onvertex);
+                } else */
+            if (!mouse_down) {
+                if (e.keyCode === 46) { // delete
+                    for (let sel of selection.items)
+                        network.remove(sel);
+                    selection.clear();
+                } else if (e.keyCode == 38) { // up
+                    let newsel = new Selection();
+                    for (let sel of selection.items) {
+                        if (sel.parent !== network) {
+                            newsel.add(sel.parent);
+                            selection.remove(sel);
+                        }
+                    }
+                    selection = newsel;
+                }
             }
         })
-                   
-        .on("mouseover", function() {
+
+        .on("mouseenter", function() {
             $canvas.focus();
+            mouse_down = false;
+            dragging = false;
+        })
+
+        .on("mouseleave", function() {
+            mouse_down = false;
+            dragging = false;
         })
         
-        .on('mousedown', function(event) {
-            mouse_down = true;
-            if (!network) return;
-            let ray = event2ray(event);
-            hit = network.getClosestDraggable(ray);
-            mousePosition.copy(hit.rayPt);
-            if (event.altKey) {
-                // ALT key down, pan view to clicked point
-                network.centre(ray.start);
+        .on('mousedown', function(e) {
+            mouse_down = {x: e.offsetX, y: e.offsetY};
+            let ray = event2ray(e);
+            lastPt = ray.start.clone();
+            if (!selection.isEmpty) {
+                let hit = network.projectRay(ray);
+                if (hit && selection.contains(hit.closest))
+                    dragging = true;
             }
         })
 
-        .on('mouseup', function(event) {
-            mouse_down = false;
-            if (!network) return;
-            hit = null;
+        .on('mouseup', function(e) {
+            if (!mouse_down || !network) return false;
+            if (!dragging) {
+                if (e.offsetX === mouse_down.x && e.offsetY === mouse_down.y) {
+                    if (!e.shiftKey)
+                        selection.clear();
+                    let ray = event2ray(event);
+                    let proj = network.projectRay(ray);
+                    if (proj)
+                        selection.add(proj.closest);
+                    else
+                        selection.clear();
+                } else
+                    selection.clear();
+            }
+            mouse_down = null;
+            dragging = false;
         })
                 
-        .on('mousemove', function(event) {
-            if (!network) return;
-            let ray = event2ray(event);
-            let h = network.getClosestDraggable(ray);
-            if (!h)
-                return;
-            if (onvertex)
-                onvertex.highlight(false);
-            onvertex = h.vertex;
-            onvertex.highlight(true);
-            $("#vertex").text(
-                onvertex.id
-                + " (" + onvertex.current.x + "," + onvertex.current.y + ")"
-                + (mouse_down ? " Moving" : ""));
-            $("#network").text(onvertex.parent.id);
-            if (!mouse_down) return;
-            ray.closestPointToPoint(
-                hit.vertex.current, false, mousePosition);
-            hit.draggable.dragTo(mousePosition);
+        .on('mousemove', function(e) {
+            if (!mouse_down || !network) return false;
+            let ray = event2ray(e);
+            let p = ray.start;
+            let delta = p.clone().sub(lastPt);
+            if (dragging) {
+                let mat = new Three.Matrix4().makeTranslation(
+                    delta.x, delta.y, 0);
+                selection.applyTransform(mat);
+            } else
+                network.panBy(delta.negate());
+            lastPt = p;
         })
 
+        // Zoom in/out
         .on('mousewheel', function(event) {
             event.stopPropagation();
 
             if (!network)
                 return;
 
-            if (event.deltaY > 0)
+            if (event.deltaY < 0)
                 network.zoom(0.8);
             else
                 network.zoom(1.2);
@@ -137,5 +177,18 @@ requirejs(["three", "js/NetworkScene", "jquery", "jquery-mousewheel"], function(
             if (network)
                 network.refocus();
         });
+
+        $("#save").on("click", function() {
+            if (!network)
+                return false;
+            let doc = document.implementation.createDocument("", "", null);
+            doc.appendChild(network.makeDOM(doc));
+            let str =
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                +  new XMLSerializer().serializeToString(doc);
+            let data = new Blob([str]);
+            this.href = URL.createObjectURL(data);
+            return true;
+         });
     });
 });

@@ -159,11 +159,6 @@ define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Network", "jquer
             this.zoom(1);
         }
 
-        removeVertex(v) {
-            v.removeFromScene(this.mScene);
-            super.removeVertex(v);
-        }
-        
         reanimate() {
             if (this.mInterrupted)
                 return;

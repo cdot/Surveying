@@ -43,9 +43,15 @@ define("js/Edge", ["three"], function(Three) {
             scene.add(this.mObject3D);
         }
 
-        removeFromScene(scene) {
+        /**
+         * Remove this edge from the scene graph,
+         * if it's there. Edges are managed by the network they
+         * are contained within, so this will not remove the
+         * edge from the containing network.
+         */
+        remove() {
             if (this.mObject3D) {
-                scene.remove(this.mObject3D);
+                this.mObject3D.parent.remove(this.mObject3D);
                 delete this.mObject3D;
                 delete this.mGeometry;
             }
@@ -59,6 +65,10 @@ define("js/Edge", ["three"], function(Three) {
         scale(s) {
             // Closeness for click test
             this.mDot2 = 4 * s * s;
+        }
+
+        highlight() {
+            // TODO:
         }
         
         projectRay(ray) {

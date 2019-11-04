@@ -15,14 +15,24 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
             this.mEdges = [];
         }
 
+        /**
+         * Get the id for the network
+         */
         get id() {
             return this.mId;
         }
 
+        /**
+         * Get the tag for this object used when creating a survey dom
+         */
         get tag() {
             return "network";
         }
-        
+
+        /**
+         * Add an edge to the network. The edge must refer to vertices
+         * in the network (not in subnets)
+         */
         addEdge(e) {
             e.parent = this;
             this.mEdges.push(e);
@@ -46,8 +56,8 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
         }
 
         /**
-         * Add the Three.Object3D representation of the vertices of this network
-         * to the given scene
+         * Add the Three.Object3D representation of the vertices and
+         * edges of this network to the given scene
          */
         addToScene(scene) {
             // Add vertex markers
@@ -70,79 +80,64 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
                 e.scale(s);
         }
 
-        // Private, purge dead networks
+        /**
+         * Remove this network if it has no vertices or subnets
+         * INTERNAL USE ONLY
+         */
         _purge() {
             if (this.mVertices.length === 0 && this.mSubnets.length === 0)
-                this.parent.remove(this);
+                this.parent._removeSubnet(this);
         }
 
         /**
-         * Remove the Three.Object3D representation
-         * from the given scene
+         * Remove a Vertex from this network
+         * INTERNAL USE ONLY
          */
-        removeFromScene(scene) {
+        _removeVertex(item) {
+            let i = this.mVertices.indexOf(item);
+            if (i < 0)
+                throw new Error("Tried to remove missing vertex");
+            this.mVertices.splice(i, 1);
+
+            this._purge();
+        }
+
+        /**
+         * Remove a Subnet from this network
+         * INTERNAL USE ONLY
+         */
+        _removeSubnet(item) {
+            let i = this.mSubnets.indexOf(item);
+            if (i < 0)
+                throw new Error("Tried to remove missing subnet");
+            this.mSubnets.splice(i, 1);
+
+            this._purge();
+        }
+
+        /**
+         * Remove a Subnet from this network
+         * INTERNAL USE ONLY
+         */
+        _removeEdge(e) {
+            let i = this.mEdges.indexOf(e);
+            if (i < 0)
+                throw new Error("Tried to remove missing edge");
+            this.mEdges.splice(i, 1);
+        }
+        
+        /**
+         * Remove this network from the network tree (and the scene graph,
+         * if it's there)
+         */
+        remove() {
             for (let v of this.mVertices)
-                v.removeFromScene(scene);
-            for (let e of this.mEdges)
-                e.removeFromScene(scene);
-            return el;
-        }
+                v.remove();
+            for (let n of this.mSubnets)
+                n.remove();
 
-        remove(item) {
-            let removed = false;
-            if (item instanceof Vertex) {
-                for (let i = 0; i < this.mVertices.length; i++) {
-                    if (item === this.mVertices[i]) {
-                        this.mVertices.splice(i, 1);
-                        console.log("Removed vertex", item.mId);
-                        debugger;
-                        // Remove edges that terminate on this vertex
-                        for (let i = this.mEdges.length - 1; i >= 0; ) {
-                            let e = this.mEdges[i];
-                            if (e.p1 === item || e.p2 === item)
-                                this.mEdges.splice(i, 1);
-                            else
-                                i--;
-                        }
-                        removed = true;
-                        break;
-                    }
-                }                
-            } else if (item instanceof Network) {
-                for (let i = 0; i < this.mSubnets.length; i++) {
-                    if (item === this.mSubnets[i]) {
-                        this.mSubnets.splice(i, 1);
-                        console.log("Removed network", this.mId);
-                        removed = true;
-                        break;
-                    }
-                }
-            }
-
-            // Not in this net, remove from subnets
-            for (let sn of this.mSubnets) {
-                if (sn.remove(item)) {
-                    removed = true;
-                    break;
-                }
-            }
-
-            if (removed)
-                this._purge();
-
-            return removed;
-        }
-
-        /**
-         * A vertex can only be in one Network
-         */
-        removeVertex(rv) {
-            
-
-            if (removed)
-                this._purge();
-
-            return removed;
+            // Tell the container to remove us
+            this.parent._removeSubnet(this);
         }
 
         /**
@@ -171,6 +166,9 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
             }            
         }*/
 
+        /**
+         * Get the volume the network occupies
+         */
         get boundingBox() {
             function extendP(bb, pt) {
                 bb.min.x = Math.min(bb.min.x, pt.x);
@@ -211,6 +209,7 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
 
         /**
          * Get the vertex or edge closest to the given ray
+         * @param {Three.Line3} ray 
          * @return {
          *     {Vertex|Edge} closest: closest Vertex or Edge
          *     {double} dist2: square of dist from closest to ray
@@ -246,9 +245,14 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
             return best;
         }
 
+        /**
+         * Highlight the network as being selected
+         */
         highlight(tf) {
             for (let p of this.mVertices)
                 p.highlight(tf);
+            for (let e of this.mEdges)
+                e.highlight(tf);
         }
 
         /**
@@ -271,6 +275,9 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
             return false;
         }
 
+        /**
+         * Make the DOM for saving in a .survey document
+         */
         makeDOM(doc) {
             let el = doc.createElement(this.tag);
             el.setAttribute("id", this.id);
@@ -281,6 +288,13 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
             for (let e of this.mEdges)
                 el.appendChild(e.makeDOM(doc));
             return el;
+        }
+
+        report() {
+            return "Network '" + this.mId + "' "
+            + this.mSubnets.length + " subnets "
+            + this.mVertices.length + " vertices "
+            + this.mEdges.length + " edges ";
         }
     }
     return Network;

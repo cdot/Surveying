@@ -14,8 +14,7 @@ define("js/Vertex", ["three"], function(Three) {
         constructor(id, v) {
             this.mId = id;
             this.mCurPos = new Three.Vector3(v.x, v.y, v.z);
-            this.mEdges = [];
-            this.mLocked = false;
+            this.mEdges = []; // not OWNED by Vertex, just referred to
         }
 
         makeDOM(doc) {
@@ -72,6 +71,10 @@ define("js/Vertex", ["three"], function(Three) {
             this.mDot2 = 4 * s * s;
         }
         
+       /**
+         * Add the Three.Object3D representation of this vertex
+         * to the given scene
+         */
         addToScene(scene) {
             this.mGeometry = new Three.BoxGeometry(1, 1, 1);
             this.mObject3D = new Three.Mesh(this.mGeometry, NORMAL);
@@ -80,15 +83,25 @@ define("js/Vertex", ["three"], function(Three) {
             scene.add(this.mObject3D);
         }
 
-        removeFromScene(scene) {
-            for (let e of this.mEdges)
-                e.removeFromScene(scene);
+        /**
+         * Remove this vertex from the network tree (and the scene graph,
+         * if it's there)
+         */
+        remove() {
+            for (let e of this.mEdges) {
+                this.parent._removeEdge(e);
+                e.remove();
+            }
+            this.mEdges = [];
 
             if (this.mObject3D) {
-                scene.remove(this.mObject3D);
+                this.mObject3D.parent.remove(this.mObject3D);
                 delete this.mObject3D;
                 delete this.mGeometry;
             }
+
+            // Tell the container to remove us.
+            this.parent._removeVertex(this);
         }
 
         /**
@@ -130,9 +143,19 @@ define("js/Vertex", ["three"], function(Three) {
             return this.mCurPos;
         }
         
+        /**
+         * Highlight the network as being selected (or part of a selected
+         * network)
+         */
         highlight(on) {
             if (this.mObject3D)
                 this.mObject3D.material = on ? HIGHLIGHT : NORMAL;
+        }
+
+        report() {
+            return "Vertex '" + this.mId + "' ("
+            + this.mCurPos.x + "," + this.mCurPos.y + "," + this.mCurPos.z
+            + ") " + this.mEdges.length + " edges";
         }
     }
     return Vertex;

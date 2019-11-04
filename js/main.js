@@ -38,19 +38,16 @@ requirejs(["three", "js/NetworkScene", "js/Selection", "jquery", "jquery-mousewh
                 $("#cursor").text(ray.start.x + ", " + ray.start.y);
             return ray;
         }
-/*
 
-One click to select object, second click to deselect - need select range
-Hold and drag on an object moves the object
-Hold and drag when no object selected pans
-
-mode: selecting (nothing else going on)
-panning: dragging the scene
-dragging: dragging an object (vertex or network)
-
- */
         let mouse_down; // button flags
-        let selection = new Selection();
+        let selection = new Selection(items => {
+            let $report = $("#report");
+            $report.empty();
+            for (let sel of items) {
+                $report.append(sel.report());
+            }
+        });
+
         let dragging = false;
         let lastPt;
 
@@ -65,17 +62,17 @@ dragging: dragging an object (vertex or network)
             if (!mouse_down) {
                 if (e.keyCode === 46) { // delete
                     for (let sel of selection.items)
-                        network.remove(sel);
+                        // Remove the item completely
+                        sel.remove();
                     selection.clear();
                 } else if (e.keyCode == 38) { // up
-                    let newsel = new Selection();
-                    for (let sel of selection.items) {
+                    let oldSel = selection.items.slice();
+                    for (let sel of oldSel) {
                         if (sel.parent !== network) {
-                            newsel.add(sel.parent);
+                            selection.add(sel.parent);
                             selection.remove(sel);
                         }
                     }
-                    selection = newsel;
                 }
             }
         })
@@ -172,7 +169,7 @@ dragging: dragging an object (vertex or network)
             // Read in the image file as a data URL.
             reader.readAsText(f);
         });
-
+        
         $("#refocus").on("click", function() {
             if (network)
                 network.refocus();

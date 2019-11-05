@@ -185,6 +185,7 @@ requirejs(["three", "js/NetworkScene", "js/Selection", "jquery", "jquery-mousewh
                 +  new XMLSerializer().serializeToString(doc);
             let data = new Blob([str]);
             this.href = URL.createObjectURL(data);
+            this.download = "survey.survey";
             return true;
          });
     });

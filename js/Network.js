@@ -1,33 +1,22 @@
-define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, Edge) {
+define("js/Network", ["three", "js/GraphElement"], function(Three, GraphElement) {
 
     /**
      * A network of interconnected vertices (Vertex) joined by edges (Edge)
      */
-    class Network {
+    class Network extends GraphElement {
 
         /**
-         * @param id network id
+         * @param name network name
          */
-        constructor(id) {
-            this.mId = id;
+        constructor(name) {
+            super(name);
             this.mSubnets = [];
             this.mVertices = [];
             this.mEdges = [];
         }
 
-        /**
-         * Get the id for the network
-         */
-        get id() {
-            return this.mId;
-        }
-
-        /**
-         * Get the tag for this object used when creating a survey dom
-         */
-        get tag() {
-            return "network";
-        }
+        // @Override
+        get tag() { return "network"; }
 
         /**
          * Add an edge to the network. The edge must refer to vertices
@@ -59,6 +48,7 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
          * Add the Three.Object3D representation of the vertices and
          * edges of this network to the given scene
          */
+        // @Override
         addToScene(scene) {
             // Add vertex markers
             for (let v of this.mVertices)
@@ -71,6 +61,7 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
         /**
          * Scale the spots used to mark vertices
          */
+        // @Override
         scale(s) {
             for (let g of this.mSubnets)
                 g.scale(s);
@@ -130,8 +121,10 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
          * Remove this network from the network tree (and the scene graph,
          * if it's there)
          */
+        // @Override
         remove() {
-            for (let v of this.mVertices)
+            let vs = this.mVertices.slice();
+            for (let v of vs)
                 v.remove();
             for (let n of this.mSubnets)
                 n.remove();
@@ -143,6 +136,7 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
         /**
          * Apply a transform to all vertices in the network
          */
+        // @Override
         applyTransform(mat) {
            for (let g of this.mSubnets)
                 g.applyTransform(mat);
@@ -217,6 +211,7 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
          *     {Three.Vector3} rayPt closest point on the ray
          * }
          */
+        // @Override
         projectRay(ray) {
             let best;
 
@@ -248,6 +243,7 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
         /**
          * Highlight the network as being selected
          */
+        // @Override
         highlight(tf) {
             for (let p of this.mVertices)
                 p.highlight(tf);
@@ -260,10 +256,8 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
          * @param item Vertex or Network to test
          */
         contains(item) {
-            if (item instanceof Vertex)
-                for (let v of this.mVertices)
-                    if (item === v)
-                        return true;
+            if (this.mVertices.indexOf(item) >= 0)
+                return true;
 
             for (let g of this.mSubnets) {
                 if (item === g)
@@ -278,9 +272,9 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
         /**
          * Make the DOM for saving in a .survey document
          */
+        // @Override
         makeDOM(doc) {
-            let el = doc.createElement(this.tag);
-            el.setAttribute("id", this.id);
+            let el = super.makeDOM(doc);
             for (let g of this.mSubnets)
                 el.appendChild(g.makeDOM(doc));
             for (let v of this.mVertices)
@@ -290,11 +284,12 @@ define("js/Network", ["three", "js/Vertex", "js/Edge"], function(Three, Vertex, 
             return el;
         }
 
+        // @Override
         report() {
-            return "Network '" + this.mId + "' "
+            return super.report()
             + this.mSubnets.length + " subnets "
             + this.mVertices.length + " vertices "
-            + this.mEdges.length + " edges ";
+            + this.mEdges.length + " edges";
         }
     }
     return Network;

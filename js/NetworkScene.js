@@ -1,4 +1,4 @@
-define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Network", "jquery"], function(Three, Vertex, Edge, Network) {
+define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Network", "js/GreatCircle", "jquery"], function(Three, Vertex, Edge, Network, GreatCircle) {
 
     /**
      * Add interactive display and manipulation to a top-level Network
@@ -131,23 +131,27 @@ define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Network", "jquer
             let bounds = this.boundingBox;
             let w = bounds.max.x - bounds.min.x;
             let h = bounds.max.y - bounds.min.y;
-            
-            if (w > h) {
-                let delta = (w - h) / 2;
-                bounds.max.y += delta; bounds.min.y -= delta;
-            } else if (w < h) {
-                let delta = (h - w) / 2;
-                bounds.max.x += delta; bounds.min.x -= delta;
-            }
             let dx =  (bounds.max.x - bounds.min.x);
             let dot = dx / 100;
 
-            bounds.min.x -= 2 * dot;
-            bounds.min.y -= 2 * dot;
+//            bounds.min.x -= 2 * dot;
+//            bounds.min.y -= 2 * dot;
             bounds.min.z -= 2 * dot;
-            bounds.max.x += 2 * dot;
-            bounds.max.y += 2 * dot;
+//            bounds.max.x += 2 * dot;
+//            bounds.max.y += 2 * dot;
             bounds.max.z += 2 * dot;
+
+            // That's our bounds in WGS84 coordinates. To work out the aspect ratios we
+            // need to convert to metres
+            let wm = GreatCircle.distanceAndBearing(bounds.min.y, bounds.min.x, bounds.min.y, bounds.max.x).distance;
+            let hm = GreatCircle.distanceAndBearing(bounds.min.y, bounds.min.x, bounds.max.y, bounds.min.x).distance;
+            console.log("Area in metres", wm, "x", hm);
+
+            if (wm > hm) {
+                bounds.max.y = bounds.min.y + w * hm / wm;
+            } else {
+                bounds.max.x = bounds.min.x + h * wm / hm;
+            }
             
             this.mZoomBox = bounds;
 

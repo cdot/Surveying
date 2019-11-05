@@ -1,4 +1,4 @@
-define("js/Vertex", ["three"], function(Three) {
+define("js/Vertex", ["three", "js/GraphElement"], function(Three, GraphElement) {
 
     const HIGHLIGHT = new Three.MeshBasicMaterial({color: 0xFF0000});
     const NORMAL = new Three.MeshBasicMaterial({color: 0x0000FF});
@@ -6,36 +6,37 @@ define("js/Vertex", ["three"], function(Three) {
     /**
      * A vertex in a network.
      */
-    class Vertex {
+    class Vertex extends GraphElement {
         /**
-         * @param id vertex identifier
+         * @param name vertex name (may not be unique)
          * @param v Three.Vector3 position of vertex
          */
-        constructor(id, v) {
-            this.mId = id;
+        constructor(name, v) {
+            super(name);
             this.mCurPos = new Three.Vector3(v.x, v.y, v.z);
             this.mEdges = []; // not OWNED by Vertex, just referred to
         }
 
+        // @Override
+        get tag() { return "node"; }
+ 
+        /**
+         * @return Three.Vector3 current position of vertex
+         */
+        get current() {
+            return this.mCurPos;
+        }
+        
+        /**
+         * Make the DOM for saving in a .survey document
+         */
+        // @Override
         makeDOM(doc) {
-            let el = doc.createElement("node");
-            el.setAttribute("id", this.id);
+            let el = super.makeDOM(doc);
             el.setAttribute("x", this.mCurPos.x);
             el.setAttribute("y", this.mCurPos.y);
             el.setAttribute("z", this.mCurPos.z);
             return el;
-        }
-        
-        get id() {
-            return this.mId;
-        }
-
-        get parent() {
-            return this.mParent;
-        }
-
-        set parent(p) {
-            this.mParent = p;
         }
         
         /**
@@ -45,6 +46,16 @@ define("js/Vertex", ["three"], function(Three) {
             this.mEdges.push(e);
         }
 
+        /**
+         * Remove a reference to an edge, if it's there
+         */
+        removeEdge(e) {
+            let i = this.mEdges.indexOf(e);
+            if (i >= 0)
+                this.mEdges.splice(i, 1);
+        }
+        
+        // @Override
         applyTransform(mat) {
             let p = this.mCurPos.clone();
             if (mat instanceof Three.Matrix3) {
@@ -59,11 +70,8 @@ define("js/Vertex", ["three"], function(Three) {
             this.current = p;
         }
         
-        /**
-         * Scale the spot
-         */
+        // @Override
         scale(s) {
-            //            this.mGeometry.scale(s, s, s);
             this.mObject3D.scale.x = s;
             this.mObject3D.scale.y = s;
             this.mObject3D.scale.z = s;
@@ -75,6 +83,7 @@ define("js/Vertex", ["three"], function(Three) {
          * Add the Three.Object3D representation of this vertex
          * to the given scene
          */
+        // @Override
         addToScene(scene) {
             this.mGeometry = new Three.BoxGeometry(1, 1, 1);
             this.mObject3D = new Three.Mesh(this.mGeometry, NORMAL);
@@ -87,11 +96,17 @@ define("js/Vertex", ["three"], function(Three) {
          * Remove this vertex from the network tree (and the scene graph,
          * if it's there)
          */
+        // @Override
         remove() {
-            for (let e of this.mEdges) {
+            // When we remove edges, the edges are removed from the endpoints, of which
+            // we are one. So copy the edges to make sure we don't strangle the iteration.
+            let deadges = this.mEdges.slice();
+            for (let e of deadges) {
                 this.parent._removeEdge(e);
                 e.remove();
             }
+            if (this.mEdges.length > 0)
+                console.debug("Suspicious that edges are left", this.mEdges);
             this.mEdges = [];
 
             if (this.mObject3D) {
@@ -112,6 +127,7 @@ define("js/Vertex", ["three"], function(Three) {
          *     {Three.Vector3} rayPt closest point on the ray
          * } or null if it's too far away
          */
+        // @Override
         projectRay(ray) {
             let np = new Three.Vector3();
             ray.closestPointToPoint(this.mCurPos, false, np);
@@ -133,29 +149,26 @@ define("js/Vertex", ["three"], function(Three) {
             if (this.mObject3D)
                 this.mObject3D.position.set(v.x, v.y, v.z);
             for (let e of this.mEdges)
-                e.needsUpdate();
+                e.vertexMoved();
         }
 
-        /**
-         * @return Three.Vector3 current position of vertex
-         */
-        get current() {
-            return this.mCurPos;
-        }
-        
         /**
          * Highlight the network as being selected (or part of a selected
          * network)
          */
+        // @Override
         highlight(on) {
             if (this.mObject3D)
                 this.mObject3D.material = on ? HIGHLIGHT : NORMAL;
         }
 
+        // @Override
         report() {
-            return "Vertex '" + this.mId + "' ("
-            + this.mCurPos.x + "," + this.mCurPos.y + "," + this.mCurPos.z
-            + ") " + this.mEdges.length + " edges";
+            let s = super.report()
+                + " (" + this.mCurPos.x + "," + this.mCurPos.y + "," + this.mCurPos.z + ")";
+            for (let e of this.mEdges)
+                s += " " + e.otherEnd(this).uid;
+            return s;
         }
     }
     return Vertex;

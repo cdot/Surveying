@@ -1,9 +1,9 @@
-define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Network", "js/GreatCircle", "jquery"], function(Three, Vertex, Edge, Network, GreatCircle) {
+define("js/Survey", ["three", "js/Vertex", "js/Edge", "js/Network", "js/GreatCircle", "jquery"], function(Three, Vertex, Edge, Network, GreatCircle) {
 
     /**
      * Add interactive display and manipulation to a top-level Network
      */
-    class NetworkScene extends Network {
+    class Survey extends Network {
 
         /**
          * @param renderer Three.WebGLRenderer
@@ -78,7 +78,7 @@ define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Network", "js/Gr
             })
             .then(nets => {
                 for (let net of nets) {
-                    this.addSubnet(net);
+                    this.addObject(net);
                     net.addToScene(this.mScene);
                 }
                 this.refocus();
@@ -179,5 +179,5 @@ define("js/NetworkScene", ["three", "js/Vertex", "js/Edge", "js/Network", "js/Gr
             this.mInterrupted = true;
         }
     }
-    return NetworkScene;
+    return Survey;
 });

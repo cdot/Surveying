@@ -1,4 +1,4 @@
-define("js/Loaders/XML", function() {
+define("js/Loaders/XML", [ "jquery"], function() {
 
     /**
      * Base class of all XML loaders
@@ -14,20 +14,17 @@ define("js/Loaders/XML", function() {
             if (!/^<\?xml/i.test(data))
                 throw new Error("XML expected");
             
-            let dom = new DOMParser().parseFromString(data, "text/xml");
-            this.mElement = dom.getElementsByTagName(tag)[0];
-            if (!this.mElement)
+            let dom = $.parseXML(data);
+            this.m$xml = $(dom).find(tag);
+            if (!this.m$xml)
                 throw new Error(source + " has no <" + tag);
             this.mNextNet = 0;
         }
 
-        /**
-         * Get the root node of the parsed XML
-         */
-        get root() {
-            return this.mElement;
+        get $xml() {
+            return this.m$xml;
         }
-
+        
         get source() {
             return this.mSource;
         }

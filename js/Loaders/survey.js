@@ -6,40 +6,44 @@ define("js/Loaders/survey", ["js/Loaders/XML", "three", "js/Vertex", "js/Edge", 
             super(source, data, "survey");
         }
 
-        loadNetwork(netel) {
-            let id = netel.getAttribute("id");
-            let net = new Network(id);
-            let nodes = {};
-            for (let nd of netel.children) {
-                if (nd.tagName === "node") {
-                    let id = nd.getAttribute("id");
-                    let name = nd.getAttribute("name");
-                    let x = parseFloat(nd.getAttribute("x"));
-                    let y = parseFloat(nd.getAttribute("y"));
-                    let z = parseFloat(nd.getAttribute("z"));
+        // @Override
+        load() {
+            function loadNetwork($net) {
+                let id = $net.attr("id");
+                let net = new Network(id);
+                let nodes = {};
+                $net.children("node").each(function() {
+                    let $nd = $(this);
+                    let id = $nd.attr("id");
+                    let name = $nd.attr("name");
+                    let x = parseFloat($nd.attr("x"));
+                    let y = parseFloat($nd.attr("y"));
+                    let z = parseFloat($nd.attr("z"));
                     let v = new Vertex(name, new Three.Vector3(x, y, z));
-                    net.addVertex(v);
+                    net.addObject(v);
                     nodes[id] = v;
-                } else if (nd.tagName === "network") {
-                    net.addSubnet(this.loadNetwork(nd));
-                } else if (nd.tagName === "edge") {
-                    let n1 = nodes[nd.getAttribute("p1")];
+                });
+                $net.children("network").each(function() {
+                    net.addObject(loadNetwork($(this)));
+                });
+                $net.children("edge").each(function() {
+                    let $edge = $(this);
+                    let n1 = nodes[$edge.attr("p1")];
                     if (!n1)
                         throw new Error("Corrupt survey; " + n1 + " missing");
-                    let n2 = nodes[nd.getAttribute("p2")];
+                    let n2 = nodes[$edge.attr("p2")];
                     if (!n2)
                         throw new Error("Corrupt survey; " + n2 + " missing");
                     net.addEdge(new Edge(n1, n2));
-                }
+                });
+                return net;
             }
-            return net;
-        }
-        
-        // @Override
-        load() {
+            
             let nets = [];
-            for (let kid of this.root.children)
-                nets.push(this.loadNetwork(kid));
+            let loader = this;
+            this.$xml.children("network").each(function() {
+                nets.push(loadNetwork($(this)));
+            });
             return nets;
         }
     }

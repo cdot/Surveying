@@ -8,3 +8,7 @@ body {
     border: 1px solid black;
     float: left;
 }
+
+#report li {
+    padding-left: 1em;
+}

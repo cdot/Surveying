@@ -11,7 +11,7 @@ requirejs.config({
     }
 });
 
-requirejs(["three", "js/NetworkScene", "js/Selection", "jquery", "jquery-mousewheel"], function(Three, NetworkScene, Selection) {
+requirejs(["three", "js/Survey", "js/Selection", "jquery", "jquery-mousewheel"], function(Three, Survey, Selection) {
     $(function(){
         let $canvas = $("#canvas");
         canvasRect = $canvas[0].getBoundingClientRect();
@@ -41,11 +41,19 @@ requirejs(["three", "js/NetworkScene", "js/Selection", "jquery", "jquery-mousewh
 
         let mouse_down; // button flags
         let selection = new Selection(items => {
-            let $report = $("#report");
-            $report.empty();
+            let $report = $("<ul></ul>");
             for (let sel of items) {
-                $report.append(sel.report());
+                let r = sel.report();
+                let $item = $("<li>" + r.shift() + "</li>");
+                if (r.length > 0) {
+                    let $block = $("<ul></ul>");
+                    for (let line of r)
+                        $block.append("<li>" + line + "</li>");
+                    $item.append($block);
+                }
+                $report.append($item);
             }
+            $("#report").empty().append($report);
         });
 
         let dragging = false;
@@ -55,9 +63,9 @@ requirejs(["three", "js/NetworkScene", "js/Selection", "jquery", "jquery-mousewh
                
         $canvas.on("keydown", function(e) {
             /*if (mouse_down && e.keyCode == 37) { // left
-                hit.draggable.rotate(hit.vertex.current, Math.PI / 180);
+                hit.draggable.rotate(hit.vertex.position, Math.PI / 180);
             } else if (mouse_down && e.keyCode == 39) { // right
-                hit.draggable.rotate(hit.vertex.current, -Math.PI / 180);
+                hit.draggable.rotate(hit.vertex.position, -Math.PI / 180);
                 } else */
             if (!mouse_down) {
                 if (e.keyCode === 46) { // delete
@@ -158,7 +166,7 @@ requirejs(["three", "js/NetworkScene", "js/Selection", "jquery", "jquery-mousewh
                 if (network)
                     network.stopAnimation();
                 else
-                    network = new NetworkScene(renderer);
+                    network = new Survey(renderer);
 
                 network.load(fn, data).then(() => {
                     console.log("Loaded", fn);

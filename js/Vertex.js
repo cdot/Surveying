@@ -17,20 +17,22 @@ define("js/Vertex", ["three", "js/GraphElement"], function(Three, GraphElement) 
             this.mEdges = []; // not OWNED by Vertex, just referred to
         }
 
-        // @Override
+        // @Override GraphElement
         get tag() { return "node"; }
  
         /**
-         * @return Three.Vector3 current position of vertex
+         * @return Three.Vector3 position of vertex
          */
-        get current() {
+        get position() {
             return this.mCurPos;
         }
         
-        /**
-         * Make the DOM for saving in a .survey document
-         */
-        // @Override
+        // @Override GraphElement
+        get boundingBox() {
+            return new Three.Box3(this.mCurPos, this.mCurPos);
+        }
+
+        // @Override GraphElement
         makeDOM(doc) {
             let el = super.makeDOM(doc);
             el.setAttribute("x", this.mCurPos.x);
@@ -55,22 +57,13 @@ define("js/Vertex", ["three", "js/GraphElement"], function(Three, GraphElement) 
                 this.mEdges.splice(i, 1);
         }
         
-        // @Override
+        // @Override GraphElement
         applyTransform(mat) {
-            let p = this.mCurPos.clone();
-            if (mat instanceof Three.Matrix3) {
-                // 2D transform
-                let e = mat.elements;
-                let x = p.x, y = p.y;
-                p.x = x * e[0] + y * e[3] + e[6];
-                p.y = x * e[1] + y * e[4] + e[7];
-            } else
-                p.applyMatrix4(mat);
-            
-            this.current = p;
+            let p = this.applyMatrix(mat, this.mCurPos.clone());
+            this.position = p;
         }
         
-        // @Override
+        // @Override GraphElement
         scale(s) {
             this.mObject3D.scale.x = s;
             this.mObject3D.scale.y = s;
@@ -78,35 +71,18 @@ define("js/Vertex", ["three", "js/GraphElement"], function(Three, GraphElement) 
             // Closeness for click test
             this.mDot2 = 4 * s * s;
         }
-        
-       /**
-         * Add the Three.Object3D representation of this vertex
-         * to the given scene
-         */
-        // @Override
+
+        // @Override GraphElement
         addToScene(scene) {
-            this.mGeometry = new Three.BoxGeometry(1, 1, 1);
+            this.mGeometry = new Three.SphereGeometry(1);
             this.mObject3D = new Three.Mesh(this.mGeometry, NORMAL);
             let v = this.mCurPos;
             this.mObject3D.position.set(v.x, v.y, v.z);
             scene.add(this.mObject3D);
         }
 
-        /**
-         * Remove this vertex from the network tree (and the scene graph,
-         * if it's there)
-         */
-        // @Override
+        // @Override GraphElement
         remove() {
-            // When we remove edges, the edges are removed from the endpoints, of which
-            // we are one. So copy the edges to make sure we don't strangle the iteration.
-            let deadges = this.mEdges.slice();
-            for (let e of deadges) {
-                this.parent._removeEdge(e);
-                e.remove();
-            }
-            if (this.mEdges.length > 0)
-                console.debug("Suspicious that edges are left", this.mEdges);
             this.mEdges = [];
 
             if (this.mObject3D) {
@@ -119,15 +95,7 @@ define("js/Vertex", ["three", "js/GraphElement"], function(Three, GraphElement) 
             this.parent._removeVertex(this);
         }
 
-        /**
-         * See if the given ray "hits" this vertex
-         * @return {
-         *     Vertex closest: this
-         *     {double} dist2: square of dist from ray
-         *     {Three.Vector3} rayPt closest point on the ray
-         * } or null if it's too far away
-         */
-        // @Override
+        // @Override GraphElement
         projectRay(ray) {
             let np = new Three.Vector3();
             ray.closestPointToPoint(this.mCurPos, false, np);
@@ -141,10 +109,13 @@ define("js/Vertex", ["three", "js/GraphElement"], function(Three, GraphElement) 
             };
         }
         
-        /*
-         * @param v Three.Vector3 set current position of vertex
+        /**
+         * Set position of vertex
+         * @param v Three.Vector3 position
          */
-        set current(v) {
+        set position(v) {
+            // It's important not to blow away the vector object, as
+            // it will be used by edges
             this.mCurPos.copy(v);
             if (this.mObject3D)
                 this.mObject3D.position.set(v.x, v.y, v.z);
@@ -152,22 +123,18 @@ define("js/Vertex", ["three", "js/GraphElement"], function(Three, GraphElement) 
                 e.vertexMoved();
         }
 
-        /**
-         * Highlight the network as being selected (or part of a selected
-         * network)
-         */
-        // @Override
+        // @Override GraphElement
         highlight(on) {
             if (this.mObject3D)
                 this.mObject3D.material = on ? HIGHLIGHT : NORMAL;
         }
 
-        // @Override
+        // @Override GraphElement
         report() {
-            let s = super.report()
-                + " (" + this.mCurPos.x + "," + this.mCurPos.y + "," + this.mCurPos.z + ")";
+            let s = super.report();
+            s.push("(" + this.mCurPos.x + "," + this.mCurPos.y + "," + this.mCurPos.z + ")");
             for (let e of this.mEdges)
-                s += " " + e.otherEnd(this).uid;
+                s.push("Edge to " + e.otherEnd(this).uid);
             return s;
         }
     }

@@ -42,14 +42,21 @@ define("js/GraphElement", ["three"], function(Three) {
          * the right size in the scene
          */
         scale(s) {
-            throw "No implementation";
+            throw new Error(this.constructor.name + ": No implementation of scale");
         }
 
+        /**
+         * Get the volume the object occupies
+         */
+        get boundingBox() {
+            throw new Error(this.constructor.name + ": No implementation of get boundingBox");
+        }
+        
         /**
          * Apply a transform to the element
          */
         applyTransform(mat) {
-            throw "No implementation";
+            throw new Error(this.constructor.name + ": No implementation of applyTransform");
         }
 
         /**
@@ -57,18 +64,32 @@ define("js/GraphElement", ["three"], function(Three) {
          * @return {
          *     Vertex closest: this
          *     {double} dist2: square of dist from ray
+         *     {Three.Vector3} edgePt closest point on the ray, if edge hit
          *     {Three.Vector3} rayPt closest point on the ray
          * } or null if it's too far away
          */
         projectRay(ray) {
-            throw "No implementation";
+            throw new Error(this.constructor.name + ": No implementation of projectRay");
+        }
+
+        // Helper for subclasses
+        applyMatrix(mat, p) {
+            if (mat instanceof Three.Matrix3) {
+                // 2D transform
+                let e = mat.elements;
+                let x = p.x, y = p.y;
+                p.x = x * e[0] + y * e[3] + e[6];
+                p.y = x * e[1] + y * e[4] + e[7];
+            } else
+                p.applyMatrix4(mat);
+            return p;
         }
 
         /**
          * Get the Object3D used to display this edge
          */
         addToScene(scene) {
-            throw "No implementation";
+            throw new Error(this.constructor.name + ": No implementation of addToScene");
         }
 
         /**
@@ -76,7 +97,7 @@ define("js/GraphElement", ["three"], function(Three) {
          * graph, if it's there.
          */
         remove() {
-            throw "No implementation";
+            throw new Error(this.constructor.name + ": No implementation of remove");
         }
 
         /**
@@ -91,7 +112,7 @@ define("js/GraphElement", ["three"], function(Three) {
         }
         
         /**
-         * Make the DOM for saving in a survey
+         * Make the DOM for saving in a .survey document
          */
         makeDOM(doc) {
             let el = doc.createElement(this.tag);
@@ -102,16 +123,20 @@ define("js/GraphElement", ["three"], function(Three) {
         }
         
         /**
-         * Highlight the network as being selected (or part of a selected
-         * network)
+         * Highlight the object as being selected (or part of a selection)
          */
         highlight(on) {
-            throw "No implementation";
+            throw new Error(this.constructor.name + ": No implementation of highlight");
         }
 
+        /**
+         * Generate a report on this object for use in the UI
+         */
         report() {
-            return this.tag + " " + this.mUid
-            + (this.mName ? (" '" + this.name + "'") : "");
+            let s =  [ this.tag + " " + this.mUid ];
+            if (this.mName)
+                s.push("'" + this.name + "'");
+            return s;
         }
 
     }

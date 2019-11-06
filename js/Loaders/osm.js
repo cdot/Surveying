@@ -9,33 +9,40 @@ define("js/Loaders/osm", ["js/Loaders/XML", "three", "js/Vertex", "js/Edge", "js
         // @Override
         load() {
             let nodes = {};
-            for (let node of this.root.getElementsByTagName("node")) {
-                nodes[node.getAttribute("id")] = {
-                    time: node.getAttribute("timestamp"),
-                    lat: parseFloat(node.getAttribute("lat")),
-                    lon: parseFloat(node.getAttribute("lon"))
+            this.$xml.children("node").each(function() {
+                let $node = $(this)
+                nodes[$node.attr("id")] = {
+                    time: $node.attr("timestamp"),
+                    lat: parseFloat($node.attr("lat")),
+                    lon: parseFloat($node.attr("lon"))
                 };
-            }
+            });
             let nets = [];
-            for (let way of this.root.getElementsByTagName("way")) {
-                let id = way.getAttribute("id");
-                for (let tag of way.getElementsByTagName("tag")) {
-                    if (tag.getAttribute("k") === "name")
-                        id = tag.getAttribute("v");
-                }
+            this.$xml.children("way").each(function() {
+                let $way = $(this);
+                let id = $way.attr("id");
+                $way.children("tag").each(function() {
+                    if ($(this).attr("k") === "name")
+                        id = $(this).attr("v");
+                });
                 let net = new Network(id);
                 let lastVert;
-                for (let nd of way.getElementsByTagName("nd")) {
-                    let pt = nodes[nd.getAttribute("ref")];
+                $way.children("nd").each(function() {
+                    let nid = $(this).attr("ref");
+                    let pt = nodes[nid];
+                    if (!pt)
+                        throw new Error("Corrupt osm; " + nid + " missing");
                     let point = new Three.Vector3(pt.lon, pt.lat, 0);
+
                     let v = new Vertex(pt.time, point);
-                    net.addVertex(v);
+                    // Networks in Survey don't share vertices
+                    net.addObject(v);
                     if (lastVert)
                         net.addEdge(new Edge(lastVert, v));
                     lastVert = v;
-                }
+                });
                 nets.push(net);
-            }
+            });
             return nets;
         }
     }

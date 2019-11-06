@@ -1,17 +1,16 @@
-define("js/Network", ["three", "js/GraphElement"], function(Three, GraphElement) {
-
+define("js/Network", ["three", "js/GraphContainer"], function(Three, GraphContainer) {
+    
     /**
      * A network of interconnected vertices (Vertex) joined by edges (Edge)
+     * A network can be a simple path, or could be a mesh.
      */
-    class Network extends GraphElement {
+    class Network extends GraphContainer {
 
         /**
          * @param name network name
          */
         constructor(name) {
             super(name);
-            this.mSubnets = [];
-            this.mVertices = [];
             this.mEdges = [];
         }
 
@@ -29,30 +28,12 @@ define("js/Network", ["three", "js/GraphElement"], function(Three, GraphElement)
         }
        
         /**
-         * Add a vertex to this network
-         */
-        addVertex(v) {
-            v.parent = this;
-            this.mVertices.push(v);
-        }
-
-        /**
-         * Add a subnetwork to this network
-         */
-        addSubnet(g) {
-            g.parent = this;
-            this.mSubnets.push(g);
-        }
-
-        /**
          * Add the Three.Object3D representation of the vertices and
          * edges of this network to the given scene
          */
         // @Override
         addToScene(scene) {
-            // Add vertex markers
-            for (let v of this.mVertices)
-                v.addToScene(scene);
+            super.addToScene(scene);
             // Add edge lines
             for (let e of this.mEdges)
                 e.addToScene(scene);
@@ -63,172 +44,22 @@ define("js/Network", ["three", "js/GraphElement"], function(Three, GraphElement)
          */
         // @Override
         scale(s) {
-            for (let g of this.mSubnets)
-                g.scale(s);
-            for (let v of this.mVertices)
-                v.scale(s);
+            super.scale(s);
             for (let e of this.mEdges)
                 e.scale(s);
         }
 
-        /**
-         * Remove this network if it has no vertices or subnets
-         * INTERNAL USE ONLY
-         */
-        _purge() {
-            if (this.mVertices.length === 0 && this.mSubnets.length === 0)
-                this.parent._removeSubnet(this);
-        }
-
-        /**
-         * Remove a Vertex from this network
-         * INTERNAL USE ONLY
-         */
-        _removeVertex(item) {
-            let i = this.mVertices.indexOf(item);
-            if (i < 0)
-                throw new Error("Tried to remove missing vertex");
-            this.mVertices.splice(i, 1);
-
-            this._purge();
-        }
-
-        /**
-         * Remove a Subnet from this network
-         * INTERNAL USE ONLY
-         */
-        _removeSubnet(item) {
-            let i = this.mSubnets.indexOf(item);
-            if (i < 0)
-                throw new Error("Tried to remove missing subnet");
-            this.mSubnets.splice(i, 1);
-
-            this._purge();
-        }
-
-        /**
-         * Remove a Subnet from this network
-         * INTERNAL USE ONLY
-         */
-        _removeEdge(e) {
-            let i = this.mEdges.indexOf(e);
-            if (i < 0)
-                throw new Error("Tried to remove missing edge");
-            this.mEdges.splice(i, 1);
-        }
-        
-        /**
-         * Remove this network from the network tree (and the scene graph,
-         * if it's there)
-         */
         // @Override
         remove() {
-            let vs = this.mVertices.slice();
-            for (let v of vs)
-                v.remove();
-            for (let n of this.mSubnets)
+            for (let n of this.mEdges)
                 n.remove();
 
-            // Tell the container to remove us
-            this.parent._removeSubnet(this);
+            super.remove();
         }
 
-        /**
-         * Apply a transform to all vertices in the network
-         */
-        // @Override
-        applyTransform(mat) {
-           for (let g of this.mSubnets)
-                g.applyTransform(mat);
-            for (let v of this.mVertices)
-                v.applyTransform(mat);
-        }
-        
-        /* keeping for reference
-           rotate(reference, angle) {
-            let mat1 = new Three.Matrix4().makeTranslation(
-                -reference.x, -reference.y, 0);
-            let mat2 = new Three.Matrix4().makeRotationZ(angle);
-            let mat3 = new Three.Matrix4().makeTranslation(
-                reference.x, reference.y, 0);
-            for (let v of this.mVertices) {
-                let p = v.current;
-                p.applyMatrix4(mat1);
-                p.applyMatrix4(mat2);
-                p.applyMatrix4(mat3);
-                v.current = p;
-            }            
-        }*/
-
-        /**
-         * Get the volume the network occupies
-         */
-        get boundingBox() {
-            function extendP(bb, pt) {
-                bb.min.x = Math.min(bb.min.x, pt.x);
-                bb.max.x = Math.max(bb.max.x, pt.x);
-                bb.min.y = Math.min(bb.min.y, pt.y);
-                bb.max.y = Math.max(bb.max.y, pt.y);
-                bb.min.z = Math.min(bb.min.z, pt.z);
-                bb.max.z = Math.max(bb.max.z, pt.z);
-            }
-
-            function extendBB(bb, obb) {
-                extendP(bb, obb.min);
-                extendP(bb, obb.max);
-            }
-            
-            let bb;
-            for (let g of this.mSubnets) {
-                let gbb = g.boundingBox;
-                if (gbb) {
-                    if (!bb)
-                        bb = gbb;
-                    else
-                        extendBB(bb, gbb);
-                }
-            }
-            
-            for (let vx of this.mVertices) {
-                let v = vx.current;
-                if (!bb)
-                    bb = {min: {x : v.x, y: v.y, z: v.z},
-                          max: {x : v.x, y: v.y, z: v.z}};
-                else
-                    extendP(bb, v);
-            }
-            
-            return bb;
-        }
-
-        /**
-         * Get the vertex or edge closest to the given ray
-         * @param {Three.Line3} ray 
-         * @return {
-         *     {Vertex|Edge} closest: closest Vertex or Edge
-         *     {double} dist2: square of dist from closest to ray
-         *     {Three.Vector3} edgePt closest point on the ray, if edge hit
-         *     {Three.Vector3} rayPt closest point on the ray
-         * }
-         */
         // @Override
         projectRay(ray) {
-            let best;
-
-            // First check sub-networks
-            for (let g of this.mSubnets) {
-                let d = g.projectRay(ray);
-                if (d && (!best || d.dist2 < best.dist2))
-                    best = d;
-            }
-
-            // Check vertices not in a sub-network.
-            for (let p of this.mVertices) {
-                let d = p.projectRay(ray);
-                                
-                if (d && (!best || d.dist2 < best.dist2))
-                    best = d;
-            }
+            let best = super.projectRay(ray);
 
             // Check edges
             for (let e of this.mEdges) {
@@ -240,45 +71,16 @@ define("js/Network", ["three", "js/GraphElement"], function(Three, GraphElement)
             return best;
         }
 
-        /**
-         * Highlight the network as being selected
-         */
         // @Override
         highlight(tf) {
-            for (let p of this.mVertices)
-                p.highlight(tf);
+            super.highlight(tf);
             for (let e of this.mEdges)
                 e.highlight(tf);
         }
 
-        /**
-         * Determine if this network contains the given item
-         * @param item Vertex or Network to test
-         */
-        contains(item) {
-            if (this.mVertices.indexOf(item) >= 0)
-                return true;
-
-            for (let g of this.mSubnets) {
-                if (item === g)
-                    return true;
-                if (g.contains(item))
-                    return true;
-            }
-
-            return false;
-        }
-
-        /**
-         * Make the DOM for saving in a .survey document
-         */
         // @Override
         makeDOM(doc) {
             let el = super.makeDOM(doc);
-            for (let g of this.mSubnets)
-                el.appendChild(g.makeDOM(doc));
-            for (let v of this.mVertices)
-                el.appendChild(v.makeDOM(doc));
             for (let e of this.mEdges)
                 el.appendChild(e.makeDOM(doc));
             return el;
@@ -286,10 +88,11 @@ define("js/Network", ["three", "js/GraphElement"], function(Three, GraphElement)
 
         // @Override
         report() {
-            return super.report()
-            + this.mSubnets.length + " subnets "
-            + this.mVertices.length + " vertices "
-            + this.mEdges.length + " edges";
+            let s = super.report();
+            if (s.mEdges.length > 0)
+                s.push(this.mEdges.length + " edge"
+                       + this.mEdges.length == 1 ? "" : "s");
+            return s;
         }
     }
     return Network;

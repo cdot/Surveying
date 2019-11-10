@@ -1,4 +1,4 @@
-define("js/GreatCircle", function() {
+define("js/GC", function() {
 
     /**
      * Great Circle calculator
@@ -7,19 +7,10 @@ define("js/GreatCircle", function() {
     // Ported from http://edwilliams.org/gccalc.htm
     // Vicenty's original paper at https://www.ngs.noaa.gov/PUBS_LIB/inverse.pdf
     
-    const ELLIPSE = {
-        // a: length of semi-major axis of the ellipsoid (metres radius at equator)
-        // invf: 1/f, f=flattening of the ellipsoid
-        // See https://en.wikipedia.org/wiki/World_Geodetic_System
-        WGS84:         { a: 6378137, f: 1 / 298.257223563 },
-        NAD27:         { a: 6378206.4, f: 1 / 294.9786982138 },
-        International: { a: 6378388, f: 1 / 297.0 },
-        Krasovsky:     { a: 6378245, f: 1 / 298.3 },
-        Bessel:        { a: 6377397.155, f: 1 / 299.1528 },
-        WGS72:         { a: 6378135, f: 1 / 298.26 },
-        WGS66:         { a: 6378145, f: 1 / 298.25 },
-        FAI:           { a: 6371000, f: 1 / 1000000000 }
-    };
+    // invf: 1/f, f=flattening of the ellipsoid
+    // See https://en.wikipedia.org/wiki/World_Geodetic_System
+    const R = 6378137;
+    const INVF = 1 / 298.257223563;
 
     /**
      * atan protected against input edge cases
@@ -55,7 +46,8 @@ define("js/GreatCircle", function() {
     let GC = {};
     
     /**
-     * Compute the distance and bearing between two points given by latitude and longitude
+     * Compute the distance and bearing between two points given by
+     * latitude and longitude
      * @param lat1 initial geodetic latitude in degrees N positive 
      * @param lon1 initial geodetic longitude in degrees E positive 
      * @param lat2 final geodetic latitude in degrees N positive 
@@ -77,10 +69,8 @@ define("js/GreatCircle", function() {
         if (!model)
             model = "WGS84";
 
-        let ellipse = ELLIPSE[model];
-
-        let a = ellipse.a;
-        let f = ellipse.f;
+        let a = R;
+        let f = INVF;
         
         const EPS = 10e-11; // close enough
         const MAXITER = 100;

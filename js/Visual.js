@@ -1,13 +1,13 @@
-define("js/GraphElement", ["three"], function(Three) {
+define("js/Visual", ["three"], function(Three) {
 
-    // Every GraphElement is uniquely numbered within this system
+    // Every Visual is uniquely numbered within this system
     let counter = 1;
 
     /**
-     * Base class of elements in a scene. This is really little more than an interface
-     * specification.
+     * Base class of elements in a scene. This is really little more
+     * than an interface specification.
      */
-    class GraphElement {
+    class Visual {
 
         /**
          * @param name may not be unique!
@@ -15,8 +15,14 @@ define("js/GraphElement", ["three"], function(Three) {
         constructor(name) {
             this.mName = name;
             this.mUid = counter++;
+            this.mScaleFactor = 1;
         }
 
+        _notImplemented(method) {
+            return new Error(this.constructor.name
+                             + " has no implementation of " + method);
+        }
+        
         /**
          * Get the name of this element. Names are not necessarily unique.
          */
@@ -32,6 +38,14 @@ define("js/GraphElement", ["three"], function(Three) {
             return this.mUid;
         }
 
+        get scale() {
+            return this.mScaleFactor;
+        }
+
+        setScale(s) {
+            this.mScaleFactor = s;
+        }
+        
          /**
          * Get the tag for this element used when creating a survey dom
          */
@@ -42,21 +56,21 @@ define("js/GraphElement", ["three"], function(Three) {
          * the right size in the scene
          */
         scale(s) {
-            throw new Error(this.constructor.name + ": No implementation of scale");
+            throw this._notImplemented("scale");
         }
 
         /**
          * Get the volume the object occupies
          */
         get boundingBox() {
-            throw new Error(this.constructor.name + ": No implementation of get boundingBox");
+            throw this._notImplemented("get boundingBox");
         }
         
         /**
          * Apply a transform to the element
          */
         applyTransform(mat) {
-            throw new Error(this.constructor.name + ": No implementation of applyTransform");
+            throw this._notImplemented("applyTransform");
         }
 
         /**
@@ -68,36 +82,31 @@ define("js/GraphElement", ["three"], function(Three) {
          *     {Three.Vector3} rayPt closest point on the ray
          * } or null if it's too far away
          */
-        projectRay(ray) {
-            throw new Error(this.constructor.name + ": No implementation of projectRay");
-        }
-
-        // Helper for subclasses
-        applyMatrix(mat, p) {
-            if (mat instanceof Three.Matrix3) {
-                // 2D transform
-                let e = mat.elements;
-                let x = p.x, y = p.y;
-                p.x = x * e[0] + y * e[3] + e[6];
-                p.y = x * e[1] + y * e[4] + e[7];
-            } else
-                p.applyMatrix4(mat);
-            return p;
-        }
+        projectRay(ray) { return null; }
 
         /**
          * Get the Object3D used to display this edge
          */
         addToScene(scene) {
-            throw new Error(this.constructor.name + ": No implementation of addToScene");
+            throw this._notImplemented("addToScene");
         }
 
         /**
-         * Remove the element, and clean up the graph. Also remove it from the scene
-         * graph, if it's there.
+         * Used by Visuals that have a parent to remove themselves
+         * from that parent
+         */
+        removeChild(child) {
+            throw this._notImplemented("removeChild");
+        }
+        
+        /**
+         * Remove the element, and clean up the graph. Also remove it
+         * from the scene graph, if it's there.
          */
         remove() {
-            throw new Error(this.constructor.name + ": No implementation of remove");
+            // Remove from parent
+            if (this.mParent)
+                this.mParent.removeChild(this);
         }
 
         /**
@@ -107,7 +116,7 @@ define("js/GraphElement", ["three"], function(Three) {
             return this.mParent;
         }
 
-        set parent(p) {
+        setParent(p) {
             this.mParent = p;
         }
         
@@ -125,20 +134,25 @@ define("js/GraphElement", ["three"], function(Three) {
         /**
          * Highlight the object as being selected (or part of a selection)
          */
-        highlight(on) {
-            throw new Error(this.constructor.name + ": No implementation of highlight");
-        }
+        highlight(on) { }
 
         /**
          * Generate a report on this object for use in the UI
          */
-        report() {
-            let s =  [ this.tag + " " + this.mUid ];
+        get report() {
+            let s = this.tag + " " + this.mUid;
             if (this.mName)
-                s.push("'" + this.name + "'");
-            return s;
+                s += " '" + this.mName + "'";
+            return [ s ];
         }
 
+        /**
+         * Determine if this visual contains (or is) the given item
+         * @param item Visual to test
+         */
+        contains(vis) {
+            return (vis === this);
+        }
     }
-    return GraphElement;
+    return Visual;
 });

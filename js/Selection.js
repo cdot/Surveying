@@ -7,7 +7,7 @@ define("js/Selection", function() {
 
         _changed() {
             if (this.mOnChange)
-                this.mOnChange(this.mItems);
+                this.mOnChange(this);
         }
         
         /**
@@ -79,6 +79,7 @@ define("js/Selection", function() {
         applyTransform(mat) {
             for (let s of this.mItems)
                 s.applyTransform(mat);
+            this._changed();
         }
     }
     return Selection;

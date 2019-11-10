@@ -8,16 +8,6 @@ define("js/FileFormat", function() {
     class FileFormat {
         constructor(source) {
             this.mSource = source;
-            this.mMetadata = {
-                // Information used for formats which support saving
-                reference_point: {
-                    // UTM coords of the 0, 0 point
-                    // Greenwich
-                    easting: 291682, northing: 5707240,
-                    zoneNum: 31, zoneLetter: N
-                },
-                units_per_metre: 1
-            };
         }
     
         get source() {
@@ -27,12 +17,12 @@ define("js/FileFormat", function() {
         /**
          * @param source identifier for the source of the data e.g. filename
          * @param {String} data file content
-         * @return {
-         *    metadata: //meta information that can be used to regenerate the file
+         * @param metadata ref to global meta information that can be used to
+         * regenerate the file
          *    { reference_point: {x:, y:, lat:, lon: }, units_per_metre: }
          *    objects: // [] of Visual }
          */
-        load(source, data) {
+        load(source, data, metadata) {
             this.mSource = source;
             this.mNextNet = 0;
         }

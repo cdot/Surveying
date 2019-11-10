@@ -1,9 +1,9 @@
-define("js/GraphContainer", ["three", "js/GraphElement"], function(Three, GraphElement) {
+define("js/Container", ["three", "js/Visual"], function(Three, Visual) {
 
     /**
      * A graphical object that can contain other objects
      */
-    class GraphContainer extends GraphElement {
+    class Container extends Visual {
         
         constructor(name) {
             super(name);
@@ -16,40 +16,38 @@ define("js/GraphContainer", ["three", "js/GraphElement"], function(Three, GraphE
          * Add a subnetwork to this network
          */
         addObject(g) {
-            g.parent = this;
+            g.setParent(this);
             this.mObjects.push(g);
         }
         
-        /**
-         * Add the Three.Object3D representation of the vertices and
-         * edges of this network to the given scene
-         */
-        // @Override
+        // @Override Visual
         addToScene(scene) {
             for (let o of this.mObjects)
                 o.addToScene(scene);
         }
-        
-        /**
-         * Scale the spots used to mark vertices
-         */
-        // @Override
-        scale(s) {
-            for (let g of this.mObjects)
-                g.scale(s);
+
+        // @Override Visual
+        get scale() {
+            return super.scale;
         }
         
-        /**
-         * Remove an object
-         */
+        // @Override Visual
+        setScale(s) {
+            super.setScale(s);
+            for (let g of this.mObjects)
+                g.setScale(s);
+        }
+        
+        // @Override Visual
         remove() {
             let contents = this.mObjects.slice();
             for (let thing of contents)
-                this.remove();
+                thing.remove();
             if (this.parent)
                 this.parent.removeChild(this);
         }
-        
+
+        // @Override Visual
         removeChild(item) {
             let i = this.mObjects.indexOf(item);
             if (i < 0)
@@ -57,13 +55,13 @@ define("js/GraphContainer", ["three", "js/GraphElement"], function(Three, GraphE
             this.mObjects.splice(i, 1);
         }
         
-        // @Override GraphElement
+        // @Override Visual
         applyTransform(mat) {
             for (let g of this.mObjects)
                 g.applyTransform(mat);
         }
         
-        // @Override GraphElement
+        // @Override Visual
          get boundingBox() {
             let bb = new Three.Box3();
             for (let g of this.mObjects) {
@@ -74,16 +72,6 @@ define("js/GraphContainer", ["three", "js/GraphElement"], function(Three, GraphE
             return bb;
         }
         
-        /**
-         * Get the vertex or edge closest to the given ray
-         * @param {Three.Line3} ray 
-         * @return {
-         *     {Vertex|Edge} closest: closest Vertex or Edge
-         *     {double} dist2: square of dist from closest to ray
-         *     {Three.Vector3} edgePt closest point on the ray, if edge hit
-         *     {Three.Vector3} rayPt closest point on the ray
-         * }
-         */
         // @Override
         projectRay(ray) {
             let best;
@@ -97,32 +85,21 @@ define("js/GraphContainer", ["three", "js/GraphElement"], function(Three, GraphE
             return best;
         }
 
-                /**
-         * Highlight the network as being selected
-         */
         // @Override
         highlight(tf) {
             for (let g of this.mObjects)
                 g.highlight(tf);
         }
 
-        /**
-         * Determine if this network contains the given item
-         * @param item Vertex or Network to test
-         */
+        // @Override Visual
         contains(item) {
-            if (this.mObjects.indexOf(item) >= 0)
-                return true;
             for (let g of this.mObjects) {
                 if (g.contains(item))
                     return true;
             }
         }
 
-    /**
-     * Make the DOM for saving in a .survey document
-     */
-        // @Override
+        // @Override Visual
         makeDOM(doc) {
             let el = super.makeDOM(doc);
             for (let g of this.mObjects)
@@ -130,14 +107,15 @@ define("js/GraphContainer", ["three", "js/GraphElement"], function(Three, GraphE
             return el;
         }
         
-        // @Override
-        report() {
-            let s = super.report();
+        // @Override Visual
+        get report() {
+            let s = super.report;
             if (this.mObjects.length > 0)
-                s.push(this.mObjects.length + " sub-objects"
-                       + this.mObjects.length == 1 ? "" : "s");
+                s.push(this.mObjects.length + " object"
+                       + (this.mObjects.length == 1 ? "" : "s"));
+            return s;
         }
     }
 
-    return GraphContainer;
+    return Container;
 });

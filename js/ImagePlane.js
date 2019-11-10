@@ -1,9 +1,9 @@
-define("js/ImagePlane", ["three", "js/GraphElement"], function(Three, GraphElement) {
+define("js/ImagePlane", ["three", "js/Visual"], function(Three, Visual) {
 
     /**
      * A visual object that maps a graphic to a plane
      */
-    class ImagePlane extends GraphElement {
+    class ImagePlane extends Visual {
 
         /**
          * @param filename name of the image file
@@ -17,10 +17,10 @@ define("js/ImagePlane", ["three", "js/GraphElement"], function(Three, GraphEleme
             this.mMax = max.clone();
         }
 
-         // @Override
+        // @Override Visual
         get tag() { return "image"; }
 
-        // @Override GraphElement
+        // @Override Visual
         get boundingBox() {
             let bb = new Three.Box3();
             bb.expandByPoint(this.mMin);
@@ -28,26 +28,36 @@ define("js/ImagePlane", ["three", "js/GraphElement"], function(Three, GraphEleme
             return bb;
         }
         
+        // @Override Visual
         addToScene(scene) {
             let loader = new Three.TextureLoader();
+            // TODO: loader.load loads from a URL, but we want to load
+            // from a file relative to the SVG
             this.mMaterial = new Three.MeshBasicMaterial({
-                map: loader.load(this.mImage)
+                map: loader.load(this.mImage),
+                side: Three.DoubleSide
             });
 
             // Constructing the plane geometry assigns vertices
             let w = this.mMax.x - this.mMin.x;
             let h = this.mMax.y - this.mMin.y;
             this.mGeometry = new Three.PlaneGeometry(w, h);
-            this.mGeometry.vertices[0].x = this.mMin.x;
-            this.mGeometry.vertices[0].y = this.mMax.y;
-            this.mGeometry.vertices[1].copy(this.mMin);
-            this.mGeometry.vertices[2].copy(this.mMin);
-            this.mGeometry.vertices[3].x = this.mMax.x;
-            this.mGeometry.vertices[3].y = this.mMin.y;
+            // We look UP the z axis, so want the plane at the far of the view box
+            this.mGeometry.vertices[0].copy(this.mMin);
+            this.mGeometry.vertices[0].z = this.mMax.z;
+            this.mGeometry.vertices[1].x = this.mMax.x;
+            this.mGeometry.vertices[1].y = this.mMin.y;
+            this.mGeometry.vertices[1].z = this.mMax.z;
+            this.mGeometry.vertices[2].x = this.mMin.x;
+            this.mGeometry.vertices[2].y = this.mMax.y;
+            this.mGeometry.vertices[2].z = this.mMax.z;
+            this.mGeometry.vertices[3].copy(this.mMax);
+            this.mGeometry.vertices[3].z = this.mMax.z;
             this.mObject3D = new Three.Mesh(this.mGeometry, this.mMaterial);
             scene.add(this.mObject3D);
         }
 
+        // @Override Visual
         remove() {
             if (this.mObject3D) {
                 this.mObject3D.parent.remove(this.mObject3D);
@@ -57,23 +67,13 @@ define("js/ImagePlane", ["three", "js/GraphElement"], function(Three, GraphEleme
             }
         }
         
-        scale(s) {
-        }
-
-        projectRay(ray) {
-            return null;
-        }
-
-        highlight(tf) {
-        }
-
-        // @Override
+        // @Override Visual
         applyTransform(mat) {
-            this.mMin = super.applyMatrix(mat, this.mMin);
-            this.mMax = super.applyMatrix(mat, this.mMax);
+            this.mMin.applyMatrix4(mat);
+            this.mMax.applyMatrix4(mat);
         }
 
-        // @Override
+        // @Override Visual
         makeDOM(doc) {
             let el = super.makeDOM(doc);
             el.setAttribute("image", this.mImage);
@@ -82,10 +82,11 @@ define("js/ImagePlane", ["three", "js/GraphElement"], function(Three, GraphEleme
             return el;
         }
 
-        // @Override
-        report() {
-            let s = super.report();
+        // @Override Visual
+        get report() {
+            let s = super.report;
             s.push("Image: " + this.mImage);
+            return s;
         }
     }
 

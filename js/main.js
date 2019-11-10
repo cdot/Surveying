@@ -11,7 +11,7 @@ requirejs.config({
     }
 });
 
-requirejs(["three", "js/Survey", "js/Selection", "jquery", "jquery-mousewheel"], function(Three, Survey, Selection) {
+requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mousewheel"], function(Three, Survey, Selection, UTM) {
     $(function(){
         let $canvas = $("#canvas");
         canvasRect = $canvas[0].getBoundingClientRect();
@@ -25,6 +25,35 @@ requirejs(["three", "js/Survey", "js/Selection", "jquery", "jquery-mousewheel"],
         let network, camera;
 
         /**
+         * Format a point for display as a lat,long
+         */
+        function wgsCoords(p) {
+            function round(x, pos, neg) {
+                let v = Math.floor(100000 * x) / 100000;
+                return (v < 0) ? (-v + "&deg;" + neg) : (v + "&deg;" + pos)
+            }
+            let ll = new UTM(p.x, p.y, network.utmZone, network.utmBand).toLatLong();
+            return round(ll.latitude, "N", "S") + " " + round(ll.longitude, "E", "W");
+        }
+
+        /**
+         * Format a point for display using internal coordinates
+         */
+        function userCoords(p) {
+            return p.x + ", " + p.y;
+        }
+        
+        /**
+         * Format a point for display using file coordinates
+         */
+        function fileCoords(p) {
+            if (!network)
+                return "";
+            let pu = network.user2saveUnits(p)
+            return pu.x + ", " + pu.y;
+        }
+        
+        /**
          * Convert an event on the canvas into a ray
          * @param e event
          */
@@ -34,16 +63,23 @@ requirejs(["three", "js/Survey", "js/Selection", "jquery", "jquery-mousewheel"],
                 x: e.offsetX / canvasRect.width,
                 y: e.offsetY / canvasRect.height
             });
-            if (ray)
-                $("#cursor").text(ray.start.x + ", " + ray.start.y);
+            if (ray) {
+                $("#cursor_wgs").html(wgsCoords(ray.start));
+                $("#cursor_user").html(userCoords(ray.start));
+                $("#cursor_save").html(fileCoords(ray.start));
+            }
             return ray;
         }
 
+        function formatBox(b) {
+            return userCoords(b.min) + " -> " + userCoords(b.max);
+        }
+        
         let mouse_down; // button flags
-        let selection = new Selection(items => {
+        let selection = new Selection(sln => {
             let $report = $("<ul></ul>");
-            for (let sel of items) {
-                let r = sel.report();
+            for (let sel of sln.items) {
+                let r = sel.report;
                 let $item = $("<li>" + r.shift() + "</li>");
                 if (r.length > 0) {
                     let $block = $("<ul></ul>");
@@ -61,27 +97,23 @@ requirejs(["three", "js/Survey", "js/Selection", "jquery", "jquery-mousewheel"],
 
         $("#noform").on("submit", () => false);
                
-        $canvas.on("keydown", function(e) {
-            /*if (mouse_down && e.keyCode == 37) { // left
-                hit.draggable.rotate(hit.vertex.position, Math.PI / 180);
-            } else if (mouse_down && e.keyCode == 39) { // right
-                hit.draggable.rotate(hit.vertex.position, -Math.PI / 180);
-                } else */
-            if (!mouse_down) {
-                if (e.keyCode === 46) { // delete
-                    for (let sel of selection.items)
-                        // Remove the item completely
-                        sel.remove();
-                    selection.clear();
-                } else if (e.keyCode == 38) { // up
-                    let oldSel = selection.items.slice();
-                    for (let sel of oldSel) {
-                        if (sel.parent !== network) {
-                            selection.add(sel.parent);
-                            selection.remove(sel);
-                        }
+        $canvas.on("keyup", function(e) {
+            switch (e.keyCode) {
+            case 46: // delete
+                for (let sel of selection.items)
+                    // Remove the item completely
+                    sel.remove();
+                selection.clear();
+                return false;
+            case 38: // up
+                let oldSel = selection.items.slice();
+                for (let sel of oldSel) {
+                    if (sel.parent !== network) {
+                        selection.add(sel.parent);
+                        selection.remove(sel);
                     }
                 }
+                return false;
             }
         })
 
@@ -127,17 +159,19 @@ requirejs(["three", "js/Survey", "js/Selection", "jquery", "jquery-mousewheel"],
         })
                 
         .on('mousemove', function(e) {
-            if (!mouse_down || !network) return false;
+            if (!network) return false;
             let ray = event2ray(e);
-            let p = ray.start;
-            let delta = p.clone().sub(lastPt);
-            if (dragging) {
-                let mat = new Three.Matrix4().makeTranslation(
-                    delta.x, delta.y, 0);
-                selection.applyTransform(mat);
-            } else
-                network.panBy(delta.negate());
-            lastPt = p;
+            if (mouse_down) {
+                let p = ray.start;
+                let delta = p.clone().sub(lastPt);
+                if (dragging) {
+                    let mat = new Three.Matrix4().makeTranslation(
+                        delta.x, delta.y, 0);
+                    selection.applyTransform(mat);
+                } else
+                    network.panBy(delta.negate());
+                lastPt = p;
+            }
         })
 
         // Zoom in/out
@@ -181,6 +215,15 @@ requirejs(["three", "js/Survey", "js/Selection", "jquery", "jquery-mousewheel"],
         $("#refocus").on("click", function() {
             if (network)
                 network.refocus();
+        });
+
+        $(document).on("scenechanged", function () {
+            console.log(network.boundingBox);
+            $("#scene").html(formatBox(network.boundingBox));
+        });
+
+        $(document).on("viewchanged", function() {
+            $("#viewport").html(formatBox(network.viewport));
         });
 
         $("#save").on("click", function() {

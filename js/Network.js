@@ -1,10 +1,10 @@
-define("js/Network", ["three", "js/GraphContainer"], function(Three, GraphContainer) {
+define("js/Network", ["three", "js/Container"], function(Three, Container) {
     
     /**
      * A network of interconnected vertices (Vertex) joined by edges (Edge)
      * A network can be a simple path, or could be a mesh.
      */
-    class Network extends GraphContainer {
+    class Network extends Container {
 
         /**
          * @param name network name
@@ -14,7 +14,7 @@ define("js/Network", ["three", "js/GraphContainer"], function(Three, GraphContai
             this.mEdges = [];
         }
 
-        // @Override
+        // @Override Container
         get tag() { return "network"; }
 
         /**
@@ -22,7 +22,7 @@ define("js/Network", ["three", "js/GraphContainer"], function(Three, GraphContai
          * in the network (not in subnets)
          */
         addEdge(e) {
-            e.parent = this;
+            e.setParent(this);
             this.mEdges.push(e);
             return e;
         }
@@ -31,7 +31,7 @@ define("js/Network", ["three", "js/GraphContainer"], function(Three, GraphContai
          * Add the Three.Object3D representation of the vertices and
          * edges of this network to the given scene
          */
-        // @Override
+        // @Override Container
         addToScene(scene) {
             super.addToScene(scene);
             // Add edge lines
@@ -39,17 +39,14 @@ define("js/Network", ["three", "js/GraphContainer"], function(Three, GraphContai
                 e.addToScene(scene);
         }
 
-        /**
-         * Scale the spots used to mark vertices
-         */
-        // @Override
-        scale(s) {
-            super.scale(s);
+        // @Override Container
+        setScale(s) {
+            super.setScale(s);
             for (let e of this.mEdges)
-                e.scale(s);
+                e.setScale(s);
         }
 
-        // @Override
+        // @Override Container
         remove() {
             for (let n of this.mEdges)
                 n.remove();
@@ -57,7 +54,7 @@ define("js/Network", ["three", "js/GraphContainer"], function(Three, GraphContai
             super.remove();
         }
 
-        // @Override
+        // @Override Container
         projectRay(ray) {
             let best = super.projectRay(ray);
 
@@ -71,14 +68,14 @@ define("js/Network", ["three", "js/GraphContainer"], function(Three, GraphContai
             return best;
         }
 
-        // @Override
+        // @Override Container
         highlight(tf) {
             super.highlight(tf);
             for (let e of this.mEdges)
                 e.highlight(tf);
         }
 
-        // @Override
+        // @Override Container
         makeDOM(doc) {
             let el = super.makeDOM(doc);
             for (let e of this.mEdges)
@@ -86,12 +83,12 @@ define("js/Network", ["three", "js/GraphContainer"], function(Three, GraphContai
             return el;
         }
 
-        // @Override
-        report() {
-            let s = super.report();
-            if (s.mEdges.length > 0)
+        // @Override Container
+        get report() {
+            let s = super.report;
+            if (this.mEdges.length > 0)
                 s.push(this.mEdges.length + " edge"
-                       + this.mEdges.length == 1 ? "" : "s");
+                       + (this.mEdges.length == 1 ? "" : "s"));
             return s;
         }
     }

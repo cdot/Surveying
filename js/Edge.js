@@ -1,14 +1,14 @@
-define("js/Edge", ["three", "js/GraphElement"], function(Three, GraphElement) {
+define("js/Edge", ["three", "js/Visual"], function(Three, Visual) {
 
-    const NORMAL = new Three.LineBasicMaterial({color: 0x00FF00});
+    const NORMAL = new Three.LineBasicMaterial({color: 0x0000FF});
     const HIGHLIGHT = new Three.LineBasicMaterial({color: 0xFF00FF});
     
     /**
-     * An edge in a network. Note that edges are GraphElements but do
+     * An edge in a network. Note that edges are Visuals but do
      * not participate in the general object hierarchy; instead they
      * are stored local to Network, and referenced in Vertex.
      */
-    class Edge extends GraphElement {
+    class Edge extends Visual {
         /**
          * @param p1 Vertex
          * @param p2 Vertex
@@ -22,7 +22,7 @@ define("js/Edge", ["three", "js/GraphElement"], function(Three, GraphElement) {
             this.mDot2 = 1;
         }
 
-        // @Override GraphElement
+        // @Override Visual
         get tag() { return "edge"; }
 
         get p1() { return this.mP1; }
@@ -36,7 +36,7 @@ define("js/Edge", ["three", "js/GraphElement"], function(Three, GraphElement) {
             return (v === this.mP1) ? this.mP2 : this.mP1;
         }
         
-        // @Override GraphElement
+        // @Override Visual
         get boundingBox() {
             let bb = new Three.Box3();
             bb.expandByPoint(this.mP1.position);
@@ -44,7 +44,7 @@ define("js/Edge", ["three", "js/GraphElement"], function(Three, GraphElement) {
             return bb;
         }
 
-        // @Override GraphElement
+        // @Override Visual
         makeDOM(doc) {
             let el = super.makeDOM();
             el.setAttribute("id", this.uid);
@@ -53,7 +53,7 @@ define("js/Edge", ["three", "js/GraphElement"], function(Three, GraphElement) {
             return el;
         }
         
-        // @Override GraphElement
+        // @Override Visual
         addToScene(scene) {
             this.mGeometry = new Three.Geometry();
             this.mGeometry.vertices.push(this.mP1.position);
@@ -62,7 +62,7 @@ define("js/Edge", ["three", "js/GraphElement"], function(Three, GraphElement) {
             scene.add(this.mObject3D);
         }
 
-        // @Override GraphElement
+        // @Override Visual
         remove() {
             this.mP1.removeEdge(this);
             this.mP2.removeEdge(this);
@@ -81,19 +81,13 @@ define("js/Edge", ["three", "js/GraphElement"], function(Three, GraphElement) {
                 this.mGeometry.verticesNeedUpdate = true;
         }
 
-        // @Override GraphElement
-        scale(s) {
-            // Closeness for click test
-            this.mDot2 = 4 * s * s;
-        }
-
-        // @Override GraphElement
+        // @Override Visual
         highlight(on) {
             if (this.mObject3D)
                 this.mObject3D.material = on ? HIGHLIGHT : NORMAL;
         }
         
-        // @Override GraphElement
+        // @Override Visual
         projectRay(ray) {
             // TODO:
             return null;

@@ -7,13 +7,13 @@ requirejs.config({
     }
 });
 
-requirejs(["js/GreatCircle"], function(GreatCircle) {
+requirejs(["js/Projection"], function(P) {
 
     const ACC = 0.01;
 
     function doTest(lat1, lon1, lat2, lon2,
                    expect) {
-        let result = GreatCircle.distanceAndBearing(lat1, lon1, lat2, lon2);
+        let result = P.distanceAndBearing(lat1, lon1, lat2, lon2);
         if (Math.abs(result.distance - expect.d) > ACC ||
             Math.abs(result.bearing1_2 - expect.a) > ACC ||
             Math.abs(result.bearing2_1 - expect.b) > ACC) {

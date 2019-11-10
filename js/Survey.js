@@ -1,30 +1,61 @@
-define("js/Survey", ["three", "js/Vertex", "js/Edge", "js/Network", "js/GreatCircle", "jquery"], function(Three, Vertex, Edge, Network, GreatCircle) {
+define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Three, Container, UTM) {
 
     /**
-     * Add interactive display and manipulation to a top-level Network
+     * Add interactive display and manipulation to a top-level Container
      */
-    class Survey extends Network {
+    class Survey extends Container {
 
         /**
          * @param renderer Three.WebGLRenderer
          */
         constructor(renderer) {
-            super("root");
+            super("survey");
             this.mScene = new Three.Scene();
             this.mScene.background = new Three.Color(0xFFFFFF);
             this.mRenderer = renderer;
             this.mDot2 = 1;
         
-            this.cursorGeom = new Three.Geometry();
-            this.cursorP0 = new Three.Vector3(0, 0, 0);
-            this.cursorP1 = new Three.Vector3(0, 0, 1);
-            this.cursorGeom.vertices.push(this.cursorP0);
-            this.cursorGeom.vertices.push(this.cursorP1);
+            this.mCursorGeom = new Three.Geometry();
+            this.mCursorP0 = new Three.Vector3(0, 0, 0);
+            this.mCursorP1 = new Three.Vector3(0, 0, -1);
+            this.mCursorGeom.vertices.push(this.mCursorP0);
+            this.mCursorGeom.vertices.push(this.mCursorP1);
             let rayLine = new Three.Line(
-                this.cursorGeom, new Three.LineBasicMaterial({color: 0xFFFFFF}));
+                this.mCursorGeom, new Three.LineBasicMaterial({color: 0xFFFFFF}));
             this.mScene.add(rayLine);
+            this.mMetadata = {
+                // Information used for formats which support saving
+                reference_point: {
+                    lat: 51.477905, lon: 0,// Greenwich
+                    x: 0, y : 0 // bottom left corner
+                },
+                units_per_metre: 1,
+                zone: undefined, // Locate the zone for UTM coords
+                band: undefined
+            };
         }
 
+        /**
+         * Convert a point in user units to the current save units
+         */
+        user2saveUnits(p) {
+            let origin = UTM.fromLatLong(this.mMetadata.reference_point.lat,
+                                         this.mMetadata.reference_point.lon,
+                                         this.mMetadata.zone);
+            return {
+                x: (p.x - origin.easting) * this.mMetadata.units_per_metre,
+                y: (p.y - origin.northing) * this.mMetadata.units_per_metre
+            };
+        }
+
+        get utmZone() {
+            return this.mMetadata.zone;
+        }
+        
+        get utmBand() {
+            return this.mMetadata.band;
+        }
+        
         // @Override Network
         get tag() {
             return "survey";
@@ -49,6 +80,7 @@ define("js/Survey", ["three", "js/Vertex", "js/Edge", "js/Network", "js/GreatCir
 
             let tgt;
             if (ortho) {
+                // Looking UP the z axis
                 let dir = new Three.Vector3(0, 0, 1);
                 dir.transformDirection(this.mCamera.matrixWorld);
                 tgt = pos.clone().add(dir);
@@ -56,9 +88,9 @@ define("js/Survey", ["three", "js/Vertex", "js/Edge", "js/Network", "js/GreatCir
                 tgt = pos;
                 pos = this.mCamera.position;
             }
-            //this.cursorP0.copy(pos);
-            this.cursorP1.copy(tgt);
-            this.cursorGeom.verticesNeedUpdate = true;
+            //this.mCursorP0.copy(pos);
+            this.mCursorP1.copy(tgt);
+            this.mCursorGeom.verticesNeedUpdate = true;
             return new Three.Line3(pos, tgt);
         }
 
@@ -72,14 +104,14 @@ define("js/Survey", ["three", "js/Vertex", "js/Edge", "js/Network", "js/GreatCir
         load(fn, data) {
             let type = fn.replace(/^.*\./, "").toLowerCase();
             return new Promise(resolve => {
-                requirejs(["js/Loaders/" + type], Loader => {
-                    resolve(new Loader(fn, data).load());
+                requirejs(["js/FileFormats/" + type], Format => {
+                    resolve(new Format().load(fn, data, this.mMetadata));
                 });
             })
-            .then(nets => {
-                for (let net of nets) {
-                    this.addObject(net);
-                    net.addToScene(this.mScene);
+            .then(loadData => {
+                for (let obj of loadData.objects) {
+                    this.addObject(obj);
+                    obj.addToScene(this.mScene);
                 }
                 this.refocus();
             });
@@ -89,78 +121,73 @@ define("js/Survey", ["three", "js/Vertex", "js/Edge", "js/Network", "js/GreatCir
             if (this.mCamera)
                 this.mScene.remove(this.mCamera);            
 
-            let dx = this.mZoomBox.max.x - this.mZoomBox.min.x;
-            let dy = this.mZoomBox.max.y - this.mZoomBox.min.y;
+            let dx = this.mViewport.max.x - this.mViewport.min.x;
+            let dy = this.mViewport.max.y - this.mViewport.min.y;
             dx = (dx * factor - dx) / 2;
             dy = (dy * factor - dy) / 2;
-            this.mZoomBox.min.x += dx;
-            this.mZoomBox.max.x -= dx;
-            this.mZoomBox.min.y += dy;
-            this.mZoomBox.max.y -= dy;
-            
-            //console.log("Zoom", this.mZoomBox.min, this.mZoomBox.max);
+            this.mViewport.min.x += dx;
+            this.mViewport.max.x -= dx;
+            this.mViewport.min.y += dy;
+            this.mViewport.max.y -= dy;
 
-            let dot = (this.mZoomBox.max.x - this.mZoomBox.min.x) / 200;
-            this.scale(dot);
+            let sz = new Three.Vector3();
+            this.mViewport.getSize(sz);
+            sz.z = 0;
+            let dot = sz.length() / 200;
+            this.setScale(dot);
+            
+            //console.log("Zoom", this.mViewport.min, this.mViewport.max);
             
             // left right top bottom near far
             this.mCamera = new Three.OrthographicCamera(
-                this.mZoomBox.min.x, this.mZoomBox.max.x,
-                this.mZoomBox.max.y, this.mZoomBox.min.y,
-                this.mZoomBox.min.z, this.mZoomBox.max.z);
+                this.mViewport.min.x, this.mViewport.max.x,
+                this.mViewport.max.y, this.mViewport.min.y,
+                // Looking UP the z axis
+                this.mViewport.min.z - 1, this.mViewport.max.z + 1);
             this.mScene.add(this.mCamera);
-            this.mRenderer.render(this.mScene, this.mCamera);          
+            this.mRenderer.render(this.mScene, this.mCamera);
+
+            $(document).trigger("viewchanged");
         }
 
+        get viewport() {
+            return this.mViewport;
+        }
+        
         panBy(delta) {
-            this.mZoomBox.min.x += delta.x;
-            this.mZoomBox.max.x += delta.x;
-            this.mZoomBox.min.y += delta.y;
-            this.mZoomBox.max.y += delta.y;
+            this.mViewport.min.x += delta.x;
+            this.mViewport.max.x += delta.x;
+            this.mViewport.min.y += delta.y;
+            this.mViewport.max.y += delta.y;
             this.zoom(1);
         }
         
         centreAt(pt) {
-            let cx = (this.mZoomBox.max.x + this.mZoomBox.min.x) / 2;
-            let cy = (this.mZoomBox.max.y + this.mZoomBox.min.y) / 2;
+            let cx = (this.mViewport.max.x + this.mViewport.min.x) / 2;
+            let cy = (this.mViewport.max.y + this.mViewport.min.y) / 2;
             this.panBy({x: pt.x - cx, y: pt.y - cy});
         }
         
         // Refocus the camera on the entire scene
         refocus() {
-            let bounds = this.boundingBox;
+            let bounds = this.boundingBox.clone();
             let w = bounds.max.x - bounds.min.x;
             let h = bounds.max.y - bounds.min.y;
             let dx =  (bounds.max.x - bounds.min.x);
             let dot = dx / 100;
 
-//            bounds.min.x -= 2 * dot;
-//            bounds.min.y -= 2 * dot;
             bounds.min.z -= 2 * dot;
-//            bounds.max.x += 2 * dot;
-//            bounds.max.y += 2 * dot;
             bounds.max.z += 2 * dot;
 
-            // That's our bounds in WGS84 coordinates. To work out the aspect ratios we
-            // need to convert to metres
-            let wm = GreatCircle.distanceAndBearing(bounds.min.y, bounds.min.x, bounds.min.y, bounds.max.x).distance;
-            let hm = GreatCircle.distanceAndBearing(bounds.min.y, bounds.min.x, bounds.max.y, bounds.min.x).distance;
-            console.log("Area in metres", wm, "x", hm);
+            this.mViewport = bounds;
 
-            if (wm > hm) {
-                bounds.max.y = bounds.min.y + w * hm / wm;
-            } else {
-                bounds.max.x = bounds.min.x + h * wm / hm;
-            }
-            
-            this.mZoomBox = bounds;
-
-            this.cursorP0.x = (bounds.min.x + bounds.max.x) / 2;
-            this.cursorP0.y = (bounds.min.y + bounds.max.y) / 2;
-            this.cursorP1.x = this.cursorP0.x;
-            this.cursorP1.y = this.cursorP0.y;
+            this.mCursorP0.x = (bounds.min.x + bounds.max.x) / 2;
+            this.mCursorP0.y = (bounds.min.y + bounds.max.y) / 2;
+            this.mCursorP1.x = this.mCursorP0.x;
+            this.mCursorP1.y = this.mCursorP0.y;
 
             this.zoom(1);
+            $(document).trigger("scenechanged");
         }
 
         reanimate() {

@@ -7,8 +7,8 @@ define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
         }
 
         // @Override
-        load(source, data, metadata) {
-            let $xml = super.load(source, data, metadata);
+        load(source, data) {
+            let $xml = this.parse(source, data);
 
             let tracks = [];
             let loader = this;
@@ -34,7 +34,7 @@ define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                                 time,
                                 new Three.Vector3(
                                     utm.easting, utm.northing, 0));
-                            track.addObject(v);
+                            track.addChild(v);
                             if (lastVert)
                                 track.addEdge(new Edge(lastVert, v));
                             lastVert = v;
@@ -43,7 +43,7 @@ define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                     tracks.push(track);
                 });
             });
-            return { objects: tracks };
+            return { visuals: tracks, metadata: {} };
         }
     }
     return GPX;

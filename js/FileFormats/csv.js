@@ -7,8 +7,8 @@ define("js/FileFormats/csv", ["three", "js/Vertex", "js/Edge", "js/Network", "jq
     class CSV extends FileFormat {
 
         // @Override FileFormat
-        load(source, data, metadata) {
-            super.load(source, data, metadata);
+        load(source, data) {
+            this.setSource(source);
 
             let table = $.csv.toArrays(data);
             let nets = [];
@@ -54,13 +54,13 @@ define("js/FileFormats/csv", ["three", "js/Vertex", "js/Edge", "js/Network", "jq
                     }
                     let point = new Three.Vector3(r.lon, r.lat, r.depth);
                     let v = new Vertex(r.name | r.time, point);
-                    network.addObject(v);
+                    network.addChild(v);
                     if (last_vertex)
                         network.addEdge(new Edge(last_vertex, v));
                     last_vertex = v;
                 }
             }
-            return nets;
+            return { visuals: nets };
         }
     }
 

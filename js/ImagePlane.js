@@ -17,9 +17,13 @@ define("js/ImagePlane", ["three", "js/Visual"], function(Three, Visual) {
             this.mMax = max.clone();
         }
 
-        // @Override Visual
-        get tag() { return "image"; }
-
+        /**
+         * Get the filename of the image file
+         */
+        get filename() {
+            return this.mImage;
+        }
+        
         // @Override Visual
         get boundingBox() {
             let bb = new Three.Box3();
@@ -71,15 +75,6 @@ define("js/ImagePlane", ["three", "js/Visual"], function(Three, Visual) {
         applyTransform(mat) {
             this.mMin.applyMatrix4(mat);
             this.mMax.applyMatrix4(mat);
-        }
-
-        // @Override Visual
-        makeDOM(doc) {
-            let el = super.makeDOM(doc);
-            el.setAttribute("image", this.mImage);
-            el.setAttribute("min", JSON.stringify(this.mMin));
-            el.setAttribute("max", JSON.stringify(this.mMax));
-            return el;
         }
 
         // @Override Visual

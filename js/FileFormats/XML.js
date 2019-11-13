@@ -12,16 +12,15 @@ define("js/FileFormats/XML", [ "js/FileFormat", "jquery"], function(FileFormat) 
             this.mTag = tag;
         }
 
-        // @Override FileFormat
-        load(source, data, metadata) {
-            super.load(source, data, metadata);
+        parse(source, data) {
+            this.setSource(source);
             if (!/^<\?xml/i.test(data))
                 throw new Error("XML expected");
             
             let dom = $.parseXML(data);
             let $xml = $(dom).find(this.mTag);
             if (!$xml)
-                throw new Error(source + " has no <" + this.mTag);
+                throw new Error(this.source + "XML has no <" + this.mTag);
             return $xml;
         }
     }

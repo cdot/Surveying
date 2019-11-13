@@ -14,9 +14,6 @@ define("js/Network", ["three", "js/Container"], function(Three, Container) {
             this.mEdges = [];
         }
 
-        // @Override Container
-        get tag() { return "network"; }
-
         /**
          * Add an edge to the network. The edge must refer to vertices
          * in the network (not in subnets)
@@ -26,7 +23,11 @@ define("js/Network", ["three", "js/Container"], function(Three, Container) {
             this.mEdges.push(e);
             return e;
         }
-       
+
+        get edges() {
+            return this.mEdges;
+        }
+        
         /**
          * Add the Three.Object3D representation of the vertices and
          * edges of this network to the given scene
@@ -40,20 +41,29 @@ define("js/Network", ["three", "js/Container"], function(Three, Container) {
         }
 
         // @Override Container
-        setScale(s) {
-            super.setScale(s);
+        setHandleSize(s) {
+            super.setHandleSize(s);
             for (let e of this.mEdges)
-                e.setScale(s);
+                e.setHandleSize(s);
         }
 
         // @Override Container
         remove() {
-            for (let n of this.mEdges)
-                n.remove();
-
+            let es = this.mEdges.slice();
+            for (let e of es)
+                e.remove();
             super.remove();
         }
 
+        /**
+         * Remove the given edge from our edge list
+         */
+        removeEdge(e) {
+            let i = this.mEdges.indexOf(e);
+            if (i >= 0)
+                this.mEdges.splice(i, 1);
+        }
+        
         // @Override Container
         projectRay(ray) {
             let best = super.projectRay(ray);
@@ -73,14 +83,6 @@ define("js/Network", ["three", "js/Container"], function(Three, Container) {
             super.highlight(tf);
             for (let e of this.mEdges)
                 e.highlight(tf);
-        }
-
-        // @Override Container
-        makeDOM(doc) {
-            let el = super.makeDOM(doc);
-            for (let e of this.mEdges)
-                el.appendChild(e.makeDOM(doc));
-            return el;
         }
 
         // @Override Container

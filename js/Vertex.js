@@ -1,4 +1,4 @@
-define("js/Vertex", ["three", "js/Visual"], function(Three, Visual) {
+define("js/Vertex", ["three", "js/Visual", "js/Edge"], function(Three, Visual, Edge) {
 
     const HIGHLIGHT = new Three.MeshBasicMaterial({color: 0xFF0000});
     const NORMAL = new Three.MeshBasicMaterial({color: 0x0000FF});
@@ -17,9 +17,6 @@ define("js/Vertex", ["three", "js/Visual"], function(Three, Visual) {
             this.mEdges = []; // not OWNED by Vertex, just referred to
         }
 
-        // @Override Visual
-        get tag() { return "node"; }
- 
         /**
          * @return Three.Vector3 position of vertex
          */
@@ -32,15 +29,6 @@ define("js/Vertex", ["three", "js/Visual"], function(Three, Visual) {
             return new Three.Box3(this.mCurPos, this.mCurPos);
         }
 
-        // @Override Visual
-        makeDOM(doc) {
-            let el = super.makeDOM(doc);
-            el.setAttribute("x", this.mCurPos.x);
-            el.setAttribute("y", this.mCurPos.y);
-            el.setAttribute("z", this.mCurPos.z);
-            return el;
-        }
-        
         /**
          * Add a reference to an edge that ends on this vertex
          */
@@ -65,8 +53,8 @@ define("js/Vertex", ["three", "js/Visual"], function(Three, Visual) {
         }
 
         // @Override Visual
-        setScale(s) {
-            super.setScale(s);
+        setHandleSize(s) {
+            super.setHandleSize(s);
             if (this.mObject3D) {
                 this.mObject3D.scale.x = s;
                 this.mObject3D.scale.y = s;
@@ -80,14 +68,26 @@ define("js/Vertex", ["three", "js/Visual"], function(Three, Visual) {
             this.mObject3D = new Three.Mesh(this.mGeometry, NORMAL);
             let v = this.mCurPos;
             this.mObject3D.position.set(v.x, v.y, v.z);
-            this.mObject3D.scale.x = this.scale;
-            this.mObject3D.scale.y = this.scale;
-            this.mObject3D.scale.z = this.scale;
+            this.mObject3D.scale.x = this.handleSize;
+            this.mObject3D.scale.y = this.handleSize;
+            this.mObject3D.scale.z = this.handleSize;
             scene.add(this.mObject3D);
         }
 
         // @Override Visual
         remove() {
+            let es = this.mEdges.slice();
+            if (es.length === 2) {
+                let p0 = es[0].otherEnd(this);
+                let p1 = es[1].otherEnd(this);
+                let nedge = new Edge(p0, p1);
+                this.parent.addEdge(nedge);
+                if (this.mObject3D)
+                    nedge.addToScene(this.mObject3D.parent);
+            }
+            for (let e of es)
+                e.remove();
+            
             this.mEdges = [];
 
             if (this.mObject3D) {
@@ -105,7 +105,7 @@ define("js/Vertex", ["three", "js/Visual"], function(Three, Visual) {
             let np = new Three.Vector3();
             ray.closestPointToPoint(this.mCurPos, false, np);
             let dist2 = np.clone().sub(this.mCurPos).lengthSq();
-            if (dist2 > 4 * this.scale * this.scale)
+            if (dist2 > 4 * this.handleSize2)
                 return null;
             return {
                 closest: this,

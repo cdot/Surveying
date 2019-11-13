@@ -1,4 +1,4 @@
-define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Edge", "js/Network", "js/ImagePlane", "js/UTM"], function(XML, Three, Vertex, Edge, Network, ImagePlane, UTM) {
+define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Edge", "js/Container", "js/Network", "js/ImagePlane", "js/UTM"], function(XML, Three, Vertex, Edge, Container, Network, ImagePlane, UTM) {
 
     /**
      * Specialised loader for an SVG used to carry survey information.
@@ -94,6 +94,13 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
 
         constructor() {
             super("svg");
+            let loader = this;
+            $.ajax({
+                url: "templates/svg.svg",
+                success: function(data, status, jqXHR) {
+                    loader.mTemplate = data;
+                },
+                dataType: "xml" });
         }
 
         loadPath($path, attrs) {
@@ -106,7 +113,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
             let cmd, j;
             function addVert(vx) {
                 let v = new Vertex(id + ":" + cmd + j++, vx.clone());
-                path.addObject(v);
+                path.addChild(v);
                 return v;
             }
 
@@ -253,12 +260,12 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
         }
         
         // @Override XML
-        load(source, data, metadata) {
-            let $xml = super.load(source, data, metadata);
+        load(source, data) {
+            let $xml = this.parse(source, data);
             let height = parseFloat($xml.attr("height"));
             let loader = this;
             // Process paths
-            let objects = [];
+            let visuals = [], metadata = {};
             $xml.children().each(function() {
                 let object;
 
@@ -276,13 +283,11 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                     // This loader abuses metadata description for carrying
                     // attributes in a block of JSON
                     $(this).find("dc\\:description").each(function() {
-                        let desc = $(this).text().replace(/}.*$/, "}");
+                        let desc = $(this).text();
                         try {
-                            let meta = JSON.parse(desc);
-                            for (let f in meta)
-                                metadata[f] = meta[f];
+                            metadata = JSON.parse(desc);
                         } catch (e) {
-                            console.error("Bad metadata description");
+                            console.error("Bad metadata description " + e);
                         }
                     });
                     return;
@@ -302,7 +307,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
 
                 applySVGTransforms($(this).attr("transform"), object);
 
-                objects.push(object);
+                visuals.push(object);
             });
 
             // Assume the SVG is plotted at metadata.resolution pixels per metre,
@@ -330,11 +335,66 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
             
             mats[2].makeTranslation(utm.easting, utm.northing, 0);
 
-            for (let o of objects) {
+            for (let o of visuals) {
                 for (let m of mats)
                     o.applyTransform(m);
             }
-            return { metadata: metadata, objects: objects };
+            return { metadata: metadata, visuals: visuals };
+        }
+
+        save(visual) {
+            let surv = visual;
+            let doc = this.mTemplate.cloneNode(true);
+            if (visual.metadata)
+                $(doc).find("dc\\:description").text(JSON.stringify(visual.metadata));
+            let $dom = $(doc).children("svg").first();
+            let bb = visual.boundingBox;
+            let ll = surv.user2saveUnits(bb.min);
+            let ur = surv.user2saveUnits(bb.max);
+            $dom.attr("width", ur.x - ll.x);
+            let height = ur.y - ll.y;
+            $dom.attr("height", height);
+            $dom.attr("viewBox", ll.x + " " + ll.y + " "
+                      + ur.x + " " + ur.y);
+            $dom.attr("sodipodi:docname", visual.name);
+            
+            function makeSVG(visual, $dom, doc) {
+                let dom;
+                if (visual instanceof Container) {
+                    if (visual instanceof Network) {
+                        // Make a path
+                        dom = doc.createElement("svg:path");
+                        if (visual.name)
+                            dom.setAttribute("name", visual.name);
+                        dom.setAttribute("id", visual.name);
+                        let d = "M";
+                        for (let o of visual.children) {
+                            if (o instanceof Vertex) {
+                                let v = surv.user2saveUnits(o.position);
+                                d += " " + v.x + " " + (height - v.y);
+                            } else
+                                console.debug("Unsupported Network Visual " + o);
+                        }
+                        dom.setAttribute("d", d);
+                        dom.setAttribute("style", "display:inline;fill:none;stroke:#FF00FF:none;stroke-width:1px;stroke-opacity:1");
+                        $dom.append(dom);
+                    } else {
+                        // Flatten out
+                        for (let o of visual.children) {
+                            let kid = makeSVG(o, $dom, doc);
+                            if (kid)
+                                $dom.append(kid);
+                        }
+                        return;
+                    }
+                } else {
+                    console.debug("Unsupported Visual " + visual);
+                    return;
+                }
+            }
+            makeSVG(visual, $dom, doc);
+            return '<?xml version="1.0" encoding="UTF-8"?>'
+            +  new XMLSerializer().serializeToString(doc);
         }
     }
     return SVG;

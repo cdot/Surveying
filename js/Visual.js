@@ -4,8 +4,7 @@ define("js/Visual", ["three"], function(Three) {
     let counter = 1;
 
     /**
-     * Base class of elements in a scene. This is really little more
-     * than an interface specification.
+     * Base class of objects in a scene.
      */
     class Visual {
 
@@ -15,7 +14,7 @@ define("js/Visual", ["three"], function(Three) {
         constructor(name) {
             this.mName = name;
             this.mUid = counter++;
-            this.mScaleFactor = 1;
+            this.mHandleSize = 1;
         }
 
         _notImplemented(method) {
@@ -24,41 +23,44 @@ define("js/Visual", ["three"], function(Three) {
         }
         
         /**
-         * Get the name of this element. Names are not necessarily unique.
+         * Get the name of this visual. Names are not necessarily unique.
          */
         get name() {
             return this.mName;
         }
 
         /**
-         * Get the uid of this element. Uids are always unique.
-         * @return unique number identifying this element
+         * Get the uid of this visual. Uids are always unique.
+         * @return unique number identifying this visual
          */
         get uid() {
             return this.mUid;
         }
 
-        get scale() {
-            return this.mScaleFactor;
-        }
-
-        setScale(s) {
-            this.mScaleFactor = s;
-        }
-        
-         /**
-         * Get the tag for this element used when creating a survey dom
-         */
-        get tag() { return "element"; }
-        
         /**
-         * Scale the geometry of the element appropriately so that it appears
-         * the right size in the scene
+         * Get the handle size for visuals that
+         * have handles in 3-space
          */
-        scale(s) {
-            throw this._notImplemented("scale");
+        get handleSize() {
+            return this.mHandleSize;
         }
 
+        /**
+         * Get the square of the handle size for visuals that
+         * have handles in 3-space
+         */
+        get handleSize2() {
+            return this.mHandleSize2;
+        }
+
+        /**
+         * Define the handle size for visuals that have handles in 3-space
+         */
+        setHandleSize(s) {
+            this.mHandleSize = s;
+            this.mHandleSize2 = s * s;
+        }
+        
         /**
          * Get the volume the object occupies
          */
@@ -67,14 +69,14 @@ define("js/Visual", ["three"], function(Three) {
         }
         
         /**
-         * Apply a transform to the element
+         * Apply a transform to the visual
          */
         applyTransform(mat) {
             throw this._notImplemented("applyTransform");
         }
 
         /**
-         * See if the given ray "hits" this element
+         * See if the given ray "hits" this visual
          * @return {
          *     Vertex closest: this
          *     {double} dist2: square of dist from ray
@@ -100,8 +102,7 @@ define("js/Visual", ["three"], function(Three) {
         }
         
         /**
-         * Remove the element, and clean up the graph. Also remove it
-         * from the scene graph, if it's there.
+         * Remove the visual, and clean up the database.
          */
         remove() {
             // Remove from parent
@@ -110,25 +111,17 @@ define("js/Visual", ["three"], function(Three) {
         }
 
         /**
-         * Note that edges don't have parents
+         * Get the parent visual that contains this visual
          */
         get parent() {
             return this.mParent;
         }
 
+        /**
+         * Set the parent visual that contains this visual
+         */
         setParent(p) {
             this.mParent = p;
-        }
-        
-        /**
-         * Make the DOM for saving in a .survey document
-         */
-        makeDOM(doc) {
-            let el = doc.createElement(this.tag);
-            if (this.nName)
-                el.setAttribute("name", this.mName);
-            el.setAttribute("id", this.mUid);
-            return el;
         }
         
         /**
@@ -140,7 +133,7 @@ define("js/Visual", ["three"], function(Three) {
          * Generate a report on this object for use in the UI
          */
         get report() {
-            let s = this.tag + " " + this.mUid;
+            let s = this.constructor.name + " " + this.mUid;
             if (this.mName)
                 s += " '" + this.mName + "'";
             return [ s ];

@@ -9,13 +9,16 @@ define("js/Container", ["three", "js/Visual"], function(Three, Visual) {
             super(name);
             this.mObjects = [];
         }
-        
-        get tag() { return "container"; }
+
+        get children() {
+            return this.mObjects;
+        }
         
         /**
-         * Add a subnetwork to this network
+         * Add a child visual to this container
+         * @param {Visual} g
          */
-        addObject(g) {
+        addChild(g) {
             g.setParent(this);
             this.mObjects.push(g);
         }
@@ -27,15 +30,10 @@ define("js/Container", ["three", "js/Visual"], function(Three, Visual) {
         }
 
         // @Override Visual
-        get scale() {
-            return super.scale;
-        }
-        
-        // @Override Visual
-        setScale(s) {
-            super.setScale(s);
+        setHandleSize(s) {
+            super.setHandleSize(s);
             for (let g of this.mObjects)
-                g.setScale(s);
+                g.setHandleSize(s);
         }
         
         // @Override Visual
@@ -99,14 +97,6 @@ define("js/Container", ["three", "js/Visual"], function(Three, Visual) {
             }
         }
 
-        // @Override Visual
-        makeDOM(doc) {
-            let el = super.makeDOM(doc);
-            for (let g of this.mObjects)
-                el.appendChild(g.makeDOM(doc));
-            return el;
-        }
-        
         // @Override Visual
         get report() {
             let s = super.report;

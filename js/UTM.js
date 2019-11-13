@@ -29,14 +29,10 @@ define("js/UTM", function() {
     // and are not supported
     const BAND_LETTERS = 'CDEFGHJKLMNPQRSTUVWXX';
 
-    function latitudeToBand(latitude) {
-        if (-80 <= latitude && latitude <= 84) {
-            return BAND_LETTERS[Math.floor((latitude + 80) / 8)];
-        } else {
-            return null;
-        }
-    }
-
+    // Default zone gets set on the first event that calculates
+    // a zone, and is used thereafter to provide a reference
+    let default_zone;
+    
     function latLonToZone(latitude, longitude) {
         if (56 <= latitude && latitude < 64 && 3 <= longitude && longitude < 12) return 32;
 
@@ -50,8 +46,8 @@ define("js/UTM", function() {
         return Math.floor((longitude + 180) / 6) + 1;
     }
 
-    function zoneToCentralLongitude(zoneNum) {
-        return (zoneNum - 1) * 6 - 180 + 3;
+    function zoneToCentralLongitude(zone) {
+        return (zone - 1) * 6 - 180 + 3;
     }
 
     function _deg2rad(d) {
@@ -63,38 +59,49 @@ define("js/UTM", function() {
     }
 
     /**
-     * A position in UTM coordinates. 
+     * A position in UTM coordinates.
+     * The point of origin of each UTM zone is the intersection of the
+     * equator and the zone's central meridian. To avoid dealing with
+     * negative numbers, the central meridian of each zone is defined
+     * to coincide with 500000 meters East. UTM eastings range from
+     * about 167000 meters to 833000 meters at the equator.
+     *
+     * In the northern hemisphere positions are measured northward
+     * from zero at the equator. The maximum "northing" value is about
+     * 9300000 meters at latitude 84 degrees North, the north end of
+     * the UTM zones. In the southern hemisphere northings decrease
+     * southward from the equator to about 1100000 meters at 80
+     * degrees South, the south end of the UTM zones. The northing at
+     * the equator is set at 10000000 meters so no point has a
+     * negative northing value.
      */
     class UTM {
         /**
          * @param easting
          * @param northing
-         * @param zone longitude zone
-         * @param band latitude band
+         * @param zone longitude zone (default to default_zone)
+         * @param hemisphere 'N' (default) or 'S'
          */
-        constructor(easting, northing, zone, band) {
+        constructor(easting, northing, zone, hemisphere) {
+            this.hemisphere = hemisphere || 'N';
+
             if (easting < 100000 || 1000000 <= easting)
                 throw new RangeError('easting must be between 100000 and 999999');
             this.easting = easting;
 
             if (northing < 0 || northing > 10000000)
-                throw new RangeError('northing must be between 0 and 10000000');
+                throw new RangeError('northing must be between 10000000 and 10000000');
             this.northing = northing;
 
-            if (zone < 1 || zone > 60)
+            if (typeof zone === "undefined")
+                zone = default_zone;
+            else if (zone < 1 || zone > 60)
                 throw new RangeError('zone must be between 1 and 60');
             this.zone = zone;
-
-            if (BAND_LETTERS.indexOf(band) < 0)
-                throw new RangeError('band out of range (must be between C and X)');
-            this.band = band;
         }
 
-        get isNorthern() { return /[N-Z]/.test(this.band); }
-
         /**
-         * Convert a position in UTM to WGS84
-         * @param {UTM} utm position.
+         * Convert to WGS84 lat/long
          * @return {
          *     latitude: degrees
          *     longitude: degrees
@@ -105,7 +112,7 @@ define("js/UTM", function() {
             let x = this.easting - 500000;
             let y = this.northing;
 
-            if (!this.isNorthern) y -= 1e7;
+            if (this.hemisphere === 'S') y -=1e7;
 
             let m = y / K0;
             let mu = m / (R * M1);
@@ -157,26 +164,25 @@ define("js/UTM", function() {
 
         /**
          * Parse UTM string. The easting and northing must be separated by
-         * a space. Latitude band letters are always interpreted as band
-         * letters, use "North" or "South" for hemispheres.
+         * a space. NS are used to represent northern and southern hemispheres.
          */
         static fromString(s) {
-            let m = /^([0-9]+\s*([A-Z]|North|South)\s*([0-9]+)\s+([0-9]+)$/.match(s);
+            let m = /^([0-9]+\s*([NS])\s*([0-9]+)\s+([0-9]+)$/.match(s);
             
             if (!m)
-                throw new Error("Bad UTM string " + s);
+                throw new Error("Unsupported UTM string " + s);
             return new UTM(
                 parseFloat(m[3]),
                 parseFloat(m[4]),
-                m[1],
-                (m[2] === "North") ? 'N' : ((m[2] === "South") ? "M" : m[2]));
+                m[1]);
         }
 
         /**
          * Note: max resolution of a UTM string is 1M
          */
         toString() {
-            return this.zone + this.band + Math.trunc(easting)
+            let n = this.northing;
+            return this.zone + this.hemisphere + Math.trunc(easting)
             + " " + Math.trunc(northing);
         }
         
@@ -202,11 +208,10 @@ define("js/UTM", function() {
             let latTan2 = Math.pow(latTan, 2);
             let latTan4 = Math.pow(latTan, 4);
 
-            let zoneNum = forceZone || latLonToZone(latitude, longitude);
-            let zoneLetter = latitudeToBand(latitude);
+            let zone = forceZone || latLonToZone(latitude, longitude);
 
             let lonRad = _deg2rad(longitude);
-            let centralLon = zoneToCentralLongitude(zoneNum);
+            let centralLon = zoneToCentralLongitude(zone);
             let centralLonRad = _deg2rad(centralLon);
 
             let n = R / Math.sqrt(1 - E * latSin * latSin);
@@ -233,7 +238,10 @@ define("js/UTM", function() {
                                                 + latTan4 + 600 * c - 330 * E_P2)));
             if (latitude < 0) northing += 1e7;
 
-            return new UTM(easting, northing, zoneNum, zoneLetter);
+            if (typeof default_zone === "undefined")
+                default_zone = zone;
+            
+            return new UTM(easting, northing, zone, latitude < 0 ? 'S' : 'N');
         }
     }
 

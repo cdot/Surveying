@@ -19,11 +19,7 @@ define("js/Edge", ["three", "js/Visual"], function(Three, Visual) {
             p1.addEdge(this);
             this.mP2 = p2;
             p2.addEdge(this);
-            this.mDot2 = 1;
         }
-
-        // @Override Visual
-        get tag() { return "edge"; }
 
         get p1() { return this.mP1; }
 
@@ -45,15 +41,6 @@ define("js/Edge", ["three", "js/Visual"], function(Three, Visual) {
         }
 
         // @Override Visual
-        makeDOM(doc) {
-            let el = super.makeDOM();
-            el.setAttribute("id", this.uid);
-            el.setAttribute("p1", this.mP1.uid);
-            el.setAttribute("p2", this.mP2.uid);
-            return el;
-        }
-        
-        // @Override Visual
         addToScene(scene) {
             this.mGeometry = new Three.Geometry();
             this.mGeometry.vertices.push(this.mP1.position);
@@ -66,6 +53,7 @@ define("js/Edge", ["three", "js/Visual"], function(Three, Visual) {
         remove() {
             this.mP1.removeEdge(this);
             this.mP2.removeEdge(this);
+            this.parent.removeEdge(this);
             if (this.mObject3D) {
                 this.mObject3D.parent.remove(this.mObject3D);
                 delete this.mObject3D;

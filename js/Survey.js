@@ -8,57 +8,64 @@ define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Thre
         /**
          * @param renderer Three.WebGLRenderer
          */
-        constructor(renderer) {
+        constructor($canvas) {
             super("survey");
+
+            this.mRenderer = new Three.WebGLRenderer();
+
+            let h = $canvas.innerHeight();
+            let w = $canvas.innerWidth();
+            $canvas.height(h);
+            $canvas.width(w);
+            this.mRenderer.setSize(w, h);
+            this.mAspectRatio = w / h;
+            $canvas.append(this.mRenderer.domElement);
+
             this.mScene = new Three.Scene();
             this.mScene.background = new Three.Color(0xFFFFFF);
-            this.mRenderer = renderer;
-            this.mDot2 = 1;
-        
+
             this.mCursorGeom = new Three.Geometry();
             this.mCursorP0 = new Three.Vector3(0, 0, 0);
             this.mCursorP1 = new Three.Vector3(0, 0, -1);
             this.mCursorGeom.vertices.push(this.mCursorP0);
             this.mCursorGeom.vertices.push(this.mCursorP1);
             let rayLine = new Three.Line(
-                this.mCursorGeom, new Three.LineBasicMaterial({color: 0xFFFFFF}));
+                this.mCursorGeom,
+                new Three.LineBasicMaterial({color: 0xFFFF00}));
             this.mScene.add(rayLine);
+
+            // Centre of the viewing frustum - will be set when
+            // we refocus()
+            this.mLookAt = new Three.Vector3(0, 0, 0);
+            
             this.mMetadata = {
                 // Information used for formats which support saving
-                reference_point: {
-                    lat: 51.477905, lon: 0,// Greenwich
-                    x: 0, y : 0 // bottom left corner
-                },
-                units_per_metre: 1,
-                zone: undefined, // Locate the zone for UTM coords
-                band: undefined
+                //reference_point: {
+                //    lat: 51.477905, lon: 0,// Greenwich
+                //    x: 0, y : 0 // bottom left corner
+                //},
+                units_per_metre: 10
             };
+
+            this.animate();
         }
 
         /**
          * Convert a point in user units to the current save units
          */
         user2saveUnits(p) {
-            let origin = UTM.fromLatLong(this.mMetadata.reference_point.lat,
-                                         this.mMetadata.reference_point.lon,
-                                         this.mMetadata.zone);
-            return {
-                x: (p.x - origin.easting) * this.mMetadata.units_per_metre,
-                y: (p.y - origin.northing) * this.mMetadata.units_per_metre
-            };
-        }
-
-        get utmZone() {
-            return this.mMetadata.zone;
-        }
-        
-        get utmBand() {
-            return this.mMetadata.band;
-        }
-        
-        // @Override Network
-        get tag() {
-            return "survey";
+            if (p instanceof Three.Box3) {
+                return new Three.Box3(
+                    this.user2saveUnits(p.min),
+                    this.user2saveUnits(p.max));
+            } else {
+                let origin = UTM.fromLatLong(this.mMetadata.reference_point.lat,
+                                             this.mMetadata.reference_point.lon);
+                return new Three.Vector3(
+                    (p.x - origin.easting) * this.mMetadata.units_per_metre,
+                    (p.y - origin.northing) * this.mMetadata.units_per_metre,
+                    0);
+            }
         }
 
         /**
@@ -95,115 +102,112 @@ define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Thre
         }
 
         /**
-         * Return a promise to load the network by parsing data that
-         * was read from the given file.
-         * The file extension is used to determine which loader to use.
-         * @param {String} data file contents
-         * @param {String} fn filename (or other identifier)
+         * Load a set of visuals into the current network.
+         * @param {[Visual]} visuals
          */
-        load(fn, data) {
-            let type = fn.replace(/^.*\./, "").toLowerCase();
-            return new Promise(resolve => {
-                requirejs(["js/FileFormats/" + type], Format => {
-                    resolve(new Format().load(fn, data, this.mMetadata));
-                });
-            })
-            .then(loadData => {
-                for (let obj of loadData.objects) {
-                    this.addObject(obj);
-                    obj.addToScene(this.mScene);
-                }
-                this.refocus();
-            });
+        addVisuals(visuals) {
+            for (let obj of visuals) {
+                this.addChild(obj);
+                obj.addToScene(this.mScene);
+            }
+            this.fitScene();
         }
 
+        setMetadata(options) {
+            if (!options) return;
+            if (!this.mMetadata.reference_point && !options.reference_point) {
+                let bb = this.boundingBox;
+                let bl = new UTM(bb.min.x, bb.min.y);
+                let ll = bl.toLatLong();
+                options.reference_point = {
+                    x: 0, y: 0,
+                    lat: ll.latitude, lon: ll.longitude
+                };
+            }
+            $.extend(this.mMetadata, options);
+        }
+
+        get metadata() {
+            return this.mMetadata;
+        }
+        
         zoom(factor) {
-            if (this.mCamera)
-                this.mScene.remove(this.mCamera);            
-
-            let dx = this.mViewport.max.x - this.mViewport.min.x;
-            let dy = this.mViewport.max.y - this.mViewport.min.y;
-            dx = (dx * factor - dx) / 2;
-            dy = (dy * factor - dy) / 2;
-            this.mViewport.min.x += dx;
-            this.mViewport.max.x -= dx;
-            this.mViewport.min.y += dy;
-            this.mViewport.max.y -= dy;
-
-            let sz = new Three.Vector3();
-            this.mViewport.getSize(sz);
-            sz.z = 0;
-            let dot = sz.length() / 200;
-            this.setScale(dot);
-            
-            //console.log("Zoom", this.mViewport.min, this.mViewport.max);
-            
-            // left right top bottom near far
-            this.mCamera = new Three.OrthographicCamera(
-                this.mViewport.min.x, this.mViewport.max.x,
-                this.mViewport.max.y, this.mViewport.min.y,
-                // Looking UP the z axis
-                this.mViewport.min.z - 1, this.mViewport.max.z + 1);
-            this.mScene.add(this.mCamera);
-            this.mRenderer.render(this.mScene, this.mCamera);
-
-            $(document).trigger("viewchanged");
-        }
-
-        get viewport() {
-            return this.mViewport;
+            if (this.mCamera) {
+                this.mCamera.zoom *= factor;
+                this.mCamera.updateProjectionMatrix();
+            }
         }
         
         panBy(delta) {
-            this.mViewport.min.x += delta.x;
-            this.mViewport.max.x += delta.x;
-            this.mViewport.min.y += delta.y;
-            this.mViewport.max.y += delta.y;
-            this.zoom(1);
+            this.mLookAt.x += delta.x;
+            this.mLookAt.y += delta.y;
+            if (this.mCamera) {
+                this.mCamera.lookAt(this.mLookAt);
+                this.mCamera.updateProjectionMatrix();
+            }
         }
         
-        centreAt(pt) {
-            let cx = (this.mViewport.max.x + this.mViewport.min.x) / 2;
-            let cy = (this.mViewport.max.y + this.mViewport.min.y) / 2;
-            this.panBy({x: pt.x - cx, y: pt.y - cy});
-        }
-        
-        // Refocus the camera on the entire scene
-        refocus() {
-            let bounds = this.boundingBox.clone();
-            let w = bounds.max.x - bounds.min.x;
-            let h = bounds.max.y - bounds.min.y;
-            let dx =  (bounds.max.x - bounds.min.x);
-            let dot = dx / 100;
-
-            bounds.min.z -= 2 * dot;
-            bounds.max.z += 2 * dot;
-
-            this.mViewport = bounds;
-
-            this.mCursorP0.x = (bounds.min.x + bounds.max.x) / 2;
-            this.mCursorP0.y = (bounds.min.y + bounds.max.y) / 2;
+        // Reposition the camera so it is looking down on the
+        // entire scene
+        fitScene() {
+            let bounds = this.boundingBox;
+            console.debug("Bounding box", bounds);
+            // Look at the centre of the scene
+            bounds.getCenter(this.mLookAt);
+            let sz = bounds.getSize(new Three.Vector3());
+            this.mViewSize = Math.max(sz.x, sz.y)
+            this.mCameraPosition = new Three.Vector3(
+                this.mLookAt.x, this.mLookAt.y, this.mViewSize);
+            
+            this.mCursorP0.x = this.mLookAt.x;
+            this.mCursorP0.y = this.mLookAt.y;
             this.mCursorP1.x = this.mCursorP0.x;
             this.mCursorP1.y = this.mCursorP0.y;
 
-            this.zoom(1);
+            if (this.mCamera) {
+                this.mScene.remove(this.mCamera);
+                delete this.mCamera;
+            }
+
+            //this.mViewSize *= factor;
+
+            let v = {
+                left: -this.mAspectRatio * this.mViewSize / 2,
+                right: this.mAspectRatio * this.mViewSize / 2,
+                top: this.mViewSize / 2,
+                bottom: -this.mViewSize / 2,
+                near: 0.1,
+                far: this.mViewSize * 10
+            };
+            // viewSize must be in world space units
+            this.mCamera = new Three.OrthographicCamera(
+                v.left, v.right, v.top, v.bottom, v.near, v.far);
+
+            //this.mCamera = new Three.PerspectiveCamera(
+            //    45, this.mAspectRatio, 0.1, 1000);
+
+            this.mCamera.up = new Three.Vector3(0, 1, 0);
+            this.mCamera.position.copy(this.mCameraPosition);
+            this.mCamera.lookAt(this.mLookAt);
+            this.mCamera.updateProjectionMatrix();
+            /*
+            let a = this.mCamera.getWorldPosition(new Three.Vector3());
+            let b = this.mCamera.getWorldDirection(new Three.Vector3());
+            console.log("Orthographic ", v,
+                        "look", b,
+                        "from", a); */
+            this.setHandleSize(this.mViewSize / 200);
+            this.mScene.add(this.mCamera);
+
             $(document).trigger("scenechanged");
         }
 
-        reanimate() {
-            if (this.mInterrupted)
-                return;
-            window.requestAnimationFrame(() => { this.reanimate(); });
-            this.mRenderer.render(this.mScene, this.mCamera);          
-        }
-
         animate() {
-            this.mInterrupted = false;
-            this.reanimate();
-        }
-        
-        stopAnimation() {
-            this.mInterrupted = true;
+            window.requestAnimationFrame(() => {
+                this.animate();
+            });
+            if (this.mScene && this.mCamera)
+                this.mRenderer.render(this.mScene, this.mCamera);          
         }
     }
     return Survey;

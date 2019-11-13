@@ -14,15 +14,8 @@ requirejs.config({
 requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mousewheel"], function(Three, Survey, Selection, UTM) {
     $(function(){
         let $canvas = $("#canvas");
-        canvasRect = $canvas[0].getBoundingClientRect();
-        
-        let renderer = new Three.WebGLRenderer();
-
-        let dim = { w: $canvas.width(), h: $canvas.height() };
-        renderer.setSize(dim.w, dim.h);
-        $canvas.append(renderer.domElement);
-
-        let network, camera;
+        let network = new Survey($canvas);
+        let saver;
 
         /**
          * Format a point for display as a lat,long
@@ -32,7 +25,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
                 let v = Math.floor(100000 * x) / 100000;
                 return (v < 0) ? (-v + "&deg;" + neg) : (v + "&deg;" + pos)
             }
-            let ll = new UTM(p.x, p.y, network.utmZone, network.utmBand).toLatLong();
+            let ll = new UTM(p.x, p.y).toLatLong();
             return round(ll.latitude, "N", "S") + " " + round(ll.longitude, "E", "W");
         }
 
@@ -60,8 +53,8 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
         function event2ray(e) {
             if (!network) return null;
             let ray = network.canvas2ray({
-                x: e.offsetX / canvasRect.width,
-                y: e.offsetY / canvasRect.height
+                x: e.offsetX / $canvas.width(),
+                y: e.offsetY / $canvas.height()
             });
             if (ray) {
                 $("#cursor_wgs").html(wgsCoords(ray.start));
@@ -73,6 +66,10 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
 
         function formatBox(b) {
             return userCoords(b.min) + " -> " + userCoords(b.max);
+        }
+
+        function enableSave() {
+            $("#save").prop("disabled", !network || !saver);
         }
         
         let mouse_down; // button flags
@@ -97,7 +94,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
 
         $("#noform").on("submit", () => false);
                
-        $canvas.on("keyup", function(e) {
+        $canvas.on("keydown", function(e) {
             switch (e.keyCode) {
             case 46: // delete
                 for (let sel of selection.items)
@@ -189,55 +186,77 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
             return false;
         });
 
-        $("#import").on("change", function(evt) {
+        $("#load").on("change", function(evt) {
             let f = evt.target.files[0];
             let fn = f.name;
+            let type = fn.replace(/^.*\./, "").toLowerCase();
 
-            let reader = new FileReader();
+            requirejs(["js/FileFormats/" + type], Loader => {
+                let reader = new FileReader();
 
-            reader.onload = e => {
-                let data = e.target.result;
-                if (network)
-                    network.stopAnimation();
-                else
-                    network = new Survey(renderer);
-
-                network.load(fn, data).then(() => {
+                reader.onload = e => {
+                    let data = e.target.result;
+                    let result = new Loader().load(fn, data);
+                    network.addVisuals(result.visuals);
+                    network.setMetadata(result.metadata || {});
                     console.log("Loaded", fn);
-                    network.animate();
-                });
-            };
+                    network.fitScene();
+                    enableSave();
+                };
 
-            // Read in the image file as a data URL.
-            reader.readAsText(f);
+                // Read in the image file as a data URL.
+                reader.readAsText(f);
+            });
         });
         
         $("#refocus").on("click", function() {
             if (network)
-                network.refocus();
+                network.fitScene();
+            return false;
+        });
+
+        $("#zoomin").on("click", function() {
+            if (network)
+                network.zoom(1.2);
+            return false;
+        });
+        
+        $("#zoomout").on("click", function() {
+            if (network)
+                network.zoom(0.8);
+            return false;
         });
 
         $(document).on("scenechanged", function () {
-            console.log(network.boundingBox);
             $("#scene").html(formatBox(network.boundingBox));
         });
 
         $(document).on("viewchanged", function() {
-            $("#viewport").html(formatBox(network.viewport));
+//            $("#viewport").html(formatBox(network.viewport));
         });
 
+        // Cannot set the saver from inside the save handler because
+        // loading a FileFormat requires a promise, but the native
+        // click event on #save is required to trigger the download,
+        // which requires a true return from the handler.
+        // So have to do it in two steps.
+        
+        $("#save").prop("disabled", true);
+
+        $("#save_format").on("change", function() {
+            let type = $(this).val();
+            requirejs(["js/FileFormats/" + type], Format => {
+                saver = new Format();
+                enableSave();
+            });
+        });
+        
         $("#save").on("click", function() {
-            if (!network)
-                return false;
-            let doc = document.implementation.createDocument("", "", null);
-            doc.appendChild(network.makeDOM(doc));
-            let str =
-                '<?xml version="1.0" encoding="UTF-8"?>'
-                +  new XMLSerializer().serializeToString(doc);
-            let data = new Blob([str]);
-            this.href = URL.createObjectURL(data);
-            this.download = "survey.survey";
+            let str = saver.save(network);
+            this.href = URL.createObjectURL(new Blob([str]));
+            this.download = "survey." + $("#save_format").val();
+            // Pass on for handling native event
             return true;
-         });
+        });
     });
 });

@@ -9,16 +9,23 @@
   <body>
     <div id="canvas" tabindex="1">
     </div>
-    <div>
+    <div id="controls">
       <!-- form not submitted, just there to get correct behaviours from jquery -->
       <form id="noform">
         <div>
-          <label for="import">File to import</label>
-          <input id="import" type="file"/>
+          <label for="load">Load</label>
+          <input id="load" type="file"/>
+          <select id="save_format">
+            <option></option>
+            <option>svg</option>
+            <option>survey</option>
+          </select>
+          <a class="button" target="_blank" id="save">Save</a>
         </div>
         <div>
-          <button id="refocus">Refocus</button>
-          <a id="save" target="_blank">Save</a>
+          <a class="button" id="refocus">Fit</a>
+          <a class="button" id="zoomin">+</a>
+          <a class="button" id="zoomout">-</a>
         </div>
       </form>
       <div>

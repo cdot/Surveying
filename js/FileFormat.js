@@ -8,8 +8,13 @@ define("js/FileFormat", function() {
     class FileFormat {
         constructor(source) {
             this.mSource = source;
+            this.mNextNet = 0;
         }
-    
+
+        setSource(s) {
+            this.mSource = s;
+        }
+        
         get source() {
             return this.mSource;
         }
@@ -17,14 +22,13 @@ define("js/FileFormat", function() {
         /**
          * @param source identifier for the source of the data e.g. filename
          * @param {String} data file content
-         * @param metadata ref to global meta information that can be used to
+         * @return { visuals: [Visual], metadata: optional meta information that can be used to
          * regenerate the file
-         *    { reference_point: {x:, y:, lat:, lon: }, units_per_metre: }
-         *    objects: // [] of Visual }
+         *    { reference_point: {x:, y:, lat:, lon: }, units_per_metre: } }
          */
-        load(source, data, metadata) {
-            this.mSource = source;
-            this.mNextNet = 0;
+        load(source, data) {
+            throw new Error(this.constructor.name + " cannot load()");
+            return {};
         }
 
         save(target) {

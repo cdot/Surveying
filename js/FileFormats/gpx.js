@@ -1,4 +1,4 @@
-define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Edge", "js/Network", "js/UTM"], function(XML, Three, Vertex, Edge, Network, UTM) {
+define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Edge", "js/Network", "js/Container", "js/UTM"], function(XML, Three, Vertex, Edge, Network, Container, UTM) {
 
     class GPX extends XML {
 
@@ -6,11 +6,11 @@ define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
             super("gpx");
         }
 
-        // @Override
+        // @Override FileFormat
         load(source, data) {
             let $xml = this.parse(source, data);
 
-            let tracks = [];
+            let tracks = new Container(source);
             let loader = this;
             let zone;
             $xml.children("trk").each(function() {
@@ -40,10 +40,10 @@ define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                             lastVert = v;
                         }
                     });
-                    tracks.push(track);
+                    tracks.addChild(track);
                 });
             });
-            return { visuals: tracks, metadata: {} };
+            return Promise.resolve(tracks);
         }
     }
     return GPX;

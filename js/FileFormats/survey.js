@@ -60,12 +60,12 @@ define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/Vertex", "js
                 return net;
             }
             
-            let nets = [];
+            let nets = new Container(source);
             let loader = this;
             $xml.children("network").each(function() {
-                nets.push(loadNetwork($(this)));
+                content.addChild(loadNetwork($(this)));
             });
-            return { visuals: nets }
+            return Promise.resolve(nets);
         }
 
         save(visual) {
@@ -122,8 +122,9 @@ define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/Vertex", "js
 
             let doc = document.implementation.createDocument("", "", null);
             doc.append(makeDOM(visual, doc));
-            return '<?xml version="1.0" encoding="UTF-8"?>'
-            +  new XMLSerializer().serializeToString(doc);
+            return Promise.resolve(
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                +  new XMLSerializer().serializeToString(doc));
         }
 
     }

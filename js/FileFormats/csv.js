@@ -1,4 +1,4 @@
-define("js/FileFormats/csv", ["three", "js/Vertex", "js/Edge", "js/Network", "jquery-csv"], function(Three, Vertex, Edge, Network) {
+define("js/FileFormats/csv", ["three", "js/Vertex", "js/Edge", "js/Network", "js/Container", "jquery-csv"], function(Three, Vertex, Edge, Network, Container) {
 
     /**
      * Load a point series from a CSV file into a network.
@@ -11,7 +11,7 @@ define("js/FileFormats/csv", ["three", "js/Vertex", "js/Edge", "js/Network", "jq
             this.setSource(source);
 
             let table = $.csv.toArrays(data);
-            let nets = [];
+            let nets = new Container(source);
 
             let network;
             let heads = [];
@@ -60,7 +60,7 @@ define("js/FileFormats/csv", ["three", "js/Vertex", "js/Edge", "js/Network", "jq
                     last_vertex = v;
                 }
             }
-            return { visuals: nets };
+            return Promise.resolve(nets);
         }
     }
 

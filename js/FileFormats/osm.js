@@ -1,4 +1,4 @@
-define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Vertex", "js/Edge", "js/Network", "js/UTM"], function(XML, Three, Vertex, Edge, Network, UTM) {
+define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Vertex", "js/Edge", "js/Container", "js/Network", "js/UTM"], function(XML, Three, Vertex, Edge, Container, Network, UTM) {
 
     class OSM extends XML {
 
@@ -19,7 +19,7 @@ define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                     lon: parseFloat($node.attr("lon"))
                 };
             });
-            let ways = [];
+            let ways = new Container(source);
             $xml.children("way").each(function() {
                 let $way = $(this);
                 let id = $way.attr("id");
@@ -44,9 +44,9 @@ define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                         way.addEdge(new Edge(lastVert, v));
                     lastVert = v;
                 });
-                ways.push(way);
+                ways.addChild(way);
             });
-            return { visuals: ways };
+            return Promise.resolve(ways);
         }
     }
     return OSM;

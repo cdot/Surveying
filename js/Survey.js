@@ -38,34 +38,7 @@ define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Thre
             // we refocus()
             this.mLookAt = new Three.Vector3(0, 0, 0);
             
-            this.mMetadata = {
-                // Information used for formats which support saving
-                //reference_point: {
-                //    lat: 51.477905, lon: 0,// Greenwich
-                //    x: 0, y : 0 // bottom left corner
-                //},
-                units_per_metre: 10
-            };
-
             this.animate();
-        }
-
-        /**
-         * Convert a point in user units to the current save units
-         */
-        user2saveUnits(p) {
-            if (p instanceof Three.Box3) {
-                return new Three.Box3(
-                    this.user2saveUnits(p.min),
-                    this.user2saveUnits(p.max));
-            } else {
-                let origin = UTM.fromLatLong(this.mMetadata.reference_point.lat,
-                                             this.mMetadata.reference_point.lon);
-                return new Three.Vector3(
-                    (p.x - origin.easting) * this.mMetadata.units_per_metre,
-                    (p.y - origin.northing) * this.mMetadata.units_per_metre,
-                    0);
-            }
         }
 
         /**
@@ -101,36 +74,27 @@ define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Thre
             return new Three.Line3(pos, tgt);
         }
 
-        /**
-         * Load a set of visuals into the current network.
-         * @param {[Visual]} visuals
-         */
-        addVisuals(visuals) {
-            for (let obj of visuals) {
-                this.addChild(obj);
-                obj.addToScene(this.mScene);
+        // @Override Container
+        addChild(vis) {
+            super.addChild(vis);
+            // Merge child metadata with this level
+            if (vis.metadata) {
+                let options = vis.metadata;
+                if (!this.metadata.reference_point
+                    && !options.reference_point) {
+                    let bb = this.boundingBox;
+                    let bl = new UTM(bb.min.x, bb.min.y);
+                    let ll = bl.toLatLong();
+                    options.reference_point = {
+                        x: 0, y: 0,
+                        lat: ll.latitude, lon: ll.longitude
+                    };
+                }
+                $.extend(this.metadata, options);
             }
-            this.fitScene();
+            vis.addToScene(this.mScene);
         }
 
-        setMetadata(options) {
-            if (!options) return;
-            if (!this.mMetadata.reference_point && !options.reference_point) {
-                let bb = this.boundingBox;
-                let bl = new UTM(bb.min.x, bb.min.y);
-                let ll = bl.toLatLong();
-                options.reference_point = {
-                    x: 0, y: 0,
-                    lat: ll.latitude, lon: ll.longitude
-                };
-            }
-            $.extend(this.mMetadata, options);
-        }
-
-        get metadata() {
-            return this.mMetadata;
-        }
-        
         zoom(factor) {
             if (this.mCamera) {
                 this.mCamera.zoom *= factor;

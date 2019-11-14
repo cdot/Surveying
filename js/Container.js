@@ -13,7 +13,7 @@ define("js/Container", ["three", "js/Visual"], function(Three, Visual) {
         get children() {
             return this.mObjects;
         }
-        
+
         /**
          * Add a child visual to this container
          * @param {Visual} g

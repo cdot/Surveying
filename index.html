@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <link href="css/styles.css" rel="stylesheet" />
     <script data-main="js/main" src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.js"></script>
   </head>
@@ -32,17 +33,32 @@
         Scene: <span id="scene"></span>
       </div>
       <div>
-        Viewport: <span id="viewport"></span>
-      </div>
-      <div>
-        Lat/Long: <span id="cursor_wgs"></span>
-      </div><div>
-        UTM: <span id="cursor_user"></span>
-      </div><div>
-        SVG: <span id="cursor_save"></span>
+        Cursor Lat/Long: <span id="cursor_wgs"></span>
       </div>
       <div id="report">
       </div>
+    </div>
+    <div id="svg_dialog" class="dialog">
+      <div>
+        Reference point:
+        <div>
+          <label for="svg_lat">Lat</label>
+          <input type="number" id="svg_lat" />
+        </div><div>
+          <label for="svg_lon">Lon</label>
+          <input type="number" id="svg_lon" />
+        </div><div>
+          <label for="svg_x">X</label>
+          <input type="number" id="svg_x" />
+        </div><div>
+          <label for="svg_y">Y</label>
+          <input type="number" id="svg_y" />
+        </div>
+      </div>
+      <div>
+        Scaling: <input type="number" id="svg_units_per_metre"/>
+      </div>
+      <a class="ui-button ui-corner-all ui-widget" target="_blank" id="svg_export">Export</a>
     </div>
   </body>
 </html>

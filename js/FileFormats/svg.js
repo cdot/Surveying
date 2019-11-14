@@ -1,17 +1,15 @@
-define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Edge", "js/Container", "js/Network", "js/ImagePlane", "js/UTM"], function(XML, Three, Vertex, Edge, Container, Network, ImagePlane, UTM) {
+define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Edge", "js/Container", "js/Network", "js/ImagePlane", "js/UTM", "jquery-ui"], function(XML, Three, Vertex, Edge, Container, Network, ImagePlane, UTM) {
 
     /**
      * Specialised loader for an SVG used to carry survey information.
      * There are a number of standards that must be observed for a survey
      * SVG. First, there must be document metadata containing a "dc:description"
-     * that carries attribute values in JSON as follows:
-     * {
-     *   reference { x:, y:       // location of the reference point in SVG units
-     *               lat:, lon: } // real world location of the reference point,
-     *                            // in decimal degrees
-     *   resolution: // resolution in SVG units per metre
-     * }
-     * The JSON block must be the first thing in the description. The rest
+     * that carries attribute key:value pairs as follows:
+     *   lat:, lon: // real world location of the reference point,
+     *   x:, y:     // location of the reference point in SVG units
+     *              // in decimal degrees
+     *   units_per_metre: // resolution in SVG units per metre
+     * The key:value block must be the first thing in the description. The rest
      * of the description is ignored.
      * The resolution defines how many SVG file units are in a real metre.
      * So a resolution of 10 says there are 10 units per metre. The actual
@@ -22,8 +20,16 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
      * objects are ignored.
      * Images should be linked in the SVG. The last path component of the
      * image URL path is appended to "data/" to retrieve the image data
-     * relative to the application.
+     * relative to the application. TODO: put URL in desc?
      */
+
+    const IS_NUMBER = /^[-+]?\d*\.?\d+([eE][-+]?\d+)?$/;
+    const IS_COORDS = /^[-+]?\d*\.?\d+([eE][-+]?\d+)?,[-+]?\d*\.?\d+([eE][-+]?\d+)?$/;
+    
+    // Styling for paths in output SVG
+    const PATH_STYLE =
+          "display:inline;fill:none;stroke:#FF00FF:none;stroke-width:1px;stroke-opacity:1";
+    const SVG_NS = 'http://www.w3.org/2000/svg';
     
     function applySVGTransforms(transforms, net) {
         if (!transforms) return;
@@ -90,6 +96,24 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
         net.applyTransform(mat);
     }
 
+    /**
+     * Parse a string of comma-separated key:value pairs from a string
+     */
+    function parseAttrs(text) {
+        let re = /(^|\s*,)\s*(\w+)\s*:\s*((["']).*?\4|[^,\s]*)/g;
+        let m;
+        let attrs = {};
+        while (m = re.exec(text)) {
+            let k = m[2];
+            let v = m[3];
+            if (IS_NUMBER.test(v))
+                attrs[k] = parseFloat(v);
+            else // quoted numbers are treated as strings
+                attrs[k] = v.replace(/^(["'])(.*)\1/, "$2");
+        }
+        return attrs;
+    }
+    
     class SVG extends XML {
 
         constructor() {
@@ -121,14 +145,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
             let startVert, lastVert, p, v;
             let vertices = [];
 
-            function isXY() {
-                return (/^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?,[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$/.test(points[0]));
-            }
-
-            function isN() {
-                return (/^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$/.test(points[0]));
-            }
-
             function getXY() {
                 let xy = points.shift().split(",");
                 return new Three.Vector3(parseFloat(xy[0]), parseFloat(xy[1]), 0);
@@ -156,7 +172,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                     if (lastVert && (cmd === "L" || cmd === "l"))
                         path.addEdge(new Edge(lastVert, v));
                     lastVert = v;
-                    while (isXY()) {
+                    while (IS_COORDS.test(points[0])) {
                         p = getXY();
                         if (/[A-Z]/.test(cmd))
                             pos.copy(p);
@@ -181,7 +197,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                     v = addVert(pos);
                     lastVert = v;
                     if (!startVert) startVert = v;
-                    while (isN()) {
+                    while (IS_NUMBER.test(points[0])) {
                         p = getN();
                         switch (cmd) {
                         case "H": pos.x = p; break;
@@ -207,7 +223,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                 case "S": case "s":
                 case "Q": case "q":
                     // Curves, treat as edge to end point
-                    while (isXY()) {
+                    while (IS_COORDS.test(points[0])) {
                         if (/C/i.test(cmd))
                             getXY(); // C has 2 control points
                         if (/[CSQ]/i.test(cmd))
@@ -238,6 +254,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                     break;
                 }
             }
+
+            applySVGTransforms($(this).attr("transform"), path);
             return path;
         }
 
@@ -248,153 +266,225 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                 .replace(/.*\//, "");
 
             console.debug("Image URL:", url);
-
             let x = parseFloat($image.attr("x"));
             let y = parseFloat($image.attr("y"));
             let h = parseFloat($image.attr("height"));
             let w = parseFloat($image.attr("width"));
-            return new ImagePlane(
+            let plane = new ImagePlane(
                 url,
                 new Three.Vector3(x, y, attrs.depth),
                 new Three.Vector3(x + w, y + h, -attrs.depth));
-        }
+            applySVGTransforms($(this).attr("transform"), plane);
+            return plane;
+         }
         
-        // @Override XML
-        load(source, data) {
-            let $xml = this.parse(source, data);
-            let height = parseFloat($xml.attr("height"));
+        loadGroup($xml) {
             let loader = this;
-            // Process paths
-            let visuals = [], metadata = {};
+            let group = new Container($(this).attr("id"));
             $xml.children().each(function() {
-                let object;
-
-                let $desc = $(this).children("desc");
-                let attrs = { depth: 0 };
-                if ($desc.length > 0)
-                    try {
-                        attrs = JSON.parse($desc.text());
-                    } catch (e) {
-                        console.error("Bad JSON " + $desc.text());
-                    }
+                let object, attrs = { depth: 0 };
                 
-                switch (this.tagName) {
-                case "metadata":
-                    // This loader abuses metadata description for carrying
-                    // attributes in a block of JSON
-                    $(this).find("dc\\:description").each(function() {
-                        let desc = $(this).text();
-                        try {
-                            metadata = JSON.parse(desc);
-                        } catch (e) {
-                            console.error("Bad metadata description " + e);
-                        }
-                    });
-                    return;
-                    
+                let $desc = $(this).children("desc");
+                if ($desc.length > 0)
+                    attrs = $.extend(attrs, parseAttrs($desc.text()));
+                
+                switch (this.tagName) {                    
                 case"image":
-                    object = loader.loadImage($(this), attrs);
+                    group.addChild(loader.loadImage($(this), attrs));
                     break;
                     
+                case "g":
+                    group.addChild(loader.loadGroup($(this)));
+                    break;
+
                 case "path":
-                    object = loader.loadPath($(this), attrs);
+                    group.addChild(loader.loadPath($(this), attrs));
                     break;
 
                 default:
                     console.debug("Ignore " + this.tagName);
                     return;
                 }
-
-                applySVGTransforms($(this).attr("transform"), object);
-
-                visuals.push(object);
             });
-
-            // Assume the SVG is plotted at metadata.resolution pixels per metre,
-            // and the metadata.reference_point is at lat/long:
-
-            let mats = [
-                new Three.Matrix4(),
-                new Three.Matrix4(),
-                new Three.Matrix4()
-            ];
-
-            mats[0].makeTranslation(
-                -metadata.reference_point.x, -height - metadata.reference_point.y, 0);
-
-            // Scale and flip y
-            mats[1].makeScale(
-                1 / metadata.units_per_metre, -1 / metadata.units_per_metre, 1);
-
-            let utm = UTM.fromLatLong(
-                metadata.reference_point.lat, metadata.reference_point.lon,
-                metadata.zone);
-
-            if (!metadata.zone) metadata.zone = utm.zone;
-            if (!metadata.band) metadata.band = utm.band;
-            
-            mats[2].makeTranslation(utm.easting, utm.northing, 0);
-
-            for (let o of visuals) {
-                for (let m of mats)
-                    o.applyTransform(m);
-            }
-            return { metadata: metadata, visuals: visuals };
+            return group;
         }
 
-        save(visual) {
-            let surv = visual;
-            let doc = this.mTemplate.cloneNode(true);
-            if (visual.metadata)
-                $(doc).find("dc\\:description").text(JSON.stringify(visual.metadata));
-            let $dom = $(doc).children("svg").first();
-            let bb = visual.boundingBox;
-            let ll = surv.user2saveUnits(bb.min);
-            let ur = surv.user2saveUnits(bb.max);
-            $dom.attr("width", ur.x - ll.x);
-            let height = ur.y - ll.y;
-            $dom.attr("height", height);
-            $dom.attr("viewBox", ll.x + " " + ll.y + " "
-                      + ur.x + " " + ur.y);
-            $dom.attr("sodipodi:docname", visual.name);
+        // @Override FileFormat
+        load(source, data) {
+            let $xml = this.parse(source, data);
             
-            function makeSVG(visual, $dom, doc) {
-                let dom;
-                if (visual instanceof Container) {
-                    if (visual instanceof Network) {
-                        // Make a path
-                        dom = doc.createElement("svg:path");
-                        if (visual.name)
-                            dom.setAttribute("name", visual.name);
-                        dom.setAttribute("id", visual.name);
-                        let d = "M";
-                        for (let o of visual.children) {
-                            if (o instanceof Vertex) {
-                                let v = surv.user2saveUnits(o.position);
-                                d += " " + v.x + " " + (height - v.y);
-                            } else
-                                console.debug("Unsupported Network Visual " + o);
-                        }
-                        dom.setAttribute("d", d);
-                        dom.setAttribute("style", "display:inline;fill:none;stroke:#FF00FF:none;stroke-width:1px;stroke-opacity:1");
-                        $dom.append(dom);
-                    } else {
-                        // Flatten out
-                        for (let o of visual.children) {
-                            let kid = makeSVG(o, $dom, doc);
-                            if (kid)
-                                $dom.append(kid);
-                        }
-                        return;
+            // Default metadata
+            let metadata = {
+                lat: 51.477905, lon: 0,// Greenwich
+                x: 0, y: 0, // bottom left corner
+                units_per_metre: 10 // 10px per metre
+            };
+            
+            // This loader abuses SVG metadata for carrying
+            // attributes in a key:value block inside the dc:description.
+            // Find it and extract the metadata
+            $xml.children("metadata").find("dc\\:description").each(function() {
+                $.extend(metadata, parseAttrs($(this).text()));
+            });
+
+            // Seed the utm zone if it's not already been done
+            UTM.fromLatLong(metadata.lat, metadata.lon);
+            
+            // Populate dialog with values from metadata
+            let $dlg = $("#svg_dialog");
+            for (let f of [ "lat", "lon", "x", "y", "units_per_metre" ])
+                if (typeof metadata[f] !== "undefined") $('#svg_' + f).val(metadata[f]);
+
+            // Export button not used here
+            $("#svg_export").hide();
+            
+            return new Promise((resolve, reject) => {
+                $dlg.dialog("option", "title", "SVG import " + source);
+                $dlg.dialog("option", "buttons", [
+                    {
+                        text: "Import",
+                        click: function() {
+                            $(this).dialog("close");
+                            for (let f of [ "lat", "lon", "x", "y", "units_per_metre" ]) {
+                                let $i = $('#svg_' + f);
+                                if ($i.attr("type") === "number")
+                                    metadata[f] = parseFloat($i.val());
+                                else
+                                    metadata[f] = $i.val();
+                            }
+                            resolve();
+                        },
+                    }]);
+                $dlg.dialog("option", "close", reject);
+                $dlg.dialog("open");
+            })
+            .then(() => {
+                let g = this.loadGroup($xml);
+                let mats = [];
+
+                // SVG coords have 0,0, at the top left, so
+                // flip the Y axis so that the bottom left becomes 0, 0
+                let height = parseFloat($xml.attr("height"));
+                mats.push(new Three.Matrix4().makeScale(1, -1, 1));
+                mats.push(new Three.Matrix4().makeTranslation(0, height, 1));
+
+                // Translate reference point to 0, 0
+                if (metadata.x !== 0 || metadata.y !== 0)
+                    mats.push(new Three.Matrix4().makeTranslation(
+                        -metadata.x, -metadata.y, 0));
+
+                // Scale and flip y
+                let scale = 1 / metadata.units_per_metre;
+                if (scale !== 1)
+                    mats.push(new Three.Matrix4().makeScale(scale, scale, 1));
+
+                // Translate reference point to reference lat,lon
+                let utm = UTM.fromLatLong(metadata.lat, metadata.lon);
+                mats.push(new Three.Matrix4().makeTranslation(utm.easting, utm.northing, 0));
+
+                for (let m of mats)
+                    g.applyTransform(m);
+                return g;
+            });
+        }
+
+        _serialise(visual, metadata) {
+            let origin = UTM.fromLatLong(metadata.lat, metadata.lon);
+            let mump = metadata.units_per_metre;
+            
+            function saveUnits(p) {
+                if (p instanceof Three.Box3)
+                    return new Three.Box3(saveUnits(p.min), saveUnits(p.max));
+                return new Three.Vector3(
+                    (p.x - origin.easting) * mump,
+                    (p.y - origin.northing) * mump,
+                    0);
+            }
+            
+            let doc = this.mTemplate.cloneNode(true);
+            let $svg = $(doc).children("svg").first();
+            let bb = visual.boundingBox;
+            let ll = new UTM(bb.min.x, bb.min.y).toLatLong();
+            let metas = [];
+            for (let m in metadata)
+                metas.push(m + ":" + metadata[m]);                
+            $svg.find("dc\\:description").text(metas.join(","));
+
+            ll = saveUnits(bb.min);
+            let ur = saveUnits(bb.max);
+            $svg.attr("width", ur.x - ll.x);
+            let height = ur.y - ll.y;
+            $svg.attr("height", height);
+            $svg.attr("viewBox", ll.x + " " + ll.y + " "
+                      + ur.x + " " + ur.y);
+            $svg.attr("sodipodi:docname", visual.name);
+            
+            function makeSVG(visual, container) {
+
+                if (visual instanceof Network) {
+                    // Make a path
+                    let path = document.createElementNS(SVG_NS, "path");
+                    if (visual.name)
+                        path.setAttribute("name", visual.name);
+                    path.setAttribute("id", visual.name);
+                    let moves = [ "M" ];
+                    for (let o of visual.children) {
+                        if (o instanceof Vertex) {
+                            let v = saveUnits(o.position);
+                            moves.push(v.x + " " + (height - v.y));
+                        } else
+                            console.debug("Unsupported Network Visual " + o);
                     }
+                    path.setAttribute("d", moves.join(" "));
+                    path.setAttribute("style", PATH_STYLE);
+                    container.appendChild(path);
+                } else if (visual instanceof Container) {
+                    let group = document.createElementNS(SVG_NS, "g");
+                    group.setAttribute("id", visual.name);
+                    for (let o of visual.children)
+                        makeSVG(o, group);
+                    container.appendChild(group);
+                } else if (visual instanceof ImagePlane) {
+                    console.debug("Reminder: support ImagePlane");
                 } else {
                     console.debug("Unsupported Visual " + visual);
-                    return;
                 }
             }
-            makeSVG(visual, $dom, doc);
+            debugger;
+            for (let o of visual.children)
+                makeSVG(o, $svg[0]);
             return '<?xml version="1.0" encoding="UTF-8"?>'
             +  new XMLSerializer().serializeToString(doc);
+        }
+
+        // @Override FileFormat
+        save(visual) {
+            let saver = this;
+            let $dlg = $("#svg_dialog");
+            
+            $dlg.dialog("option", "title", "SVG export");
+            // Clear the button panel
+            $dlg.dialog("option", "buttons", []);
+            $("#svg_export")
+            .show()
+            .on("click", function() {
+                let metadata = {};
+                for (let f of [ "lat", "lon", "x", "y", "units_per_metre" ]) {
+                    let $i = $('#svg_' + f);
+                    if ($i.attr("type") === "number")
+                        metadata[f] = parseFloat($i.val());
+                    else
+                        metadata[f] = $i.val();
+                }
+                this.href = URL.createObjectURL(new Blob([saver._serialise(visual, metadata)]));
+                this.download = "svg." + $("#save_format").val();
+                // Pass on for native event handling
+                return true;
+            })
+            $dlg.dialog("open");
+            // Tell the caller not to bother trying to save the content, we're doing it
+            // through the dialog
+            return null;
         }
     }
     return SVG;

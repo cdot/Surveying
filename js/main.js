@@ -11,10 +11,17 @@ requirejs.config({
     }
 });
 
-requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mousewheel"], function(Three, Survey, Selection, UTM) {
+requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui", "jquery-mousewheel"], function(Three, Survey, Selection, UTM) {
     $(function(){
+        $(".dialog").dialog({
+            autoOpen: false,
+            modal: true,
+            show: "blind",
+            hide: "blind"
+        });
+
         let $canvas = $("#canvas");
-        let network = new Survey($canvas);
+        let survey = new Survey($canvas);
         let saver;
 
         /**
@@ -30,46 +37,27 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
         }
 
         /**
-         * Format a point for display using internal coordinates
-         */
-        function userCoords(p) {
-            return p.x + ", " + p.y;
-        }
-        
-        /**
-         * Format a point for display using file coordinates
-         */
-        function fileCoords(p) {
-            if (!network)
-                return "";
-            let pu = network.user2saveUnits(p)
-            return pu.x + ", " + pu.y;
-        }
-        
-        /**
          * Convert an event on the canvas into a ray
          * @param e event
          */
         function event2ray(e) {
-            if (!network) return null;
-            let ray = network.canvas2ray({
+            if (!survey) return null;
+            let ray = survey.canvas2ray({
                 x: e.offsetX / $canvas.width(),
                 y: e.offsetY / $canvas.height()
             });
             if (ray) {
                 $("#cursor_wgs").html(wgsCoords(ray.start));
-                $("#cursor_user").html(userCoords(ray.start));
-                $("#cursor_save").html(fileCoords(ray.start));
             }
             return ray;
         }
 
         function formatBox(b) {
-            return userCoords(b.min) + " -> " + userCoords(b.max);
+            return wgsCoords(b.min) + " -> " + wgsCoords(b.max);
         }
 
         function enableSave() {
-            $("#save").prop("disabled", !network || !saver);
+            $("#save").prop("disabled", !survey || !saver);
         }
         
         let mouse_down; // button flags
@@ -105,7 +93,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
             case 38: // up
                 let oldSel = selection.items.slice();
                 for (let sel of oldSel) {
-                    if (sel.parent !== network) {
+                    if (sel.parent !== survey) {
                         selection.add(sel.parent);
                         selection.remove(sel);
                     }
@@ -130,20 +118,20 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
             let ray = event2ray(e);
             lastPt = ray.start.clone();
             if (!selection.isEmpty) {
-                let hit = network.projectRay(ray);
+                let hit = survey.projectRay(ray);
                 if (hit && selection.contains(hit.closest))
                     dragging = true;
             }
         })
 
         .on('mouseup', function(e) {
-            if (!mouse_down || !network) return false;
+            if (!mouse_down || !survey) return false;
             if (!dragging) {
                 if (e.offsetX === mouse_down.x && e.offsetY === mouse_down.y) {
                     if (!e.shiftKey)
                         selection.clear();
                     let ray = event2ray(event);
-                    let proj = network.projectRay(ray);
+                    let proj = survey.projectRay(ray);
                     if (proj)
                         selection.add(proj.closest);
                     else
@@ -156,7 +144,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
         })
                 
         .on('mousemove', function(e) {
-            if (!network) return false;
+            if (!survey) return false;
             let ray = event2ray(e);
             if (mouse_down) {
                 let p = ray.start;
@@ -166,7 +154,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
                         delta.x, delta.y, 0);
                     selection.applyTransform(mat);
                 } else
-                    network.panBy(delta.negate());
+                    survey.panBy(delta.negate());
                 lastPt = p;
             }
         })
@@ -175,13 +163,13 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
         .on('mousewheel', function(event) {
             event.stopPropagation();
 
-            if (!network)
+            if (!survey)
                 return;
 
             if (event.deltaY < 0)
-                network.zoom(0.8);
+                survey.zoom(0.8);
             else
-                network.zoom(1.2);
+                survey.zoom(1.2);
             
             return false;
         });
@@ -196,12 +184,13 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
 
                 reader.onload = e => {
                     let data = e.target.result;
-                    let result = new Loader().load(fn, data);
-                    network.addVisuals(result.visuals);
-                    network.setMetadata(result.metadata || {});
-                    console.log("Loaded", fn);
-                    network.fitScene();
-                    enableSave();
+                    new Loader().load(fn, data)
+                    .then(result => {
+                        survey.addChild(result);
+                        console.log("Loaded", fn);
+                        survey.fitScene();
+                        enableSave();
+                    });
                 };
 
                 // Read in the image file as a data URL.
@@ -210,29 +199,29 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
         });
         
         $("#refocus").on("click", function() {
-            if (network)
-                network.fitScene();
+            if (survey)
+                survey.fitScene();
             return false;
         });
 
         $("#zoomin").on("click", function() {
-            if (network)
-                network.zoom(1.2);
+            if (survey)
+                survey.zoom(1.2);
             return false;
         });
         
         $("#zoomout").on("click", function() {
-            if (network)
-                network.zoom(0.8);
+            if (survey)
+                survey.zoom(0.8);
             return false;
         });
 
         $(document).on("scenechanged", function () {
-            $("#scene").html(formatBox(network.boundingBox));
+            $("#scene").html(formatBox(survey.boundingBox));
         });
 
         $(document).on("viewchanged", function() {
-//            $("#viewport").html(formatBox(network.viewport));
+//            $("#viewport").html(formatBox(survey.viewport));
         });
 
         // Cannot set the saver from inside the save handler because
@@ -252,10 +241,15 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-mou
         });
         
         $("#save").on("click", function() {
-            let str = saver.save(network);
-            this.href = URL.createObjectURL(new Blob([str]));
-            this.download = "survey." + $("#save_format").val();
-            // Pass on for handling native event
+            // If save() returns a promise, then it has used a dialog and we
+            // don't require native event handling
+            let str = saver.save(survey);
+            if (str) {
+                // The format wants to use the Save button to trigger the save
+                this.href = URL.createObjectURL(new Blob([str]));
+                this.download = "survey." + $("#save_format").val();
+            }
+            // Pass on for native event handling
             return true;
         });
     });

@@ -60,7 +60,7 @@ define("js/Visual", ["three"], function(Three) {
             this.mHandleSize = s;
             this.mHandleSize2 = s * s;
         }
-        
+
         /**
          * Get the volume the object occupies
          */

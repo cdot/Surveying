@@ -22,16 +22,19 @@ define("js/FileFormat", function() {
         /**
          * @param source identifier for the source of the data e.g. filename
          * @param {String} data file content
-         * @return { visuals: [Visual], metadata: optional meta information that can be used to
-         * regenerate the file
-         *    { reference_point: {x:, y:, lat:, lon: }, units_per_metre: } }
+         * @return Promise that resolves to a {Visual} content
          */
         load(source, data) {
-            throw new Error(this.constructor.name + " cannot load()");
-            return {};
+            return Promise.reject(this.constructor.name + " cannot load()");
         }
 
-        save(target) {
+        /**
+         * Promise to save the visual
+         * @param {Visual} visual to save
+         * @return {String} stringified version of the visual, or null if the
+         * method has handled saving internally
+         */
+        save(visual) {
             throw new Error("no save() defined");
         }
 

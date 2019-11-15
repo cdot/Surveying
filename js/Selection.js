@@ -18,12 +18,12 @@ define("js/Selection", function() {
         }
 
         /**
-         * True if the selection is empty
+         * Get the number of items in the selection
          */
-        get isEmpty() {
-            return this.mItems.length === 0;
+        get size() {
+            return this.mItems.length;
         }
-
+        
         /**
          * Empty the selection
          */

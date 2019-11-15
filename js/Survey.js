@@ -68,7 +68,6 @@ define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Thre
                 tgt = pos;
                 pos = this.mCamera.position;
             }
-            //this.mCursorP0.copy(pos);
             this.mCursorP1.copy(tgt);
             this.mCursorGeom.verticesNeedUpdate = true;
             return new Three.Line3(pos, tgt);
@@ -109,6 +108,21 @@ define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Thre
                 this.mCamera.lookAt(this.mLookAt);
                 this.mCamera.updateProjectionMatrix();
             }
+        }
+
+        measureStart() {
+            this.mCursorP0.x = this.mCursorP1.x;
+            this.mCursorP0.y = this.mCursorP1.y;
+            this.mCursorGeom.verticesNeedUpdate = true;
+        }
+
+        /**
+         * Measure the planar distance between P0 and P1
+         */
+        measureCursor() {
+            let dx = this.mCursorP1.x - this.mCursorP0.x;
+            let dy = this.mCursorP1.y - this.mCursorP0.y;
+            return Math.round(100 * Math.sqrt(dx * dx + dy * dy)) / 100;
         }
         
         // Reposition the camera so it is looking down on the

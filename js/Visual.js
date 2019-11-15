@@ -125,6 +125,24 @@ define("js/Visual", ["three"], function(Three) {
         }
         
         /**
+         * Get the child before this in the parent
+         */
+        get prev() {
+            if (!this.mParent)
+                return null;
+            return this.mParent.prevChild(this);
+        }
+        
+        /**
+         * Get the child after htis in the parent
+         */
+        get next() {
+            if (!this.mParent)
+                return null;
+            return this.mParent.nextChild(this);
+        }
+        
+        /**
          * Highlight the object as being selected (or part of a selection)
          */
         highlight(on) { }

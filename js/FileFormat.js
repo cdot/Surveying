@@ -29,7 +29,16 @@ define("js/FileFormat", function() {
         }
 
         /**
-         * Promise to save the visual
+         * Save, or serialise, the visual. Because browsers require a
+         * user action to trigger a download action, we have to be
+         * able to return true from a click handler. That click
+         * handler can either be associated with the front page "save"
+         * button, or it can be associated with a button on a
+         * dialog. Some formats, such as .svg, naturally have such a
+         * dialog; other formats, such as .survey, do not.  We handle
+         * this difference by using this method either as a serialiser
+         * (return a string, caller expected to handle the download)
+         * or as a save method (dialog button handles the download).
          * @param {Visual} visual to save
          * @return {String} stringified version of the visual, or null if the
          * method has handled saving internally

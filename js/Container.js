@@ -52,6 +52,30 @@ define("js/Container", ["three", "js/Visual"], function(Three, Visual) {
                 throw new Error("Cannot remove missing child");
             this.mObjects.splice(i, 1);
         }
+
+        /**
+         * Get the child before to the given child
+         */
+        prevChild(child) {
+            let i = this.mObjects.indexOf(child);
+            if (i < 0)
+                return null;
+            if (i === 0)
+                i = this.mObjects.length;
+            return this.mObjects[i - 1];
+        }
+        
+        /**
+         * Get the child after to the given child
+         */
+        nextChild(child) {
+            let i = this.mObjects.indexOf(child);
+            if (i < 0)
+                return null;
+            if (i === this.mObjects.length - 1)
+                i = -1;
+            return this.mObjects[i + 1];
+        }
         
         // @Override Visual
         applyTransform(mat) {

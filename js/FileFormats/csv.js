@@ -1,7 +1,7 @@
-define("js/FileFormats/csv", ["three", "js/Vertex", "js/Edge", "js/Network", "js/Container", "jquery-csv"], function(Three, Vertex, Edge, Network, Container) {
+define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Vertex", "js/Edge", "js/Network", "js/Container", "js/UTM", "jquery-csv"], function(FileFormat, Three, Vertex, Edge, Network, Container, UTM) {
 
     /**
-     * Load a point series from a CSV file into a network.
+     * Load a set of points from a CSV file into a container.
      * Column headings Time, Lat, Long, and Depth are expected
      */
     class CSV extends FileFormat {
@@ -11,11 +11,9 @@ define("js/FileFormats/csv", ["three", "js/Vertex", "js/Edge", "js/Network", "js
             this.setSource(source);
 
             let table = $.csv.toArrays(data);
-            let nets = new Container(source);
+            let group = new Container(source);
 
-            let network;
             let heads = [];
-            let last_vertex;
             for (let row of table) {
                 if (heads.length === 0) {
                     // First row always provides the headings
@@ -31,14 +29,10 @@ define("js/FileFormats/csv", ["three", "js/Vertex", "js/Edge", "js/Network", "js
                         else if (/^(name|point|id)/i.test(h))
                             heads.push("name");
                     }
-                } else if (row.length < heads.length) {
-                    nets.push(network);
-                    network = new Network(row[0] || this.nextNet());
-                } else {
-                    if (!network) {
-                        network = new Network(this.nextNet());
-                        nets.push(network);
-                    }
+                    continue;
+                }
+
+                if (row.length >= heads.length) {
                     // Data row
                     let r = {};
                     // For each column
@@ -52,15 +46,13 @@ define("js/FileFormats/csv", ["three", "js/Vertex", "js/Edge", "js/Network", "js
                             r[heads[h]] = row[h];
                         }
                     }
-                    let point = new Three.Vector3(r.lon, r.lat, r.depth);
+                    let utm = UTM.fromLatLong(r.lat, r.lon);
+                    let point = new Three.Vector3(utm.easting, utm.northing, r.depth);
                     let v = new Vertex(r.name | r.time, point);
-                    network.addChild(v);
-                    if (last_vertex)
-                        network.addEdge(new Edge(last_vertex, v));
-                    last_vertex = v;
+                    group.addChild(v);
                 }
             }
-            return Promise.resolve(nets);
+            return Promise.resolve(group);
         }
     }
 

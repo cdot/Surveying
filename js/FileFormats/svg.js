@@ -30,6 +30,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
     const PATH_STYLE =
           "display:inline;fill:none;stroke:#FF00FF:none;stroke-width:1px;stroke-opacity:1";
     const SVG_NS = 'http://www.w3.org/2000/svg';
+    const METADATA = [ "lat", "lon", "x", "y", "units_per_metre" ];
     
     function applySVGTransforms(transforms, net) {
         if (!transforms) return;
@@ -329,10 +330,10 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
 
             // Seed the utm zone if it's not already been done
             UTM.fromLatLong(metadata.lat, metadata.lon);
-            
+
             // Populate dialog with values from metadata
             let $dlg = $("#svg_dialog");
-            for (let f of [ "lat", "lon", "x", "y", "units_per_metre" ])
+            for (let f of METADATA)
                 if (typeof metadata[f] !== "undefined") $('#svg_' + f).val(metadata[f]);
 
             // Export button not used here
@@ -345,7 +346,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                         text: "Import",
                         click: function() {
                             $(this).dialog("close");
-                            for (let f of [ "lat", "lon", "x", "y", "units_per_metre" ]) {
+                            for (let f of METADATA) {
                                 let $i = $('#svg_' + f);
                                 if ($i.attr("type") === "number")
                                     metadata[f] = parseFloat($i.val());
@@ -365,8 +366,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                 // SVG coords have 0,0, at the top left, so
                 // flip the Y axis so that the bottom left becomes 0, 0
                 let height = parseFloat($xml.attr("height"));
+                mats.push(new Three.Matrix4().makeTranslation(0, -height, 1));
                 mats.push(new Three.Matrix4().makeScale(1, -1, 1));
-                mats.push(new Three.Matrix4().makeTranslation(0, height, 1));
 
                 // Translate reference point to 0, 0
                 if (metadata.x !== 0 || metadata.y !== 0)
@@ -389,6 +390,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
         }
 
         _serialise(visual, metadata) {
+
             let origin = UTM.fromLatLong(metadata.lat, metadata.lon);
             let mump = metadata.units_per_metre;
             
@@ -403,20 +405,18 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
             
             let doc = this.mTemplate.cloneNode(true);
             let $svg = $(doc).children("svg").first();
-            let bb = visual.boundingBox;
-            let ll = new UTM(bb.min.x, bb.min.y).toLatLong();
+
             let metas = [];
             for (let m in metadata)
                 metas.push(m + ":" + metadata[m]);                
             $svg.find("dc\\:description").text(metas.join(","));
 
-            ll = saveUnits(bb.min);
+            let bb = visual.boundingBox;
             let ur = saveUnits(bb.max);
-            $svg.attr("width", ur.x - ll.x);
-            let height = ur.y - ll.y;
-            $svg.attr("height", height);
-            $svg.attr("viewBox", ll.x + " " + ll.y + " "
-                      + ur.x + " " + ur.y);
+            $svg.attr("width", ur.x);
+            let height = ur.y;
+            $svg.attr("height", ur.y);
+            $svg.attr("viewBox", "0 0 " + ur.x + " " + ur.y);
             $svg.attr("sodipodi:docname", visual.name);
             
             function makeSVG(visual, container) {
@@ -450,7 +450,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                     console.debug("Unsupported Visual " + visual);
                 }
             }
-            debugger;
             for (let o of visual.children)
                 makeSVG(o, $svg[0]);
             return '<?xml version="1.0" encoding="UTF-8"?>'
@@ -461,15 +460,22 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
         save(visual) {
             let saver = this;
             let $dlg = $("#svg_dialog");
-            
+            let bb = visual.boundingBox;
+            let ll = new UTM(bb.min.x, bb.min.y).toLatLong();
+            let metadata = {
+                lat: ll.latitude, lon: ll.longitude,
+                x:0, y:0,
+                units_per_metre: 10};
+            for (let f of METADATA)
+                if ($('#svg_' + f).val().length === 0) $('#svg_' + f).val(metadata[f]);
+
             $dlg.dialog("option", "title", "SVG export");
             // Clear the button panel
             $dlg.dialog("option", "buttons", []);
             $("#svg_export")
             .show()
             .on("click", function() {
-                let metadata = {};
-                for (let f of [ "lat", "lon", "x", "y", "units_per_metre" ]) {
+                for (let f of METADATA) {
                     let $i = $('#svg_' + f);
                     if ($i.attr("type") === "number")
                         metadata[f] = parseFloat($i.val());
@@ -478,7 +484,9 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                 }
                 this.href = URL.createObjectURL(new Blob([saver._serialise(visual, metadata)]));
                 this.download = "svg." + $("#save_format").val();
-                // Pass on for native event handling
+                // Set a timer event to close this dialog and
+                // pass the user event on for native event handling
+                setTimeout(() => { $dlg.dialog("close"); }, 10);
                 return true;
             })
             $dlg.dialog("open");

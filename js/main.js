@@ -48,6 +48,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
             });
             if (ray) {
                 $("#cursor_wgs").html(wgsCoords(ray.start));
+                $("#cursor_length").text(survey.measureCursor());
             }
             return ray;
         }
@@ -83,23 +84,60 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
         $("#noform").on("submit", () => false);
                
         $canvas.on("keydown", function(e) {
+            let sel;
             switch (e.keyCode) {
-            case 46: // delete
-                for (let sel of selection.items)
+            case 46: // delete selection
+                for (sel of selection.items)
                     // Remove the item completely
                     sel.remove();
                 selection.clear();
-                return false;
-            case 38: // up
-                let oldSel = selection.items.slice();
-                for (let sel of oldSel) {
-                    if (sel.parent !== survey) {
-                        selection.add(sel.parent);
-                        selection.remove(sel);
+                break;
+
+            case 37: // left, prev sibling
+                sel = selection.items.slice();
+                for (let s of sel) {
+                    if (s.prev) {
+                        selection.add(s.prev);
+                        selection.remove(s);
                     }
                 }
-                return false;
+                break;
+                
+            case 38: // up, move up in selection
+                sel = selection.items.slice();
+                for (let s of sel) {
+                    if (s.parent !== survey) {
+                        selection.add(s.parent);
+                        selection.remove(s);
+                    }
+                }
+                break;
+
+            case 39: // right
+                sel = selection.items.slice();
+                for (let s of sel) {
+                    if (s.next) {
+                        selection.add(s.next);
+                        selection.remove(s);
+                    }
+                }
+                break;
+
+            case 40: // down, select first child
+                sel = selection.items.slice();
+                for (let s of sel) {
+                    if (s.children && s.children.length > 0) {
+                        selection.add(s.children[0]);
+                        selection.remove(s);
+                    }
+                }
+                break;
+
+            case 77: // m, set measure point
+                survey.measureStart();
+                break;
             }
+            return false;
         })
 
         .on("mouseenter", function() {
@@ -117,7 +155,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
             mouse_down = {x: e.offsetX, y: e.offsetY};
             let ray = event2ray(e);
             lastPt = ray.start.clone();
-            if (!selection.isEmpty) {
+            if (selection.size > 0) {
                 let hit = survey.projectRay(ray);
                 if (hit && selection.contains(hit.closest))
                     dragging = true;
@@ -220,18 +258,16 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
             $("#scene").html(formatBox(survey.boundingBox));
         });
 
-        $(document).on("viewchanged", function() {
-//            $("#viewport").html(formatBox(survey.viewport));
-        });
+        $("#save").prop("disabled", true);
 
         // Cannot set the saver from inside the save handler because
         // loading a FileFormat requires a promise, but the native
         // click event on #save is required to trigger the download,
         // which requires a true return from the handler.
-        // So have to do it in two steps.
+        // So have to do it in two steps. Setting the save format
+        // loads the saver and enables the save button if successful.
+        // Clicking the save button saves using that saver.
         
-        $("#save").prop("disabled", true);
-
         $("#save_format").on("change", function() {
             let type = $(this).val();
             requirejs(["js/FileFormats/" + type], Format => {

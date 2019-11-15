@@ -1,4 +1,4 @@
-define("js/ImagePlane", ["three", "js/Visual"], function(Three, Visual) {
+define("js/ImagePlane", ["js/Visual", "three"], function(Visual, Three) {
 
     /**
      * A Visual that maps a graphic to a plane

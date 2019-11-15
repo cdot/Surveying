@@ -1,4 +1,4 @@
-define("js/Container", ["three", "js/Visual"], function(Three, Visual) {
+define("js/Container", ["js/Visual", "three"], function(Visual, Three) {
 
     /**
      * A graphical object that can contain other objects
@@ -30,10 +30,10 @@ define("js/Container", ["three", "js/Visual"], function(Three, Visual) {
         }
 
         // @Override Visual
-        setHandleSize(s) {
-            super.setHandleSize(s);
+        setHandleScale(s) {
+            super.setHandleScale(s);
             for (let g of this.mObjects)
-                g.setHandleSize(s);
+                g.setHandleScale(s);
         }
         
         // @Override Visual

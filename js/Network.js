@@ -1,4 +1,4 @@
-define("js/Network", ["three", "js/Container"], function(Three, Container) {
+define("js/Network", ["js/Container"], function(Container) {
     
     /**
      * A network of interconnected vertices (Vertex) joined by edges (Edge)
@@ -41,10 +41,10 @@ define("js/Network", ["three", "js/Container"], function(Three, Container) {
         }
 
         // @Override Container
-        setHandleSize(s) {
-            super.setHandleSize(s);
+        setHandleScale(s) {
+            super.setHandleScale(s);
             for (let e of this.mEdges)
-                e.setHandleSize(s);
+                e.setHandleScale(s);
         }
 
         // @Override Container

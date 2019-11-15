@@ -14,7 +14,7 @@ define("js/Visual", ["three"], function(Three) {
         constructor(name) {
             this.mName = name;
             this.mUid = counter++;
-            this.mHandleSize = 1;
+            this.mHandleScale = 1;
         }
 
         _notImplemented(method) {
@@ -41,24 +41,24 @@ define("js/Visual", ["three"], function(Three) {
          * Get the handle size for visuals that
          * have handles in 3-space
          */
-        get handleSize() {
-            return this.mHandleSize;
+        get handleScale() {
+            return this.mHandleScale;
         }
 
         /**
-         * Get the square of the handle size for visuals that
+         * Get the square of the handle scale for visuals that
          * have handles in 3-space
          */
-        get handleSize2() {
-            return this.mHandleSize2;
+        get handleScale2() {
+            return this.mHandleScale2;
         }
 
         /**
          * Define the handle size for visuals that have handles in 3-space
          */
-        setHandleSize(s) {
-            this.mHandleSize = s;
-            this.mHandleSize2 = s * s;
+        setHandleScale(s) {
+            this.mHandleScale = s;
+            this.mHandleScale2 = s * s;
         }
 
         /**

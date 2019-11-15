@@ -1,4 +1,4 @@
-define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Three, Container, UTM) {
+define("js/Survey", ["js/Container", "three", "js/UTM", "js/Materials", "jquery"], function(Container, Three, UTM, Materials) {
 
     /**
      * Add interactive display and manipulation to a top-level Container
@@ -22,21 +22,25 @@ define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Thre
             $canvas.append(this.mRenderer.domElement);
 
             this.mScene = new Three.Scene();
-            this.mScene.background = new Three.Color(0xFFFFFF);
+            this.mScene.background = new Three.Color(0xF0F0F0);
 
-            this.mCursorGeom = new Three.Geometry();
-            this.mCursorP0 = new Three.Vector3(0, 0, 0);
-            this.mCursorP1 = new Three.Vector3(0, 0, -1);
-            this.mCursorGeom.vertices.push(this.mCursorP0);
-            this.mCursorGeom.vertices.push(this.mCursorP1);
-            let rayLine = new Three.Line(
-                this.mCursorGeom,
-                new Three.LineBasicMaterial({color: 0xFFFF00}));
-            this.mScene.add(rayLine);
+            // Set up ruler geometry
+            this.mRulerGeom = new Three.Geometry();
+            // Start of measure line
+            this.mRulerStart = new Three.Vector3(0, 0, 0);
+            this.mRulerGeom.vertices.push(this.mRulerStart);
+            // End of measure line under the cursor
+            this.mCursor = new Three.Vector3(0, 0, 0);
+            this.mRulerGeom.vertices.push(this.mCursor);
+            let rulerLine = new Three.Line(this.mRulerGeom, Materials.RULER);
+            this.mScene.add(rulerLine);
 
             // Centre of the viewing frustum - will be set when
             // we refocus()
             this.mLookAt = new Three.Vector3(0, 0, 0);
+
+            // Size of a handle in world coordinates
+            this.mHandleSize = 1;
             
             this.animate();
         }
@@ -68,8 +72,11 @@ define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Thre
                 tgt = pos;
                 pos = this.mCamera.position;
             }
-            this.mCursorP1.copy(tgt);
-            this.mCursorGeom.verticesNeedUpdate = true;
+            this.mCursor.x = tgt.x;
+            this.mCursor.y = tgt.y;
+            this.mRulerGeom.verticesNeedUpdate = true;
+            //console.debug("Cursor",this.mCursor);
+            $(document).trigger("cursorchanged");
             return new Three.Line3(pos, tgt);
         }
 
@@ -97,6 +104,7 @@ define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Thre
         zoom(factor) {
             if (this.mCamera) {
                 this.mCamera.zoom *= factor;
+                this.setHandleScale(this.mHandleSize / this.mCamera.zoom);
                 this.mCamera.updateProjectionMatrix();
             }
         }
@@ -110,18 +118,47 @@ define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Thre
             }
         }
 
-        measureStart() {
-            this.mCursorP0.x = this.mCursorP1.x;
-            this.mCursorP0.y = this.mCursorP1.y;
-            this.mCursorGeom.verticesNeedUpdate = true;
+        get cursor() {
+            return this.mCursor;
+        }
+
+        get boundingBox() {
+            let bounds = super.boundingBox;
+
+            if (bounds.isEmpty()) {
+                // Fitting without a scene
+                // A roughly 1nm square block of sea in the English Channel
+                let ll = UTM.fromLatLong(50, -0.5);
+                let ur = UTM.fromLatLong(50.017, -0.483);
+                
+                // If nothing has been loaded yet, we may have an empty
+                // scene to deal with
+                bounds = new Three.Box3();
+                bounds.expandByPoint(
+                    new Three.Vector3(ll.easting, ll.northing, -10)),
+                bounds.expandByPoint(
+                    new Three.Vector3(ur.easting, ur.northing, 10));
+            }
+            
+            return bounds;
+        }
+        
+        /**
+         * Set the start of the ruler to be the cursor point
+         */
+        measureFrom() {
+            this.mRulerStart.copy(this.mCursor);
+            this.mRulerGeom.verticesNeedUpdate = true;
+            //console.log("measure", this.mRulerGeom.vertices);
         }
 
         /**
-         * Measure the planar distance between P0 and P1
+         * Measure the planar distance between the start of the ruler
+         * and the cursor
          */
-        measureCursor() {
-            let dx = this.mCursorP1.x - this.mCursorP0.x;
-            let dy = this.mCursorP1.y - this.mCursorP0.y;
+        get rulerLength() {
+            let dx = this.mCursor.x - this.mRulerStart.x;
+            let dy = this.mCursor.y - this.mRulerStart.y;
             return Math.round(100 * Math.sqrt(dx * dx + dy * dy)) / 100;
         }
         
@@ -129,35 +166,34 @@ define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Thre
         // entire scene
         fitScene() {
             let bounds = this.boundingBox;
-            console.debug("Bounding box", bounds);
+
             // Look at the centre of the scene
             bounds.getCenter(this.mLookAt);
+
             let sz = bounds.getSize(new Three.Vector3());
-            this.mViewSize = Math.max(sz.x, sz.y)
+            let viewSize = Math.max(sz.x, sz.y)
+
+            // Scale handles appropriately so they appear as
+            // a fraction of the canvas width
+            this.mHandleSize = viewSize / 200;
+            this.setHandleScale(this.mHandleSize);
+
             this.mCameraPosition = new Three.Vector3(
-                this.mLookAt.x, this.mLookAt.y, this.mViewSize);
-            
-            this.mCursorP0.x = this.mLookAt.x;
-            this.mCursorP0.y = this.mLookAt.y;
-            this.mCursorP1.x = this.mCursorP0.x;
-            this.mCursorP1.y = this.mCursorP0.y;
+                this.mLookAt.x, this.mLookAt.y, viewSize);
 
             if (this.mCamera) {
                 this.mScene.remove(this.mCamera);
                 delete this.mCamera;
             }
 
-            //this.mViewSize *= factor;
-
             let v = {
-                left: -this.mAspectRatio * this.mViewSize / 2,
-                right: this.mAspectRatio * this.mViewSize / 2,
-                top: this.mViewSize / 2,
-                bottom: -this.mViewSize / 2,
+                left: -this.mAspectRatio * viewSize / 2,
+                right: this.mAspectRatio * viewSize / 2,
+                top: viewSize / 2,
+                bottom: -viewSize / 2,
                 near: 0.1,
-                far: this.mViewSize * 10
+                far: viewSize * 10
             };
-            // viewSize must be in world space units
             this.mCamera = new Three.OrthographicCamera(
                 v.left, v.right, v.top, v.bottom, v.near, v.far);
 
@@ -174,8 +210,13 @@ define("js/Survey", ["three", "js/Container", "js/UTM", "jquery"], function(Thre
             console.log("Orthographic ", v,
                         "look", b,
                         "from", a); */
-            this.setHandleSize(this.mViewSize / 200);
+            
             this.mScene.add(this.mCamera);
+
+            // WTF IS GOING ON? Where has my ruler gone? :-(
+            bounds.getCenter(this.mRulerStart);
+            bounds.getCenter(this.mCursor);
+            this.mRulerGeom.verticesNeedUpdate = true;
 
             $(document).trigger("scenechanged");
         }

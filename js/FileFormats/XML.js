@@ -1,4 +1,4 @@
-define("js/FileFormats/XML", [ "js/FileFormat", "jquery"], function(FileFormat) {
+define("js/FileFormats/XML", ["js/FileFormat", "jquery"], function(FileFormat) {
 
     /**
      * Base class of all XML loaders

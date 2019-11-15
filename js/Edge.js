@@ -1,10 +1,7 @@
-define("js/Edge", ["three", "js/Visual"], function(Three, Visual) {
+define("js/Edge", ["js/Visual", "three", "js/Materials"], function(Visual, Three, Materials) {
 
-    const NORMAL = new Three.LineBasicMaterial({color: 0x0000FF});
-    const HIGHLIGHT = new Three.LineBasicMaterial({color: 0xFF00FF});
-    
     /**
-     * An edge in a network. Note that edges are Visuals but do
+     * An edge in a Network. Note that edges are Visuals but do
      * not participate in the general object hierarchy; instead they
      * are stored local to Network, and referenced in Vertex.
      */
@@ -45,7 +42,7 @@ define("js/Edge", ["three", "js/Visual"], function(Three, Visual) {
             this.mGeometry = new Three.Geometry();
             this.mGeometry.vertices.push(this.mP1.position);
             this.mGeometry.vertices.push(this.mP2.position);
-            this.mObject3D = new Three.Line(this.mGeometry, NORMAL);
+            this.mObject3D = new Three.Line(this.mGeometry, Materials.EDGE);
             scene.add(this.mObject3D);
         }
 
@@ -71,8 +68,10 @@ define("js/Edge", ["three", "js/Visual"], function(Three, Visual) {
 
         // @Override Visual
         highlight(on) {
-            if (this.mObject3D)
-                this.mObject3D.material = on ? HIGHLIGHT : NORMAL;
+            if (this.mObject3D) {
+                this.mObject3D.material =
+                (on ? Materials.EDGE_SELECTED : Materials.EDGE);
+            }
         }
         
         // @Override Visual

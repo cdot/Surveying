@@ -42,15 +42,10 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
          */
         function event2ray(e) {
             if (!survey) return null;
-            let ray = survey.canvas2ray({
+            return survey.canvas2ray({
                 x: e.offsetX / $canvas.width(),
                 y: e.offsetY / $canvas.height()
             });
-            if (ray) {
-                $("#cursor_wgs").html(wgsCoords(ray.start));
-                $("#cursor_length").text(survey.measureCursor());
-            }
-            return ray;
         }
 
         function formatBox(b) {
@@ -97,8 +92,8 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
                 sel = selection.items.slice();
                 for (let s of sel) {
                     if (s.prev) {
-                        selection.add(s.prev);
                         selection.remove(s);
+                        selection.add(s.prev);
                     }
                 }
                 break;
@@ -107,8 +102,8 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
                 sel = selection.items.slice();
                 for (let s of sel) {
                     if (s.parent !== survey) {
-                        selection.add(s.parent);
                         selection.remove(s);
+                        selection.add(s.parent);
                     }
                 }
                 break;
@@ -117,8 +112,8 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
                 sel = selection.items.slice();
                 for (let s of sel) {
                     if (s.next) {
-                        selection.add(s.next);
                         selection.remove(s);
+                        selection.add(s.next);
                     }
                 }
                 break;
@@ -127,14 +122,14 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
                 sel = selection.items.slice();
                 for (let s of sel) {
                     if (s.children && s.children.length > 0) {
-                        selection.add(s.children[0]);
                         selection.remove(s);
+                        selection.add(s.children[0]);
                     }
                 }
                 break;
 
             case 77: // m, set measure point
-                survey.measureStart();
+                survey.measureFrom();
                 break;
             }
             return false;
@@ -237,8 +232,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
         });
         
         $("#refocus").on("click", function() {
-            if (survey)
-                survey.fitScene();
+            survey.fitScene();
             return false;
         });
 
@@ -256,6 +250,11 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
 
         $(document).on("scenechanged", function () {
             $("#scene").html(formatBox(survey.boundingBox));
+        });
+
+        $(document).on("cursorchanged", function() {
+            $("#cursor_wgs").html(wgsCoords(survey.cursor));
+            $("#cursor_length").text(survey.rulerLength);
         });
 
         $("#save").prop("disabled", true);

@@ -1,4 +1,4 @@
-define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Vertex", "js/Edge", "js/Network", "js/Container", "js/UTM", "jquery-csv"], function(FileFormat, Three, Vertex, Edge, Network, Container, UTM) {
+define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Point", "js/Container", "js/UTM", "jquery-csv"], function(FileFormat, Three, Point, Container, UTM) {
 
     /**
      * Load a set of points from a CSV file into a container.
@@ -48,7 +48,7 @@ define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Vertex", "js/Edge", 
                     }
                     let utm = UTM.fromLatLong(r.lat, r.lon);
                     let point = new Three.Vector3(utm.easting, utm.northing, r.depth);
-                    let v = new Vertex(r.name | r.time, point);
+                    let v = new Point(r.name | r.time, point);
                     group.addChild(v);
                 }
             }

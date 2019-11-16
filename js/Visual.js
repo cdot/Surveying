@@ -1,8 +1,5 @@
 define("js/Visual", ["three"], function(Three) {
 
-    // Every Visual is uniquely numbered within this system
-    let counter = 1;
-
     /**
      * Base class of objects in a scene.
      */
@@ -13,7 +10,6 @@ define("js/Visual", ["three"], function(Three) {
          */
         constructor(name) {
             this.mName = name;
-            this.mUid = counter++;
             this.mHandleScale = 1;
         }
 
@@ -27,14 +23,6 @@ define("js/Visual", ["three"], function(Three) {
          */
         get name() {
             return this.mName;
-        }
-
-        /**
-         * Get the uid of this visual. Uids are always unique.
-         * @return unique number identifying this visual
-         */
-        get uid() {
-            return this.mUid;
         }
 
         /**
@@ -151,7 +139,7 @@ define("js/Visual", ["three"], function(Three) {
          * Generate a report on this object for use in the UI
          */
         get report() {
-            let s = this.constructor.name + " " + this.mUid;
+            let s = this.constructor.name;
             if (this.mName)
                 s += " '" + this.mName + "'";
             return [ s ];

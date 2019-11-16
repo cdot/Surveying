@@ -1,7 +1,7 @@
 define("js/Survey", ["js/Container", "three", "js/UTM", "js/Materials", "jquery"], function(Container, Three, UTM, Materials) {
 
     /**
-     * Add interactive display and manipulation to a top-level Container
+     * Add interactive display and manipulation to a Container
      */
     class Survey extends Container {
 

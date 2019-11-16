@@ -1,4 +1,4 @@
-define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Edge", "js/Container", "js/Network", "js/ImagePlane", "js/UTM", "jquery-ui"], function(XML, Three, Vertex, Edge, Container, Network, ImagePlane, UTM) {
+define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Vertex", "js/Edge", "js/Container", "js/Network", "js/ImagePlane", "js/UTM", "jquery-ui"], function(XML, Three, Point, Vertex, Edge, Container, Network, ImagePlane, UTM) {
 
     /**
      * Specialised loader for an SVG used to carry survey information.
@@ -21,6 +21,14 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
      * Images should be linked in the SVG. The last path component of the
      * image URL path is appended to "data/" to retrieve the image data
      * relative to the application. TODO: put URL in desc?
+     *
+     * SVG entities may be annotated with key=value pairs in their
+     * descriptions, as follows:
+     * type: <entity type>
+     * Recognised entity types are "point" and "isobath". An isobath
+     * defines a closed path that represents a line of constant
+     * depth. "point" only works on "circle" objects, and
+     * defines a point depth measurement.
      */
 
     const IS_NUMBER = /^[-+]?\d*\.?\d+([eE][-+]?\d+)?$/;
@@ -31,6 +39,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
           "display:inline;fill:none;stroke:#FF00FF:none;stroke-width:1px;stroke-opacity:1";
     const SVG_NS = 'http://www.w3.org/2000/svg';
     const METADATA = [ "lat", "lon", "x", "y", "units_per_metre" ];
+
+    let counter = 0;
     
     function applySVGTransforms(transforms, net) {
         if (!transforms) return;
@@ -78,7 +88,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                     step.set(1, 0, vs[0],
                              0, 1, vs[1],
                              0, 0, 1);
-                    mat.mutliply(step);
+                    mat.multiply(step);
                     break;
 
                 case "scale":
@@ -129,8 +139,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
         }
 
         loadPath($path, attrs) {
-            let $title = $path.children("title");
-            let id = $title.text() || $path.attr("id") || this.nextNet();
+            let id = attrs.title || $path.attr("id") || counter++;
             console.debug("Loading path", id);
             let path = new Network(id);
             let pos = new Three.Vector3(0, 0, attrs.depth);
@@ -256,7 +265,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                 }
             }
 
-            applySVGTransforms($(this).attr("transform"), path);
             return path;
         }
 
@@ -266,7 +274,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                                  || $image.attr("xlink:href"))
                 .replace(/.*\//, "");
 
-            console.debug("Image URL:", url);
+            console.debug("Loading image", url);
             let x = parseFloat($image.attr("x"));
             let y = parseFloat($image.attr("y"));
             let h = parseFloat($image.attr("height"));
@@ -275,36 +283,62 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                 url,
                 new Three.Vector3(x, y, attrs.depth),
                 new Three.Vector3(x + w, y + h, -attrs.depth));
-            applySVGTransforms($(this).attr("transform"), plane);
+
             return plane;
-         }
+        }
+
+        loadPoint($xml, attrs) {
+            let pid = attrs.title || $(this).attr("id")
+                || counter++;
+            console.debug("Loading point", pid);
+            return new Point(
+                pid, new Three.Vector3(attrs.cx, attrs.cy, attrs.depth || 0));
+        }
         
-        loadGroup($xml) {
-            let loader = this;
-            let group = new Container($(this).attr("id"));
+        loadGroup($xml, attrs) {
+            let loader = this;               
+            let id = attrs.title || $xml.attr("id") || counter++;
+            let group = new Container(id);
             $xml.children().each(function() {
                 let object, attrs = { depth: 0 };
                 
+                let $title = $(this).children("title");
+                if ($title.length > 0)
+                    attrs.title = $title.text();
+
                 let $desc = $(this).children("desc");
                 if ($desc.length > 0)
                     attrs = $.extend(attrs, parseAttrs($desc.text()));
+                let obj;
                 
-                switch (this.tagName) {                    
+                switch (this.tagName) {
+                    
                 case"image":
-                    group.addChild(loader.loadImage($(this), attrs));
+                    obj = loader.loadImage($(this), attrs);
+                    break;
+                    
+                case "circle":
+                    if (attrs.type === "point")
+                        obj = loader.loadPoint($(this), attrs);
+                    else
+                        console.debug("Ignore circle with no point");
                     break;
                     
                 case "g":
-                    group.addChild(loader.loadGroup($(this)));
+                    obj = loader.loadGroup($(this), attrs);
                     break;
 
                 case "path":
-                    group.addChild(loader.loadPath($(this), attrs));
+                    obj = loader.loadPath($(this), attrs);
                     break;
 
                 default:
-                    console.debug("Ignore " + this.tagName);
-                    return;
+                    console.debug("Ignore", this.tagName);
+                    break;
+                }
+                if (obj) {
+                    applySVGTransforms($(this).attr("transform"), obj);
+                    group.addChild(obj);
                 }
             });
             return group;
@@ -360,7 +394,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                 $dlg.dialog("open");
             })
             .then(() => {
-                let g = this.loadGroup($xml);
+                let g = this.loadGroup($xml, {});
                 let mats = [];
 
                 // SVG coords have 0,0, at the top left, so
@@ -444,6 +478,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                     for (let o of visual.children)
                         makeSVG(o, group);
                     container.appendChild(group);
+                } else if (visual instanceof Point) {
+                    console.debug("Reminder: support Point");
                 } else if (visual instanceof ImagePlane) {
                     console.debug("Reminder: support ImagePlane");
                 } else {

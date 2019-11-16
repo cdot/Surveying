@@ -1,5 +1,7 @@
 define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Edge", "js/Network", "js/Container", "js/UTM"], function(XML, Three, Vertex, Edge, Network, Container, UTM) {
 
+    let counter = 0;
+    
     class GPX extends XML {
 
         constructor() {
@@ -17,7 +19,7 @@ define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                 let $trk = $(this);
                 $trk.children("trkseg").each(function() {
                     let $seg = $(this);
-                    let id = loader.nextNet();
+                    let id = counter++;
                     console.debug("Loading track", id);
                     let track = new Network(id);
                     let lastVert, lastLat = NaN, lastLon = NaN;

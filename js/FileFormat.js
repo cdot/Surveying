@@ -8,7 +8,6 @@ define("js/FileFormat", function() {
     class FileFormat {
         constructor(source) {
             this.mSource = source;
-            this.mNextNet = 0;
         }
 
         setSource(s) {
@@ -45,14 +44,6 @@ define("js/FileFormat", function() {
          */
         save(visual) {
             throw new Error("no save() defined");
-        }
-
-        /**
-         * Service for subclasses, generate a suitable ID for a net,
-         * used when the data doesn't provide one
-         */
-        nextNet() {
-            return this.mSource + (this.mNextNet++);
         }
     }
 

@@ -1,5 +1,8 @@
 define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(Point, Three, Materials, Edge) {
     
+    // Every Visual is uniquely numbered within this system
+    let counter = 1;
+
     /**
      * A vertex in a Network. A vertex is a Point with edges and
      * slightly different highlighting behaviours (it is rmeoved from
@@ -12,9 +15,19 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
          */
         constructor(name, v) {
             super(name, v);
+            this.mVid = counter++;
             // Edges are not OWNED by Vertex, just referred to. They
             // are owned by the parent Networl.
             this.mEdges = [];
+        }
+
+        /**
+         * Get the unique identifier of this vertex.
+         * Vids are allocated when scenes are loaded.
+         * @return unique number identifying this vertex
+         */
+        get vid() {
+            return this.mVid;
         }
 
         /**
@@ -89,6 +102,7 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
         // @Override Point
         get report() {
             let s = super.report;
+            s.push("ID: " + this.mVid);
             for (let e of this.mEdges)
                 s.push("Edge to " + e.otherEnd(this).uid);
             return s;

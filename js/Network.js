@@ -14,6 +14,16 @@ define("js/Network", ["js/Container"], function(Container) {
             this.mEdges = [];
         }
 
+        // @Override Visual
+        prop(k, v) {
+            // Impose depth on all children (which will be Vertex)
+            if (k === "depth" && typeof v === "number") {
+                for (let c of this.children)
+                    c.prop(k, v);
+            }
+            return super.prop(k, v);
+        }
+
         /**
          * Add an edge to the network. The edge must refer to vertices
          * in the network (not in subnets)
@@ -28,16 +38,19 @@ define("js/Network", ["js/Container"], function(Container) {
             return this.mEdges;
         }
         
-        /**
-         * Add the Three.Object3D representation of the vertices and
-         * edges of this network to the given scene
-         */
         // @Override Container
         addToScene(scene) {
             super.addToScene(scene);
             // Add edge lines
             for (let e of this.mEdges)
                 e.addToScene(scene);
+        }
+
+        // @Override Container
+        removeFromScene() {
+            super.removeFromScene();
+            for (let e of this.mEdges)
+                e.removeFromScene(scene);
         }
 
         // @Override Container

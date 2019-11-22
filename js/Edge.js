@@ -42,20 +42,23 @@ define("js/Edge", ["js/Visual", "three", "js/Materials"], function(Visual, Three
             this.mGeometry = new Three.Geometry();
             this.mGeometry.vertices.push(this.mP1.position);
             this.mGeometry.vertices.push(this.mP2.position);
-            this.mObject3D = new Three.Line(this.mGeometry, Materials.EDGE);
-            scene.add(this.mObject3D);
+            this.setObject3D(new Three.Line(this.mGeometry, Materials.EDGE));
+            scene.add(this.object3D);
         }
 
+        // @Override Visual
+        removeFromScene() {
+            super.removeFromScene();           
+            if (this.mGeometry)
+                delete this.mGeometry;
+        }
+        
         // @Override Visual
         remove() {
             this.mP1.removeEdge(this);
             this.mP2.removeEdge(this);
             this.parent.removeEdge(this);
-            if (this.mObject3D) {
-                this.mObject3D.parent.remove(this.mObject3D);
-                delete this.mObject3D;
-                delete this.mGeometry;
-            }
+            this.removeFromScene();
         }
 
         /**
@@ -68,8 +71,8 @@ define("js/Edge", ["js/Visual", "three", "js/Materials"], function(Visual, Three
 
         // @Override Visual
         highlight(on) {
-            if (this.mObject3D) {
-                this.mObject3D.material =
+            if (this.object3D) {
+                this.object3D.material =
                 (on ? Materials.EDGE_SELECTED : Materials.EDGE);
             }
         }

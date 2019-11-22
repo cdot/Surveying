@@ -10,8 +10,8 @@ define("js/ImagePlane", ["js/Visual", "three"], function(Visual, Three) {
          * @param {Three.Vector3} min point
          * @param {Three.Vector3} max point
          */
-        constructor(filename, min, max) {
-            super(filename);
+        constructor(name, filename, min, max) {
+            super(name);
             this.mImage = filename;
             this.mMin = min.clone();
             this.mMax = max.clone();
@@ -39,7 +39,7 @@ define("js/ImagePlane", ["js/Visual", "three"], function(Visual, Three) {
             let loader = new Three.TextureLoader();
             this.mMaterial = new Three.MeshBasicMaterial({
                 map: loader.load(this.mImage),
-                opacity: 0.5,
+                opacity: 0.9,
                 transparent: true
             });
 
@@ -57,20 +57,10 @@ define("js/ImagePlane", ["js/Visual", "three"], function(Visual, Three) {
             this.mGeometry.vertices[2].y = this.mMax.y;
             this.mGeometry.vertices[2].z = this.mMax.z;
             this.mGeometry.vertices[3].copy(this.mMax);
-            this.mObject3D = new Three.Mesh(this.mGeometry, this.mMaterial);
-            scene.add(this.mObject3D);
+            this.setObject3D(new Three.Mesh(this.mGeometry, this.mMaterial));
+            scene.add(this.object3D);
         }
 
-        // @Override Visual
-        remove() {
-            if (this.mObject3D) {
-                this.mObject3D.parent.remove(this.mObject3D);
-                delete this.mObject3D;
-                delete this.mGeometry;
-                delete this.mMaterial;
-            }
-        }
-        
         // @Override Visual
         applyTransform(mat) {
             this.mMin.applyMatrix4(mat);

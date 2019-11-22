@@ -19,6 +19,7 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
             // Edges are not OWNED by Vertex, just referred to. They
             // are owned by the parent Networl.
             this.mEdges = [];
+            this.prop("type", "vertex");
         }
 
         /**
@@ -61,8 +62,8 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
                 let p1 = es[1].otherEnd(this);
                 let nedge = new Edge(p0, p1);
                 this.parent.addEdge(nedge);
-                if (this.mObject3D)
-                    nedge.addToScene(this.mObject3D.parent);
+                if (this.object3D)
+                    nedge.addToScene(this.object3D.parent);
             }
             for (let e of es)
                 e.remove();
@@ -82,30 +83,38 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
         // @Override Point
         highlight(on) {
             if (!on) {
-                if (this.mObject3D && this.mObject3D.parent)
-                    this.mObject3D.parent.remove(this.mObject3D);
+                if (this.object3D && this.object3D.parent)
+                    this.object3D.parent.remove(this.object3D);
                 return;
             }
 
             if (!this.mScene)
                 return;
 
-            if (!this.mObject3D) {
+            if (!this.object3D) {
                 // Once created, we keep the handle object around as it
                 // will be useful again
                 super.addToScene(this.mScene);
                 super.highlight(on);
             } else
-                this.mScene.add(this.mObject3D);
+                this.mScene.add(this.object3D);
         }
 
         // @Override Point
         get report() {
             let s = super.report;
-            s.push("ID: " + this.mVid);
+            s.push("vertex: " + this.mVid);
             for (let e of this.mEdges)
-                s.push("Edge to " + e.otherEnd(this).uid);
+                s.push("Edge to " + e.otherEnd(this).vid);
             return s;
+        }
+
+        // @Override Point
+        condense(coords, mapBack) {
+            if (this.parent && this.parent.prop("type") === "isobath")
+                super.condense(coords, mapBack);
+            else
+                console.log("Parent of",this.name,"NOT ISOBATH");
         }
     }
     return Vertex;

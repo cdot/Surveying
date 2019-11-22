@@ -11,6 +11,7 @@ define("js/Visual", ["three"], function(Three) {
         constructor(name) {
             this.mName = name;
             this.mHandleScale = 1;
+            this.mProp = {};
         }
 
         _notImplemented(method) {
@@ -25,6 +26,38 @@ define("js/Visual", ["three"], function(Three) {
             return this.mName;
         }
 
+        /**
+         * All visuals can carry any number of arbitrary properties.
+         * Two signatures: prop(k) get the value of the property and
+         * prop(k, v) set the value of the property.
+         */
+        prop(k, v) {
+            if (typeof v !== "undefined")
+                this.mProp[k] = v;
+            return this.mProp[k];
+        }
+
+        /**
+         * Get a list of the properties defined on this visual
+         */
+        get props() {
+            if (this.mProp.keys)
+                return this.mProp.keys();
+            let ks = [];
+            for (let k in this.mProp)
+                ks.push(k);
+            return ks;
+        }
+        
+        /**
+         * Remove the given property. If the property isn't present,
+         * does nothing. Note that subclasses may define properties that
+         * can't be removed (such as "type")
+         */
+        removeProp(k) {
+            delete this.mProp[k];
+        }
+        
         /**
          * Get the handle size for visuals that
          * have handles in 3-space
@@ -75,11 +108,33 @@ define("js/Visual", ["three"], function(Three) {
         projectRay(ray) { return null; }
 
         /**
-         * Get the Object3D used to display this edge
+         * Get the Object3D used to display this Visual
+         */
+        get object3D() {
+            return this.mObject3D;
+        }
+
+        /**
+         * Set the Object3D used to display this Visual
+         */
+        setObject3D(o3d) {
+            this.mObject3D = o3d;
+        }
+        
+        /**
+         * Add the Object3D used to display this Visual to the scene
          */
         addToScene(scene) {
-            throw this._notImplemented("addToScene");
         }
+
+        /**
+         * Remove the Object3D associated with this visual from the scene.
+         * The object is NOT deleted, just removed from the parent.
+         */
+        removeFromScene() {
+            if (this.mObject3D && this.mObject3D.parent)
+                this.mObject3D.parent.remove(this.mObject3D);
+        } 
 
         /**
          * Used by Visuals that have a parent to remove themselves
@@ -142,6 +197,11 @@ define("js/Visual", ["three"], function(Three) {
             let s = this.constructor.name;
             if (this.mName)
                 s += " '" + this.mName + "'";
+            let prs = [];
+            for (let p in this.mProp)
+                prs.push(p + ":" + this.mProp[p])
+            if (prs.length > 0)
+                s += " {" + prs.join(",") + "}";
             return [ s ];
         }
 
@@ -151,6 +211,18 @@ define("js/Visual", ["three"], function(Three) {
          */
         contains(vis) {
             return (vis === this);
+        }
+
+        /**
+         * Add the points in visuals that have the properties isobath or point
+         * and depth to a flat array suitable for passing to delaunator, with
+         * a map back to the actual Point
+         * object.
+         * @param coords array of [x0, y0, x1, y1, ...] 
+         * @param mapBack array indexed by the index into coords/2, mapping
+         * to the visual object.
+         */
+        condense(coords, mapBack) {
         }
     }
     return Visual;

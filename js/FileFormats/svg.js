@@ -23,12 +23,10 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
      * relative to the application. TODO: put URL in desc?
      *
      * SVG entities may be annotated with key=value pairs in their
-     * descriptions, as follows:
+     * descriptions.
      * type: <entity type>
-     * Recognised entity types are "point" and "isobath". An isobath
-     * defines a closed path that represents a line of constant
-     * depth. "point" only works on "circle" objects, and
-     * defines a point depth measurement.
+     * type: point, when applied to a circle, defines a point depth
+     * measurement.
      */
 
     const IS_NUMBER = /^[-+]?\d*\.?\d+([eE][-+]?\d+)?$/;
@@ -36,7 +34,10 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
     
     // Styling for paths in output SVG
     const PATH_STYLE =
-          "display:inline;fill:none;stroke:#FF00FF:none;stroke-width:1px;stroke-opacity:1";
+          "fill:none;stroke:#FF00FF;stroke-width:1px;stroke-opacity:1";
+    const POINT_STYLE =
+          "fill:#FFFF00;fill-opacity:1;stroke:none";
+    
     const SVG_NS = 'http://www.w3.org/2000/svg';
     const METADATA = [ "lat", "lon", "x", "y", "units_per_metre" ];
 
@@ -110,19 +111,29 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
     /**
      * Parse a string of comma-separated key:value pairs from a string
      */
-    function parseAttrs(text) {
+    function parseProps(text) {
         let re = /(^|\s*,)\s*(\w+)\s*:\s*((["']).*?\4|[^,\s]*)/g;
         let m;
-        let attrs = {};
+        let props = {};
         while (m = re.exec(text)) {
             let k = m[2];
             let v = m[3];
             if (IS_NUMBER.test(v))
-                attrs[k] = parseFloat(v);
+                props[k] = parseFloat(v);
             else // quoted numbers are treated as strings
-                attrs[k] = v.replace(/^(["'])(.*)\1/, "$2");
+                props[k] = v.replace(/^(["'])(.*)\1/, "$2");
         }
-        return attrs;
+        return props;
+    }
+
+    function getAttrN($el, attrn, def) {
+        return parseFloat($el.attr(attrn));
+    }
+
+    function addVertex(el, name, vx) {
+        let v = new Vertex(name, vx.clone());
+        el.addChild(v);
+        return v;
     }
     
     class SVG extends XML {
@@ -138,17 +149,67 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 dataType: "xml" });
         }
 
-        loadPath($path, attrs) {
-            let id = attrs.title || $path.attr("id") || counter++;
-            console.debug("Loading path", id);
-            let path = new Network(id);
-            let pos = new Three.Vector3(0, 0, attrs.depth);
+        _load_rect($rect, name, props) {
+            let x = getAttrN($rect, "x");
+            let y = getAttrN($rect, "y");
+            let w = getAttrN($rect, "width");
+            let h = getAttrN($rect, "height");
+            let path = new Network(name);
+            let v0 = addVertex(
+                path, name + "_xy", new Three.Vector3(x, y, 0));
+            let v1 = addVertex(
+                path, name + "_Xy", new Three.Vector3(x + w, y, 0));
+            let v2 = addVertex(
+                path, name + "_XY", new Three.Vector3(x + w, y + h, 0));
+            let v3 = addVertex(
+                path, name + "_xY", new Three.Vector3(x, y + h, 0));
+            path.addEdge(new Edge(v0, v1));
+            path.addEdge(new Edge(v1, v2));
+            path.addEdge(new Edge(v2, v3));
+            path.addEdge(new Edge(v3, v0));
+            return path;
+        }
+
+        _load_polyline($poly, name, props, closed) {
+            let path = new Network(name);
+            let pts = $poly.getAttribute("points").split(/[,\s]+/);
+            let sv;
+            for (let i = 0; i < pts.length; i += 2) {
+                let v = addVertex(
+                    path, name + "_" + (i / 2),
+                    new Three.Vector3(pts[i], pts[i + 1], 0));
+                if (!sv) sv = v;
+                if (vp)
+                    path.addEdge(new Edge(vp, v));
+                vp = v;
+            }
+            if (closed && vp && sv && vp !== sv)
+                path.addEdge(vp, sv);
+            return path;
+        }
+        
+        _load_polygon($poly, name, props) {
+            return this.load_polyline($poly, name, props, true);
+        }
+
+        _load_line($poly, name, props) {
+            let path = new Network(name);
+            let v0 = addVertex(getAttrN($rect, "x1"),
+                               getAttrN($rect, "y1"), 0);
+            let v1 = addVertex(getAttrN($rect, "x2"),
+                               getAttrN($rect, "y2"), 0);
+            path.addEdge(v0, v1);
+            return path;
+        }
+        
+        _load_path($path, name, props) {
+            console.debug("Loading path", name);
+            let path = new Network(name);
+            let pos = new Three.Vector3(0, 0, 0);
 
             let cmd, j;
-            function addVert(vx) {
-                let v = new Vertex(id + ":" + cmd + j++, vx.clone());
-                path.addChild(v);
-                return v;
+            function addPV(vx) {
+                return addVertex(path, name + ":" + cmd + j++, vx);
             }
 
             let points = $path.attr("d").split(/\s+/);
@@ -157,7 +218,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
 
             function getXY() {
                 let xy = points.shift().split(",");
-                return new Three.Vector3(parseFloat(xy[0]), parseFloat(xy[1]), 0);
+                return new Three.Vector3(
+                    parseFloat(xy[0]), parseFloat(xy[1]), 0);
             }
 
             function getN() {
@@ -177,7 +239,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     else {
                         pos.x += p.x; pos.y += p.y;
                     }
-                    v = addVert(pos);
+                    v = addPV(pos);
                     if (!startVert) startVert = v;
                     if (lastVert && (cmd === "L" || cmd === "l"))
                         path.addEdge(new Edge(lastVert, v));
@@ -189,7 +251,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                         else {
                             pos.x += p.x; pos.y += p.y;
                         }
-                        v = addVert(pos);
+                        v = addPV(pos);
                         path.addEdge(new Edge(lastVert, v));
                         lastVert = v;
                     }
@@ -204,7 +266,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     case "h": pos.x += p; break;
                     case "v": pos.y += p; break;
                     }
-                    v = addVert(pos);
+                    v = addPV(pos);
                     lastVert = v;
                     if (!startVert) startVert = v;
                     while (IS_NUMBER.test(points[0])) {
@@ -215,7 +277,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                         case "h": pos.x += p; break;
                         case "v": pos.y += p; break;
                         }
-                        v = addVert(pos);
+                        v = addPV(pos);
                         path.addEdge(new Edge(lastVert, v));
                         lastVert = v;
                     }
@@ -244,7 +306,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                             pos.copy(p);
                         else
                             pos.x += p.x, pos.y += p.y;
-                        v = addVert(pos);
+                        v = addPV(pos);
                         path.addEdge(new Edge(lastVert, v));
                         lastVert = v;
                     }
@@ -255,7 +317,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     getN(); // angle
                     getN(); // large-arc-flag
                     getN(); // sweep-flag
-                    lastVert = addVert(pos);
+                    lastVert = addPV(pos);
                     p = getXY();
                     if (/[A-Z]/.test(cmd))
                         pos.copy(p);
@@ -268,75 +330,65 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             return path;
         }
 
-        loadImage($image, attrs) {
+        _load_image($image, name, props) {
             // Always get images from data/
             let url = "data/" + ($image.attr("href")
                                  || $image.attr("xlink:href"))
                 .replace(/.*\//, "");
 
             console.debug("Loading image", url);
-            let x = parseFloat($image.attr("x"));
-            let y = parseFloat($image.attr("y"));
-            let h = parseFloat($image.attr("height"));
-            let w = parseFloat($image.attr("width"));
+            let x = getAttrN($image, "x");
+            let y = getAttrN($image, "y");
+            let h = getAttrN($image, "height");
+            let w = getAttrN($image, "width");
             let plane = new ImagePlane(
+                name,
                 url,
-                new Three.Vector3(x, y, attrs.depth),
-                new Three.Vector3(x + w, y + h, -attrs.depth));
+                new Three.Vector3(x, y, 0),
+                new Three.Vector3(x + w, y + h, 0));
 
             return plane;
         }
 
-        loadPoint($xml, attrs) {
-            let pid = attrs.title || $(this).attr("id")
-                || counter++;
-            console.debug("Loading point", pid);
-            return new Point(
-                pid, new Three.Vector3(attrs.cx, attrs.cy, attrs.depth || 0));
+        _load_circle($xml, name, props) {
+            let pt;
+            if (props.type === "point") {
+                console.debug("Loading point", name);
+                pt = new Point(
+                    name, new Three.Vector3(
+                        getAttrN($xml, "cx"),
+                        getAttrN($xml, "cy"), 0));
+            }
+            else
+                console.debug("Ignore non-point circle");
+            
+            return pt;
         }
         
-        loadGroup($xml, attrs) {
+        _load_g($xml, name, props) {
             let loader = this;               
-            let id = attrs.title || $xml.attr("id") || counter++;
-            let group = new Container(id);
+            let group = new Container(name);
             $xml.children().each(function() {
-                let object, attrs = { depth: 0 };
-                
+                let cname = $(this).attr("id") || counter++;
                 let $title = $(this).children("title");
                 if ($title.length > 0)
-                    attrs.title = $title.text();
-
+                    cname = $title.text();
+                let props = {};
                 let $desc = $(this).children("desc");
                 if ($desc.length > 0)
-                    attrs = $.extend(attrs, parseAttrs($desc.text()));
+                    props = parseProps($desc.text());
+
+                let fn = loader["_load_" + this.tagName];
+
                 let obj;
-                
-                switch (this.tagName) {
-                    
-                case"image":
-                    obj = loader.loadImage($(this), attrs);
-                    break;
-                    
-                case "circle":
-                    if (attrs.type === "point")
-                        obj = loader.loadPoint($(this), attrs);
-                    else
-                        console.debug("Ignore circle with no point");
-                    break;
-                    
-                case "g":
-                    obj = loader.loadGroup($(this), attrs);
-                    break;
-
-                case "path":
-                    obj = loader.loadPath($(this), attrs);
-                    break;
-
-                default:
+                if (fn)
+                    obj = fn.call(loader, $(this), cname, props);
+                else
                     console.debug("Ignore", this.tagName);
-                    break;
-                }
+
                 if (obj) {
+                    for (let k in props)
+                        obj.prop(k, props[k]);
                     applySVGTransforms($(this).attr("transform"), obj);
                     group.addChild(obj);
                 }
@@ -359,16 +411,17 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             // attributes in a key:value block inside the dc:description.
             // Find it and extract the metadata
             $xml.children("metadata").find("dc\\:description").each(function() {
-                $.extend(metadata, parseAttrs($(this).text()));
+                $.extend(metadata, parseProps($(this).text()));
             });
 
-            // Seed the utm zone if it's not already been done
+            // Seed the utm default zone if it's not already been done
             UTM.fromLatLong(metadata.lat, metadata.lon);
 
             // Populate dialog with values from metadata
             let $dlg = $("#svg_dialog");
             for (let f of METADATA)
-                if (typeof metadata[f] !== "undefined") $('#svg_' + f).val(metadata[f]);
+                if (typeof metadata[f] !== "undefined")
+                    $('#svg_' + f).val(metadata[f]);
 
             // Export button not used here
             $("#svg_export").hide();
@@ -394,12 +447,12 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 $dlg.dialog("open");
             })
             .then(() => {
-                let g = this.loadGroup($xml, {});
+                let g = this._load_g($xml, "root", {});
                 let mats = [];
 
                 // SVG coords have 0,0, at the top left, so
                 // flip the Y axis so that the bottom left becomes 0, 0
-                let height = parseFloat($xml.attr("height"));
+                let height = getAttrN($xml, "height");
                 mats.push(new Three.Matrix4().makeTranslation(0, -height, 1));
                 mats.push(new Three.Matrix4().makeScale(1, -1, 1));
 
@@ -452,15 +505,35 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             $svg.attr("height", ur.y);
             $svg.attr("viewBox", "0 0 " + ur.x + " " + ur.y);
             $svg.attr("sodipodi:docname", visual.name);
+
+            function makeEl(tag, visual) {
+                let el = document.createElementNS(SVG_NS, tag);
+                if (visual.name) {
+                    let tit = document.createElementNS(SVG_NS, "title");
+                    tit.appendChild(document.createTextNode(visual.name));
+                    el.appendChild(tit);
+                }
+                let vs = [];
+                for (let k of visual.props) {
+                    let v = visual.prop(k);
+                    if (typeof v === "number")
+                        vs.push(k + ':' + v);
+                    else if (typeof v !== "undefined")
+                        vs.push(k + ':"' + v + '"');
+                }
+                if (vs.length > 0) {
+                    let desc = document.createElementNS(SVG_NS, "desc");
+                    desc.appendChild(document.createTextNode(vs.join(",")));
+                    el.appendChild(desc);
+                }
+                return el;
+            }
             
             function makeSVG(visual, container) {
-
-                if (visual instanceof Network) {
+                switch (visual.constructor.name) {
+                case "Network": {
                     // Make a path
-                    let path = document.createElementNS(SVG_NS, "path");
-                    if (visual.name)
-                        path.setAttribute("name", visual.name);
-                    path.setAttribute("id", visual.name);
+                    let path = makeEl("path", visual);
                     let moves = [ "M" ];
                     for (let o of visual.children) {
                         if (o instanceof Vertex) {
@@ -472,18 +545,31 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     path.setAttribute("d", moves.join(" "));
                     path.setAttribute("style", PATH_STYLE);
                     container.appendChild(path);
-                } else if (visual instanceof Container) {
-                    let group = document.createElementNS(SVG_NS, "g");
-                    group.setAttribute("id", visual.name);
+                    break;
+                }
+                case "Container": {
+                    let group = makeEl("g", visual);
                     for (let o of visual.children)
                         makeSVG(o, group);
                     container.appendChild(group);
-                } else if (visual instanceof Point) {
-                    console.debug("Reminder: support Point");
-                } else if (visual instanceof ImagePlane) {
+                    break;
+                }
+                case "Point": {
+                    let v = saveUnits(visual.position);
+                    let circle = makeEl("circle", visual);
+                    circle.setAttribute("style", POINT_STYLE);
+                    circle.setAttribute("cx", v.x);
+                    circle.setAttribute("cy", v.y);
+                    circle.setAttribute("r", 2);
+                    container.appendChild(circle);
+                    break;
+                }
+                case "ImagePlane": {
                     console.debug("Reminder: support ImagePlane");
-                } else {
-                    console.debug("Unsupported Visual " + visual);
+                    break;
+                }
+                default:
+                    throw new Error("Unsupported Visual " + visual);
                 }
             }
             for (let o of visual.children)
@@ -503,7 +589,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 x:0, y:0,
                 units_per_metre: 10};
             for (let f of METADATA)
-                if ($('#svg_' + f).val().length === 0) $('#svg_' + f).val(metadata[f]);
+                if ($('#svg_' + f).val().length === 0)
+                    $('#svg_' + f).val(metadata[f]);
 
             $dlg.dialog("option", "title", "SVG export");
             // Clear the button panel
@@ -518,7 +605,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     else
                         metadata[f] = $i.val();
                 }
-                this.href = URL.createObjectURL(new Blob([saver._serialise(visual, metadata)]));
+                this.href = URL.createObjectURL(
+                    new Blob([saver._serialise(visual, metadata)]));
                 this.download = "svg." + $("#save_format").val();
                 // Set a timer event to close this dialog and
                 // pass the user event on for native event handling
@@ -526,8 +614,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 return true;
             })
             $dlg.dialog("open");
-            // Tell the caller not to bother trying to save the content, we're doing it
-            // through the dialog
+            // Tell the caller not to bother trying to save the
+            // content, we're doing it through the dialog
             return null;
         }
     }

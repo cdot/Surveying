@@ -30,6 +30,12 @@ define("js/Container", ["js/Visual", "three"], function(Visual, Three) {
         }
 
         // @Override Visual
+        removeFromScene() {
+            for (let o of this.mObjects)
+                o.removeFromScene();
+        }
+
+        // @Override Visual
         setHandleScale(s) {
             super.setHandleScale(s);
             for (let g of this.mObjects)
@@ -128,6 +134,21 @@ define("js/Container", ["js/Visual", "three"], function(Visual, Three) {
                 s.push(this.mObjects.length + " object"
                        + (this.mObjects.length == 1 ? "" : "s"));
             return s;
+        }
+        
+        // @Override Visual
+        condense(coords, mapBack) {
+            let kids = this.mObjects.slice();
+            for (let g of kids)
+                g.condense(coords, mapBack);
+            if (this.prop("type") === "isobath") {
+                this.removeFromScene();
+                if (this.mObjects.length === 0 && this.parent) {
+                    // Decouple for garbage collection
+                    this.parent.removeChild(this);
+                    delete this.parent;
+                }
+            }
         }
     }
 

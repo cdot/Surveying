@@ -101,6 +101,19 @@ define("js/UTM", function() {
         }
 
         /**
+         * Format as a WGS84 lat/long string
+         */
+        stringify() {
+            function round(x, pos, neg) {
+                let v = Math.floor(100000 * x) / 100000;
+                return (v < 0) ? (-v + "°" + neg) : (v + "°" + pos)
+            }
+            let ll = this.toLatLong();
+            return round(ll.latitude, "N", "S") + " "
+            + round(ll.longitude, "E", "W");
+        }
+        
+        /**
          * Convert to WGS84 lat/long
          * @return {
          *     latitude: degrees

@@ -1,7 +1,7 @@
-define("js/Point", ["js/Visual", "three", "js/Materials"], function(Visual, Three, Materials) {
+define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Visual, Three, UTM, Materials) {
 
     /**
-     * An isolated point
+     * An isolated point sounding
      */
     class Point extends Visual {
         /**
@@ -12,8 +12,29 @@ define("js/Point", ["js/Visual", "three", "js/Materials"], function(Visual, Thre
             super(name);
             this.mCurPos = new Three.Vector3(v.x, v.y, v.z);
             // {Three.SphereGeometry} this.mGeometry
-            // {Three.Mesh} this.mObject3D
             // {Three.Scene} this.mScene
+            this.prop("type", "point");
+            super.prop("depth", v.z);
+        }
+
+        // @Override Visual
+        prop(k, v) {
+            if (k === "depth" && typeof v === "number") {
+                let vec = new Three.Vector3(
+                    this.mCurPos.x, this.mCurPos.y, v);
+                this.setPosition(vec);
+            }
+            return super.prop(k, v);
+        }
+
+        /**
+         * Set position of vertex
+         * @param v Three.Vector3 position
+         */
+        setPosition(v) {
+            this.mCurPos.copy(v);
+            if (this.object3D)
+                this.object3D.position.set(v.x, v.y, v.z);
         }
 
         /**
@@ -38,37 +59,33 @@ define("js/Point", ["js/Visual", "three", "js/Materials"], function(Visual, Thre
         // @Override Visual
         setHandleScale(s) {
             super.setHandleScale(s);
-            if (this.mObject3D) {
-                this.mObject3D.scale.x = this.handleScale;
-                this.mObject3D.scale.y = this.handleScale;
-                this.mObject3D.scale.z = this.handleScale;
+            if (this.object3D) {
+                this.object3D.scale.x = this.handleScale;
+                this.object3D.scale.y = this.handleScale;
+                this.object3D.scale.z = this.handleScale;
             }
         }
         
         // @Override Visual
         addToScene(scene) {
-            if (!this.mObject3D) {
+            if (!this.object3D) {
                 // Once created, we keep the handle object around as it
                 // will be useful again
                 this.mGeometry = new Three.SphereGeometry(1);
-                this.mObject3D = new Three.Mesh(this.mGeometry, Materials.POINT);
+                this.setObject3D(new Three.Mesh(this.mGeometry, Materials.POINT));
 
                 let v = this.mCurPos;
-                this.mObject3D.position.set(v.x, v.y, v.z);
-                this.mObject3D.scale.x = this.handleScale;
-                this.mObject3D.scale.y = this.handleScale;
-                this.mObject3D.scale.z = this.handleScale;
+                this.object3D.position.set(v.x, v.y, v.z);
+                this.object3D.scale.x = this.handleScale;
+                this.object3D.scale.y = this.handleScale;
+                this.object3D.scale.z = this.handleScale;
             }
-            scene.add(this.mObject3D);
+            scene.add(this.object3D);
         }
 
         // @Override Visual
         remove() {
-            if (this.mObject3D) {
-                this.mObject3D.parent.remove(this.mObject3D);
-                delete this.mObject3D;
-                delete this.mGeometry;
-            }
+            this.removeFromScene();
 
             if (this.parent)
                 this.parent.removeChild(this);
@@ -88,20 +105,10 @@ define("js/Point", ["js/Visual", "three", "js/Materials"], function(Visual, Thre
             };
         }
         
-        /**
-         * Set position of vertex
-         * @param v Three.Vector3 position
-         */
-        setPosition(v) {
-            this.mCurPos.copy(v);
-            if (this.mObject3D)
-                this.mObject3D.position.set(v.x, v.y, v.z);
-        }
-
         // @Override Visual
         highlight(on) {
-            if (this.mObject3D) {
-                this.mObject3D.material =
+            if (this.object3D) {
+                this.object3D.material =
                 (on ? Materials.POINT_SELECTED : Materials.POINT);
             }
         }
@@ -112,7 +119,18 @@ define("js/Point", ["js/Visual", "three", "js/Materials"], function(Visual, Thre
             s.push("(" + this.mCurPos.x +
                    "," + this.mCurPos.y +
                    "," + this.mCurPos.z + ")");
+            s.push(new UTM(this.mCurPos.x, this.mCurPos.y).stringify());
             return s;
+        }
+
+        // @Override Visual
+        // Soundings are always added to point clouds
+        condense(coords, mapBack) {
+            console.log("Condensed ", this.name);
+            this.removeFromScene();
+            this.parent.removeChild(this);
+            coords.push([this.position.x, this.position.y]);
+            mapBack.push(this);
         }
     }
     return Point;

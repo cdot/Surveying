@@ -10,6 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "browser-xml2js": "^0.4.19",
-    "three": "^0.110.0"
+    "three": "^0.110.0",
+    "three-orbitcontrols": "^2.110.1"
   }
 }

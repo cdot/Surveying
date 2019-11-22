@@ -7,7 +7,8 @@ requirejs.config({
         "jquery-ui/ui": "//cdn.jsdelivr.net/npm/jquery-ui@1.12.1/ui",
         "jquery-csv": "//cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.5/jquery.csv",
         "jquery-mousewheel": "//cdnjs.cloudflare.com/ajax/libs/jquery-mousewheel/3.1.13/jquery.mousewheel",
-        "three": "//cdnjs.cloudflare.com/ajax/libs/three.js/106/three"
+        "three": "//cdnjs.cloudflare.com/ajax/libs/three.js/109/three",
+        "delaunator": "//cdn.jsdelivr.net/npm/delaunator@4.0.1/delaunator.min"
     }
 });
 
@@ -28,12 +29,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
          * Format a point for display as a lat,long
          */
         function wgsCoords(p) {
-            function round(x, pos, neg) {
-                let v = Math.floor(100000 * x) / 100000;
-                return (v < 0) ? (-v + "&deg;" + neg) : (v + "&deg;" + pos)
-            }
-            let ll = new UTM(p.x, p.y).toLatLong();
-            return round(ll.latitude, "N", "S") + " " + round(ll.longitude, "E", "W");
+            return new UTM(p.x, p.y).stringify();
         }
 
         /**
@@ -41,11 +37,13 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
          * @param e event
          */
         function event2ray(e) {
-            if (!survey) return null;
-            return survey.canvas2ray({
+            let r = survey.canvas2ray({
                 x: e.offsetX / $canvas.width(),
                 y: e.offsetY / $canvas.height()
             });
+            if (r)
+                $(document).trigger("cursorchanged");
+            return r;
         }
 
         function formatBox(b) {
@@ -53,7 +51,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
         }
 
         function enableSave() {
-            $("#save").prop("disabled", !survey || !saver);
+            $("#save").prop("disabled", !saver);
         }
         
         let mouse_down; // button flags
@@ -77,7 +75,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
         let lastPt;
 
         $("#noform").on("submit", () => false);
-               
+        
         $canvas.on("keydown", function(e) {
             let sel;
             switch (e.keyCode) {
@@ -134,7 +132,6 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
             }
             return false;
         })
-
         .on("mouseenter", function() {
             $canvas.focus();
             mouse_down = false;
@@ -145,41 +142,45 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
             mouse_down = false;
             dragging = false;
         })
-        
+
         .on('mousedown', function(e) {
             mouse_down = {x: e.offsetX, y: e.offsetY};
             let ray = event2ray(e);
-            lastPt = ray.start.clone();
-            if (selection.size > 0) {
-                let hit = survey.projectRay(ray);
-                if (hit && selection.contains(hit.closest))
-                    dragging = true;
+            if (ray) {
+                lastPt = ray.start.clone();
+                if (selection.size > 0) {
+                    let hit = survey.projectRay(ray);
+                    if (hit && selection.contains(hit.closest))
+                        dragging = true;
+                }
             }
         })
 
         .on('mouseup', function(e) {
-            if (!mouse_down || !survey) return false;
+            if (!mouse_down)
+                return false;
             if (!dragging) {
                 if (e.offsetX === mouse_down.x && e.offsetY === mouse_down.y) {
-                    if (!e.shiftKey)
-                        selection.clear();
                     let ray = event2ray(event);
-                    let proj = survey.projectRay(ray);
-                    if (proj)
-                        selection.add(proj.closest);
-                    else
-                        selection.clear();
+                    if (ray) {
+                        if (!e.shiftKey)
+                            selection.clear();
+                        let proj = survey.projectRay(ray);
+                        if (proj)
+                            selection.add(proj.closest);
+                        else
+                            selection.clear();
+                    }
                 } else
                     selection.clear();
             }
             mouse_down = null;
             dragging = false;
         })
-                
+
         .on('mousemove', function(e) {
-            if (!survey) return false;
             let ray = event2ray(e);
-            if (mouse_down) {
+            if (mouse_down && ray) {
                 let p = ray.start;
                 let delta = p.clone().sub(lastPt);
                 if (dragging) {
@@ -195,9 +196,6 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
         // Zoom in/out
         .on('mousewheel', function(event) {
             event.stopPropagation();
-
-            if (!survey)
-                return;
 
             if (event.deltaY < 0)
                 survey.zoom(0.8);
@@ -237,17 +235,19 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
         });
 
         $("#zoomin").on("click", function() {
-            if (survey)
-                survey.zoom(1.2);
+            survey.zoom(1.2);
             return false;
         });
         
         $("#zoomout").on("click", function() {
-            if (survey)
-                survey.zoom(0.8);
+            survey.zoom(0.8);
             return false;
         });
 
+        $("#meshify").on("click", function() {
+            survey.meshify();
+        });
+                         
         $(document).on("scenechanged", function () {
             $("#scene").html(formatBox(survey.boundingBox));
         });
@@ -255,6 +255,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
         $(document).on("cursorchanged", function() {
             $("#cursor_wgs").html(wgsCoords(survey.cursor));
             $("#cursor_length").text(survey.rulerLength);
+            $("#cursor_bearing").text(survey.rulerBearing);
         });
 
         $("#save").prop("disabled", true);

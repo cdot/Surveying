@@ -1,5 +1,9 @@
 define("js/OrbitControls", ["three"], function(THREE) {
 
+    /**
+     * OrbitControls rewritten as a class
+     */
+    
     // const changeEvent = { type: 'change' };
     // const startEvent = { type: 'start' };
     // const endEvent = { type: 'end' };
@@ -24,25 +28,25 @@ define("js/OrbitControls", ["three"], function(THREE) {
             // Internals
             
             // current position in spherical coordinates
-            this.spherical = new THREE.Spherical();
-            this.sphericalDelta = new THREE.Spherical();
-            this.scale = 1;
-            this.panOffset = new THREE.Vector3();
-            this.zoomChanged = false;
+            this.mSpherical = new THREE.Spherical();
+            this.mSphericalDelta = new THREE.Spherical();
+            this.mScale = 1;
+            this.mPanOffset = new THREE.Vector3();
+            this.mZoomChanged = false;
 
-            this.rotateStart = new THREE.Vector2();
-            this.rotateEnd = new THREE.Vector2();
-            this.rotateDelta = new THREE.Vector2();
+            this.mRotateStart = new THREE.Vector2();
+            this.mRotateEnd = new THREE.Vector2();
+            this.mRotateDelta = new THREE.Vector2();
 
-            this.panStart = new THREE.Vector2();
-            this.panEnd = new THREE.Vector2();
-            this.panDelta = new THREE.Vector2();
+            this.mPanStart = new THREE.Vector2();
+            this.mPanEnd = new THREE.Vector2();
+            this.mPanDelta = new THREE.Vector2();
 
-            this.dollyStart = new THREE.Vector2();
-            this.dollyEnd = new THREE.Vector2();
-            this.dollyDelta = new THREE.Vector2();
+            this.mDollyStart = new THREE.Vector2();
+            this.mDollyEnd = new THREE.Vector2();
+            this.mDollyDelta = new THREE.Vector2();
 
-            this.state = STATE.NONE;
+            this.mState = STATE.NONE;
 
             // Public
 
@@ -206,7 +210,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
          * Get the current vertical rotation, in radians
          */
         getPolarAngle() {
-	    return this.spherical.phi;
+	    return this.mSpherical.phi;
         }
 
         /**
@@ -214,7 +218,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
          * Get the current horizontal rotation, in radians.
          */
         getAzimuthalAngle() {
-	    return this.spherical.theta;
+	    return this.mSpherical.theta;
         }
 
         /**
@@ -243,7 +247,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
 
 	    this.update();
 
-	    this.state = STATE.NONE;
+	    this.mState = STATE.NONE;
         }
 
         /**
@@ -256,7 +260,8 @@ define("js/OrbitControls", ["three"], function(THREE) {
 	    let offset = new THREE.Vector3();
 
 	    // so camera.up is the orbit axis
-	    let quat = new THREE.Quaternion().setFromUnitVectors(this.object.up, new THREE.Vector3(0, 1, 0));
+	    let quat = new THREE.Quaternion().setFromUnitVectors(
+                this.object.up, new THREE.Vector3(0, 1, 0));
 	    let quatInverse = quat.clone().inverse();
 
 	    let lastPosition = new THREE.Vector3();
@@ -267,62 +272,70 @@ define("js/OrbitControls", ["three"], function(THREE) {
 	    // rotate offset to "y-axis-is-up" space
 	    offset.applyQuaternion(quat);
 	    // angle from z-axis around y-axis
-	    this.spherical.setFromVector3(offset);
-	    if (this.autoRotate && this.state === STATE.NONE) {
+	    this.mSpherical.setFromVector3(offset);
+	    if (this.autoRotate && this.mState === STATE.NONE) {
 		this.rotateLeft(this._getAutoRotationAngle());
 	    }
 
 	    if (this.enableDamping) {
-		this.spherical.theta += this.sphericalDelta.theta * this.dampingFactor;
-		this.spherical.phi += this.sphericalDelta.phi * this.dampingFactor;
+		this.mSpherical.theta +=
+                this.mSphericalDelta.theta * this.dampingFactor;
+		this.mSpherical.phi +=
+                this.mSphericalDelta.phi * this.dampingFactor;
 	    } else {
-	        this.spherical.theta += this.sphericalDelta.theta;
-		this.spherical.phi += this.sphericalDelta.phi;
+	        this.mSpherical.theta += this.mSphericalDelta.theta;
+		this.mSpherical.phi += this.mSphericalDelta.phi;
 	    }
 
 	    // restrict theta to be between desired limits
-	    this.spherical.theta = Math.max(this.minAzimuthAngle, Math.min(this.maxAzimuthAngle, this.spherical.theta));
+	    this.mSpherical.theta =
+            Math.max(this.minAzimuthAngle,
+                     Math.min(this.maxAzimuthAngle, this.mSpherical.theta));
 
 	    // restrict phi to be between desired limits
-	    this.spherical.phi = Math.max(this.minPolarAngle, Math.min(this.maxPolarAngle, this.spherical.phi));
+	    this.mSpherical.phi =
+            Math.max(this.minPolarAngle,
+                     Math.min(this.maxPolarAngle, this.mSpherical.phi));
 
-	    this.spherical.makeSafe();
+	    this.mSpherical.makeSafe();
             
-	    this.spherical.radius *= this.scale;
+	    this.mSpherical.radius *= this.mScale;
 
 	    // restrict radius to be between desired limits
-	    this.spherical.radius = Math.max(this.minDistance, Math.min(this.maxDistance, this.spherical.radius));
+	    this.mSpherical.radius =
+            Math.max(this.minDistance,
+                     Math.min(this.maxDistance, this.mSpherical.radius));
 
 	    // move target to panned location
 
 	    if (this.enableDamping === true) {
-		this.target.addScaledVector(this.panOffset, this.dampingFactor);
+		this.target.addScaledVector(this.mPanOffset, this.dampingFactor);
 	    } else {
-		this.target.add(this.panOffset);
+		this.target.add(this.mPanOffset);
 	    }
 
-	    offset.setFromSpherical(this.spherical);
+	    offset.setFromSpherical(this.mSpherical);
 
 	    // rotate offset back to "camera-up-vector-is-up" space
 	    offset.applyQuaternion(quatInverse);
 	    position.copy(this.target).add(offset);
 	    this.object.lookAt(this.target);
 	    if (this.enableDamping === true) {
-		this.sphericalDelta.theta *= (1 - this.dampingFactor);
-		this.sphericalDelta.phi *= (1 - this.dampingFactor);
-		this.panOffset.multiplyScalar(1 - this.dampingFactor);
+		this.mSphericalDelta.theta *= (1 - this.dampingFactor);
+		this.mSphericalDelta.phi *= (1 - this.dampingFactor);
+		this.mPanOffset.multiplyScalar(1 - this.dampingFactor);
 	    } else {
-		this.sphericalDelta.set(0, 0, 0);
-		this.panOffset.set(0, 0, 0);
+		this.mSphericalDelta.set(0, 0, 0);
+		this.mPanOffset.set(0, 0, 0);
 	    }
 
-	    this.scale = 1;
+	    this.mScale = 1;
 
 	    // update condition is:
 	    // min(camera displacement, camera rotation in radians)^2 > EPS
 	    // using small-angle approximation cos(x/2) = 1 - x^2 / 8
 
-	    if (this.zoomChanged ||
+	    if (this.mZoomChanged ||
 		 lastPosition.distanceToSquared(this.object.position) > EPS ||
 		 8 * (1 - lastQuaternion.dot(this.object.quaternion)) > EPS) {
 
@@ -330,7 +343,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
 
 		lastPosition.copy(this.object.position);
 		lastQuaternion.copy(this.object.quaternion);
-		this.zoomChanged = false;
+		this.mZoomChanged = false;
 		return true;
 	    }
 	    return false;
@@ -367,18 +380,18 @@ define("js/OrbitControls", ["three"], function(THREE) {
         }
 
         _rotateLeft(angle) {
-	    this.sphericalDelta.theta -= angle;
+	    this.mSphericalDelta.theta -= angle;
         }
 
         _rotateUp(angle) {
-	    this.sphericalDelta.phi -= angle;
+	    this.mSphericalDelta.phi -= angle;
         }
 
 	_panLeft(distance, objectMatrix) {
 	    let v = new THREE.Vector3();
 	    v.setFromMatrixColumn(objectMatrix, 0); // get X column of objectMatrix
 	    v.multiplyScalar(- distance);
-	    this.panOffset.add(v);
+	    this.mPanOffset.add(v);
 	}
 
 	_panUp(distance, objectMatrix) {
@@ -390,7 +403,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
 	        v.crossVectors(this.object.up, v);
 	    }
 	    v.multiplyScalar(distance);
-	    this.panOffset.add(v);
+	    this.mPanOffset.add(v);
 	}
 
         // deltaX and deltaY are in pixels; right and down are positive
@@ -407,7 +420,8 @@ define("js/OrbitControls", ["three"], function(THREE) {
 		targetDistance *= Math.tan((this.object.fov / 2)
                                            * Math.PI / 180.0);
 
-		// we use only clientHeight here so aspect ratio does not distort speed
+		// we use only clientHeight here so aspect ratio does
+		// not distort speed
 		this._panLeft(2 * deltaX * targetDistance / element.clientHeight,
                         this.object.matrix);
 		this._panUp(2 * deltaY * targetDistance / element.clientHeight,
@@ -430,11 +444,11 @@ define("js/OrbitControls", ["three"], function(THREE) {
 
         _dollyIn(dollyScale) {
 	    if (this.object.isPerspectiveCamera) {
-	        this.scale /= dollyScale;
+	        this.mScale /= dollyScale;
 	    } else if (this.object.isOrthographicCamera) {
 	        this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom * dollyScale));
 	        this.object.updateProjectionMatrix();
-	        this.zoomChanged = true;
+	        this.mZoomChanged = true;
 	    } else {
 	        console.warn('WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.');
 	        this.enableZoom = false;
@@ -443,11 +457,11 @@ define("js/OrbitControls", ["three"], function(THREE) {
 
         _dollyOut(dollyScale) {
 	    if (this.object.isPerspectiveCamera) {
-	        this.scale *= dollyScale;
+	        this.mScale *= dollyScale;
 	    } else if (this.object.isOrthographicCamera) {
 	        this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / dollyScale));
 	        this.object.updateProjectionMatrix();
-	        this.zoomChanged = true;
+	        this.mZoomChanged = true;
 	    } else {
 	        console.warn('WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.');
 	        this.enableZoom = false;
@@ -459,45 +473,50 @@ define("js/OrbitControls", ["three"], function(THREE) {
         //
 
         _handleMouseDownRotate(event) {
-	    this.rotateStart.set(event.clientX, event.clientY);
+	    this.mRotateStart.set(event.clientX, event.clientY);
         }
 
         _handleMouseDownDolly(event) {
-	    this.dollyStart.set(event.clientX, event.clientY);
+	    this.mDollyStart.set(event.clientX, event.clientY);
         }
 
         _handleMouseDownPan(event) {
-	    this.panStart.set(event.clientX, event.clientY);
+	    this.mPanStart.set(event.clientX, event.clientY);
         }
 
         _handleMouseMoveRotate(event) {
-	    this.rotateEnd.set(event.clientX, event.clientY);
-	    this.rotateDelta.subVectors(this.rotateEnd, this.rotateStart).multiplyScalar(this.rotateSpeed);
+	    this.mRotateEnd.set(event.clientX, event.clientY);
+	    this.mRotateDelta.subVectors(
+                this.mRotateEnd, this.mRotateStart).multiplyScalar(
+                    this.rotateSpeed);
 
 	    let element = this.domElement;
-	    this._rotateLeft(2 * Math.PI * this.rotateDelta.x / element.clientHeight); // yes, height
-	    this._rotateUp(2 * Math.PI * this.rotateDelta.y / element.clientHeight);
-	    this.rotateStart.copy(this.rotateEnd);
+	    this._rotateLeft(2 * Math.PI * this.mRotateDelta.x /
+                             element.clientHeight); // yes, height
+	    this._rotateUp(2 * Math.PI * this.mRotateDelta.y /
+                           element.clientHeight);
+	    this.mRotateStart.copy(this.mRotateEnd);
 	    this.update();
         }
 
         _handleMouseMoveDolly(event) {
-	    this.dollyEnd.set(event.clientX, event.clientY);
-	    this.dollyDelta.subVectors(this.dollyEnd, this.dollyStart);
-	    if (this.dollyDelta.y > 0) {
+	    this.mDollyEnd.set(event.clientX, event.clientY);
+	    this.mDollyDelta.subVectors(this.mDollyEnd, this.mDollyStart);
+	    if (this.mDollyDelta.y > 0) {
 	        this._dollyIn(this._getZoomScale());
-	    } else if (this.dollyDelta.y < 0) {
+	    } else if (this.mDollyDelta.y < 0) {
 	        this._dollyOut(this._getZoomScale());
 	    }
-	    this.dollyStart.copy(this.dollyEnd);
+	    this.mDollyStart.copy(this.mDollyEnd);
 	    this.update();
         }
 
         _handleMouseMovePan(event) {
-	    this.panEnd.set(event.clientX, event.clientY);
-	    this.panDelta.subVectors(this.panEnd, this.panStart).multiplyScalar(this.panSpeed);
-	    this._pan(this.panDelta.x, this.panDelta.y);
-	    this.panStart.copy(this.panEnd);
+	    this.mPanEnd.set(event.clientX, event.clientY);
+	    this.mPanDelta.subVectors(this.mPanEnd, this.mPanStart)
+            .multiplyScalar(this.panSpeed);
+	    this._pan(this.mPanDelta.x, this.mPanDelta.y);
+	    this.mPanStart.copy(this.mPanEnd);
 	    this.update();
         }
 
@@ -544,21 +563,27 @@ define("js/OrbitControls", ["three"], function(THREE) {
 
         _handleTouchStartRotate(event) {
 	    if (event.touches.length == 1) {
-	        this.rotateStart.set(event.touches[ 0 ].pageX, event.touches[ 0 ].pageY);
+	        this.mRotateStart.set(event.touches[ 0 ].pageX,
+                                      event.touches[ 0 ].pageY);
 	    } else {
-	        let x = 0.5 * (event.touches[ 0 ].pageX + event.touches[ 1 ].pageX);
-	        let y = 0.5 * (event.touches[ 0 ].pageY + event.touches[ 1 ].pageY);
-	        this.rotateStart.set(x, y);
+	        let x = 0.5 * (event.touches[ 0 ].pageX +
+                               event.touches[ 1 ].pageX);
+	        let y = 0.5 * (event.touches[ 0 ].pageY +
+                               event.touches[ 1 ].pageY);
+	        this.mRotateStart.set(x, y);
 	    }
         }
 
         _handleTouchStartPan(event) {
 	    if (event.touches.length == 1) {
-	        this.panStart.set(event.touches[ 0 ].pageX, event.touches[ 0 ].pageY);
+	        this.mPanStart.set(event.touches[ 0 ].pageX,
+                                   event.touches[ 0 ].pageY);
 	    } else {
-	        let x = 0.5 * (event.touches[ 0 ].pageX + event.touches[ 1 ].pageX);
-                let y = 0.5 * (event.touches[ 0 ].pageY + event.touches[ 1 ].pageY);
-	        this.panStart.set(x, y);
+	        let x = 0.5 * (event.touches[ 0 ].pageX +
+                               event.touches[ 1 ].pageX);
+                let y = 0.5 * (event.touches[ 0 ].pageY +
+                               event.touches[ 1 ].pageY);
+	        this.mPanStart.set(x, y);
 	    }
         }
 
@@ -566,7 +591,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
 	    let dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
 	    let dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
 	    let distance = Math.sqrt(dx * dx + dy * dy);
-	    this.dollyStart.set(0, distance);
+	    this.mDollyStart.set(0, distance);
         }
 
         _handleTouchStartDollyPan(event) {
@@ -581,43 +606,56 @@ define("js/OrbitControls", ["three"], function(THREE) {
 
         _handleTouchMoveRotate(event) {
 	    if (event.touches.length == 1) {
-	        this.rotateEnd.set(event.touches[ 0 ].pageX, event.touches[ 0 ].pageY);
+	        this.mRotateEnd.set(event.touches[ 0 ].pageX,
+                                    event.touches[ 0 ].pageY);
 	    } else {
-	        let x = 0.5 * (event.touches[ 0 ].pageX + event.touches[ 1 ].pageX);
-	        let y = 0.5 * (event.touches[ 0 ].pageY + event.touches[ 1 ].pageY);
-	        this.rotateEnd.set(x, y);
+	        let x = 0.5 * (event.touches[ 0 ].pageX +
+                               event.touches[ 1 ].pageX);
+	        let y = 0.5 * (event.touches[ 0 ].pageY +
+                               event.touches[ 1 ].pageY);
+	        this.mRotateEnd.set(x, y);
 	    }
 
-	    this.rotateDelta.subVectors(this.rotateEnd, this.rotateStart).multiplyScalar(this.rotateSpeed);
+	    this.mRotateDelta.subVectors(
+                this.mRotateEnd, this.mRotateStart).multiplyScalar(
+                    this.rotateSpeed);
             let element = this.domElement;
 
-	    this._rotateLeft(2 * Math.PI * this.rotateDelta.x / element.clientHeight); // yes, height
-	    this._rotateUp(2 * Math.PI * this.rotateDelta.y / element.clientHeight);
-	    this.rotateStart.copy(this.rotateEnd);
+	    this._rotateLeft(2 * Math.PI * this.mRotateDelta.x /
+                             element.clientHeight); // yes, height
+	    this._rotateUp(2 * Math.PI * this.mRotateDelta.y /
+                           element.clientHeight);
+	    this.mRotateStart.copy(this.mRotateEnd);
         }
 
         _handleTouchMovePan(event) {
 	    if (event.touches.length == 1) {
-	        this.panEnd.set(event.touches[ 0 ].pageX, event.touches[ 0 ].pageY);
+	        this.mPanEnd.set(event.touches[ 0 ].pageX,
+                                 event.touches[ 0 ].pageY);
 	    } else {
-	        let x = 0.5 * (event.touches[ 0 ].pageX + event.touches[ 1 ].pageX);
-	        let y = 0.5 * (event.touches[ 0 ].pageY + event.touches[ 1 ].pageY);
-	        this.panEnd.set(x, y);
+	        let x = 0.5 * (event.touches[ 0 ].pageX +
+                               event.touches[ 1 ].pageX);
+	        let y = 0.5 * (event.touches[ 0 ].pageY +
+                               event.touches[ 1 ].pageY);
+	        this.mPanEnd.set(x, y);
 	    }
 
-	    this.panDelta.subVectors(this.panEnd, this.panStart).multiplyScalar(this.panSpeed);
-	    this._pan(this.panDelta.x, this.panDelta.y);
-	    this.panStart.copy(this.panEnd);
+	    this.mPanDelta.subVectors(
+                this.mPanEnd, this.mPanStart).multiplyScalar(this.panSpeed);
+	    this._pan(this.mPanDelta.x, this.mPanDelta.y);
+	    this.mPanStart.copy(this.mPanEnd);
         }
 
         _handleTouchMoveDolly(event) {
 	    let dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
 	    let dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
 	    let distance = Math.sqrt(dx * dx + dy * dy);
-	    this.dollyEnd.set(0, distance);
-	    this.dollyDelta.set(0, Math.pow(this.dollyEnd.y / this.dollyStart.y, this.zoomSpeed));
-	    this._dollyIn(this.dollyDelta.y);
-	    this.dollyStart.copy(this.dollyEnd);
+	    this.mDollyEnd.set(0, distance);
+	    this.mDollyDelta.set(
+                0, Math.pow(this.mDollyEnd.y / this.mDollyStart.y,
+                            this.zoomSpeed));
+	    this._dollyIn(this.mDollyDelta.y);
+	    this.mDollyStart.copy(this.mDollyEnd);
         }
 
         _handleTouchMoveDollyPan(event) {
@@ -791,13 +829,15 @@ define("js/OrbitControls", ["three"], function(THREE) {
                 case 2:
 	            switch (self.touches.TWO) {
 	            case THREE.TOUCH.DOLLY_PAN:
-		        if (self.enableZoom === false && self.enablePan === false) return;
+		        if (self.enableZoom === false &&
+                            self.enablePan === false) return;
 		        self._handleTouchStartDollyPan(event);
 		        self.state = STATE.TOUCH_DOLLY_PAN;
 		        break;
 
 	            case THREE.TOUCH.DOLLY_ROTATE:
-		        if (self.enableZoom === false && self.enableRotate === false) return;
+		        if (self.enableZoom === false &&
+                            self.enableRotate === false) return;
 		        self._handleTouchStartDollyRotate(event);
 		        self.state = STATE.TOUCH_DOLLY_ROTATE;
 		        break;
@@ -832,12 +872,14 @@ define("js/OrbitControls", ["three"], function(THREE) {
 	            self.update();
 	            break;
 	        case STATE.TOUCH_DOLLY_PAN:
-	            if (self.enableZoom === false && self.enablePan === false) return;
+	            if (self.enableZoom === false && self.enablePan === false)
+                        return;
 	            self._handleTouchMoveDollyPan(event);
 	            self.update();
 	            break;
 	        case STATE.TOUCH_DOLLY_ROTATE:
-	            if (self.enableZoom === false && self.enableRotate === false) return;
+	            if (self.enableZoom === false && self.enableRotate === false)
+                        return;
 	            self._handleTouchMoveDollyRotate(event);
 	            self.update();
 	            break;

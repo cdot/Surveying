@@ -1,7 +1,7 @@
 define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Vertex", "js/Edge", "js/Container", "js/Network", "js/ImagePlane", "js/UTM", "jquery-ui"], function(XML, Three, Point, Vertex, Edge, Container, Network, ImagePlane, UTM) {
 
     /**
-     * Specialised loader for an SVG used to carry survey information.
+     * Specialised loader/saver for an SVG used to carry survey information.
      * There are a number of standards that must be observed for a survey
      * SVG. First, there must be document metadata containing a "dc:description"
      * that carries attribute key:value pairs as follows:
@@ -30,7 +30,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
      */
 
     const IS_NUMBER = /^[-+]?\d*\.?\d+([eE][-+]?\d+)?$/;
-    const IS_COORDS = /^[-+]?\d*\.?\d+([eE][-+]?\d+)?,[-+]?\d*\.?\d+([eE][-+]?\d+)?$/;
     
     // Styling for paths in output SVG
     const PATH_STYLE =
@@ -42,6 +41,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
     const METADATA = [ "lat", "lon", "x", "y", "units_per_metre" ];
 
     let counter = 0;
+
+    // Loader
     
     function applySVGTransforms(transforms, net) {
         if (!transforms) return;
@@ -205,27 +206,34 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
         _load_path($path, name, props) {
             console.debug("Loading path", name);
             let path = new Network(name);
+            let vertindex = {};
             let pos = new Three.Vector3(0, 0, 0);
 
             let cmd, j;
             function addPV(vx) {
-                return addVertex(path, name + ":" + cmd + j++, vx);
+                let i = vx.x + "," + vx.y + "," + vx.z;
+                let known = vertindex[i];
+                if (known)
+                    return known;
+                known = addVertex(path, name + ":" + cmd + j++, vx);
+                vertindex[i] = known;
+                return known;
             }
 
-            let points = $path.attr("d").split(/\s+/);
+            let points = $path.attr("d").split(/[,\s]+/);
             let startVert, lastVert, p, v;
             let vertices = [];
-
-            function getXY() {
-                let xy = points.shift().split(",");
-                return new Three.Vector3(
-                    parseFloat(xy[0]), parseFloat(xy[1]), 0);
-            }
 
             function getN() {
                 return parseFloat(points.shift());
             }
             
+            function getXY() {
+                let x = getN();
+                let y = getN();
+                return new Three.Vector3(x, y, 0);
+            }
+
             while (points.length > 0) {
                 cmd = points.shift();
                 j = 0;
@@ -244,7 +252,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     if (lastVert && (cmd === "L" || cmd === "l"))
                         path.addEdge(new Edge(lastVert, v));
                     lastVert = v;
-                    while (IS_COORDS.test(points[0])) {
+                    while (IS_NUMBER.test(points[0])) {
                         p = getXY();
                         if (/[A-Z]/.test(cmd))
                             pos.copy(p);
@@ -267,6 +275,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     case "v": pos.y += p; break;
                     }
                     v = addPV(pos);
+                    if (lastVert)
+                        path.addEdge(new Edge(lastVert, v));
                     lastVert = v;
                     if (!startVert) startVert = v;
                     while (IS_NUMBER.test(points[0])) {
@@ -295,7 +305,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 case "S": case "s":
                 case "Q": case "q":
                     // Curves, treat as edge to end point
-                    while (IS_COORDS.test(points[0])) {
+                    while (IS_NUMBER.test(points[0])) {
                         if (/C/i.test(cmd))
                             getXY(); // C has 2 control points
                         if (/[CSQ]/i.test(cmd))
@@ -327,6 +337,10 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 }
             }
 
+            if (path.children.length === 0) {
+                console.debug("Empty path", path.name, "ignored"); 
+                return undefined;
+            }
             return path;
         }
 
@@ -423,9 +437,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 if (typeof metadata[f] !== "undefined")
                     $('#svg_' + f).val(metadata[f]);
 
-            // Export button not used here
-            $("#svg_export").hide();
-            
             return new Promise((resolve, reject) => {
                 $dlg.dialog("option", "title", "SVG import " + source);
                 $dlg.dialog("option", "buttons", [
@@ -461,14 +472,15 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     mats.push(new Three.Matrix4().makeTranslation(
                         -metadata.x, -metadata.y, 0));
 
-                // Scale and flip y
+                // Scale to metres
                 let scale = 1 / metadata.units_per_metre;
                 if (scale !== 1)
                     mats.push(new Three.Matrix4().makeScale(scale, scale, 1));
 
                 // Translate reference point to reference lat,lon
                 let utm = UTM.fromLatLong(metadata.lat, metadata.lon);
-                mats.push(new Three.Matrix4().makeTranslation(utm.easting, utm.northing, 0));
+                mats.push(new Three.Matrix4()
+                          .makeTranslation(utm.easting, utm.northing, 0));
 
                 for (let m of mats)
                     g.applyTransform(m);
@@ -476,17 +488,37 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             });
         }
 
-        _serialise(visual, metadata) {
+        // Saver
 
-            let origin = UTM.fromLatLong(metadata.lat, metadata.lon);
-            let mump = metadata.units_per_metre;
+        // @Override FileFormat
+        save(visual) {
+
+            let mump = 10; // SVG px  per metre
             
-            function saveUnits(p) {
+            // Get position and width/height of the bounding box in
+            // UTM coords
+            let bb = visual.boundingBox;
+            let minx = bb.min.x;
+            let miny = bb.min.y;
+            let width = (bb.max.x - minx) * mump;
+            let height = (bb.max.y - miny) * mump;
+
+            // Lat/long of the origin
+            let llo = new UTM(bb.min.x, bb.min.y).toLatLong();
+            let metadata = {
+                lat: llo.latitude,
+                lon: llo.longitude,
+                x: 0, y: 0, // bottom left corner
+                units_per_metre: mump // 10px per metre
+            };
+
+            // Convert a point or a box in UTM coords to SVG coords
+            function utm2svg(p) {
                 if (p instanceof Three.Box3)
-                    return new Three.Box3(saveUnits(p.min), saveUnits(p.max));
+                    return new Three.Box3(utm2svg(p.min), utm2svg(p.max));
                 return new Three.Vector3(
-                    (p.x - origin.easting) * mump,
-                    (p.y - origin.northing) * mump,
+                    (p.x - minx) * mump,
+                    height - (p.y - miny) * mump,
                     0);
             }
             
@@ -498,14 +530,12 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 metas.push(m + ":" + metadata[m]);                
             $svg.find("dc\\:description").text(metas.join(","));
 
-            let bb = visual.boundingBox;
-            let ur = saveUnits(bb.max);
-            $svg.attr("width", ur.x);
-            let height = ur.y;
-            $svg.attr("height", ur.y);
-            $svg.attr("viewBox", "0 0 " + ur.x + " " + ur.y);
+            $svg.attr("width", width);
+            $svg.attr("height", height);
+            $svg.attr("viewBox", "0 0 " + width + " " + height);
             $svg.attr("sodipodi:docname", visual.name);
 
+            // Make an XML DOM element of the given tag for the given Visual
             function makeEl(tag, visual) {
                 let el = document.createElementNS(SVG_NS, tag);
                 if (visual.name) {
@@ -528,25 +558,41 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 }
                 return el;
             }
-            
+
+            // Make the SVG for the given Visual, adding the XML DOM to the
+            // given container
             function makeSVG(visual, container) {
                 switch (visual.constructor.name) {
+                    
                 case "Network": {
-                    // Make a path
+                    // Serialise the network as individual edges in a
+                    // path
                     let path = makeEl("path", visual);
-                    let moves = [ "M" ];
-                    for (let o of visual.children) {
-                        if (o instanceof Vertex) {
-                            let v = saveUnits(o.position);
-                            moves.push(v.x + " " + (height - v.y));
-                        } else
-                            console.debug("Unsupported Network Visual " + o);
+                    let lines = [];
+                    let last;
+                    for (let e of visual.edges) {
+                        if (e.p1 === last) {
+                            let v2 = utm2svg(e.p2.position);
+                            lines.push(v2.x + " " + v2.y);
+                            last = v2;
+                        } else if (e.p2 === last) {
+                            let v1 = utm2svg(e.p1.position);
+                            lines.push(v1.x + " " + v1.y);
+                            last = v1;
+                        } else {
+                            let v1 = utm2svg(e.p1.position);
+                            let v2 = utm2svg(e.p2.position);
+                            lines.push("M " + v1.x + " " + v1.y
+                                       + " " + v2.x + " " + v2.y);
+                            last = e.p2;
+                        }
                     }
-                    path.setAttribute("d", moves.join(" "));
+                    path.setAttribute("d", lines.join(" "));
                     path.setAttribute("style", PATH_STYLE);
                     container.appendChild(path);
                     break;
                 }
+                    
                 case "Container": {
                     let group = makeEl("g", visual);
                     for (let o of visual.children)
@@ -554,8 +600,9 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     container.appendChild(group);
                     break;
                 }
+                    
                 case "Point": {
-                    let v = saveUnits(visual.position);
+                    let v = utm2svg(visual.position);
                     let circle = makeEl("circle", visual);
                     circle.setAttribute("style", POINT_STYLE);
                     circle.setAttribute("cx", v.x);
@@ -564,59 +611,21 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     container.appendChild(circle);
                     break;
                 }
+                    
                 case "ImagePlane": {
                     console.debug("Reminder: support ImagePlane");
                     break;
                 }
+                    
                 default:
                     throw new Error("Unsupported Visual " + visual);
                 }
             }
             for (let o of visual.children)
                 makeSVG(o, $svg[0]);
+
             return '<?xml version="1.0" encoding="UTF-8"?>'
             +  new XMLSerializer().serializeToString(doc);
-        }
-
-        // @Override FileFormat
-        save(visual) {
-            let saver = this;
-            let $dlg = $("#svg_dialog");
-            let bb = visual.boundingBox;
-            let ll = new UTM(bb.min.x, bb.min.y).toLatLong();
-            let metadata = {
-                lat: ll.latitude, lon: ll.longitude,
-                x:0, y:0,
-                units_per_metre: 10};
-            for (let f of METADATA)
-                if ($('#svg_' + f).val().length === 0)
-                    $('#svg_' + f).val(metadata[f]);
-
-            $dlg.dialog("option", "title", "SVG export");
-            // Clear the button panel
-            $dlg.dialog("option", "buttons", []);
-            $("#svg_export")
-            .show()
-            .on("click", function() {
-                for (let f of METADATA) {
-                    let $i = $('#svg_' + f);
-                    if ($i.attr("type") === "number")
-                        metadata[f] = parseFloat($i.val());
-                    else
-                        metadata[f] = $i.val();
-                }
-                this.href = URL.createObjectURL(
-                    new Blob([saver._serialise(visual, metadata)]));
-                this.download = "svg." + $("#save_format").val();
-                // Set a timer event to close this dialog and
-                // pass the user event on for native event handling
-                setTimeout(() => { $dlg.dialog("close"); }, 10);
-                return true;
-            })
-            $dlg.dialog("open");
-            // Tell the caller not to bother trying to save the
-            // content, we're doing it through the dialog
-            return null;
         }
     }
     return SVG;

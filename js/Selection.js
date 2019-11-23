@@ -1,4 +1,7 @@
 define("js/Selection", function() {
+    /**
+     * A collection of Visuals
+     */
     class Selection {
         constructor(onChange) {
             this.mItems = [];
@@ -74,7 +77,7 @@ define("js/Selection", function() {
 
         /**
          * Apply the given transform to the selected items
-         * @param {Three.Matrix3|Three.Matrix4} transform matrix
+         * @param {Three.Matrix4} transform matrix
          */
         applyTransform(mat) {
             for (let s of this.mItems)

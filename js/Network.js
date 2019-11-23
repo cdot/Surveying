@@ -1,5 +1,5 @@
-define("js/Network", ["js/Container"], function(Container) {
-    
+define("js/Network", ["js/Container", "js/Vertex", "js/Edge", "delaunator"], function(Container, Vertex, Edge, Delaunator) {
+
     /**
      * A network of interconnected vertices (Vertex) joined by edges (Edge)
      * A network can be a simple path, or could be a mesh.
@@ -26,9 +26,12 @@ define("js/Network", ["js/Container"], function(Container) {
 
         /**
          * Add an edge to the network. The edge must refer to vertices
-         * in the network (not in subnets)
+         * in the network (not in subnets). Two signatures,
+         * (Edge) and (Vertex, Vertex)
          */
-        addEdge(e) {
+        addEdge(e, p) {
+            if (!(e instanceof Edge))
+                e = new Edge(e, p);
             e.setParent(this);
             this.mEdges.push(e);
             return e;
@@ -105,6 +108,45 @@ define("js/Network", ["js/Container"], function(Container) {
                 s.push(this.mEdges.length + " edge"
                        + (this.mEdges.length == 1 ? "" : "s"));
             return s;
+        }
+
+        /**
+         * Construct a new Network object that contains a Delaunay
+         * triangulation of all the Point objects in the container
+         * @param a Visual to recursively meshify
+         * @return the resulting network
+         */
+        static meshify(visual) {
+            function nextHalfedge(e) {
+                return (e % 3 === 2) ? e - 2 : e + 1;
+            }
+
+            // Condense isobaths and soundings into a cloud of points
+            let coords = [];
+            let mapBack = [];
+            visual.condense(coords, mapBack);
+
+            let del = Delaunator.from(coords);
+            let result = new Network("Triangulation");
+
+            // Construct a mesh, adding condensed points back in as vertices
+            for (let i in mapBack) {
+                let c = mapBack[i];
+                mapBack[i] = c = new Vertex(c.name, c.position);
+                result.addChild(c);
+            }
+            
+            // Iterate over the forward edges
+            for (let e = 0; e < del.triangles.length; e++) {
+                if (e > del.halfedges[e]) {
+                    // Not a back-edge
+                    let p = mapBack[del.triangles[e]];
+                    let q = mapBack[del.triangles[nextHalfedge(e)]];
+                    if (!p || !q) debugger;
+                    result.addEdge(p, q);
+                }
+            }
+            return result;
         }
     }
     return Network;

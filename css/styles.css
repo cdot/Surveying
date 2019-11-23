@@ -9,38 +9,12 @@ html {
 
 body {
     margin: 0;
-    width: 100%;
-    height: 100%;
     font-family: lucida grande, lucida, sans-serif;
-}
-
-#controls {
-    background-color:#666;
-    color: white;
-    padding: 0.5em;
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 30%;
     height: 100%;
-    font-size: large;
 }
 
-#canvas {
-    display: block;
-    width: 70%;
-    height: 100%;
-    width:1000px;
-    height:1000px;
-    border: 1px solid black;
-    float: left;
-}
-
-#report li {
-    padding-left: 1em;
-}
-
-#controls .button, #controls input, #controls button {
+/* Consistent look and feel for controls */
+.button, input, button {
     display: inline-block;
     -webkit-appearance: button;
     -webkit-writing-mode: horizontal-tb !important;
@@ -63,6 +37,34 @@ body {
     border-style: outset;
     border-color: buttonface;
     border-image: initial;
+}
+
+#canvases {
+    display: block;
+    border: 1px solid black;
+    float: left;
+    width: 70%;
+    height: 100%;
+}
+
+.canvas {
+    height: 100%;
+}
+
+.controls {
+    background-color:#666;
+    color: white;
+    padding: 0.5em;
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-size: large;
+    width: 30%;
+    height: 100%;
+}
+
+#report li {
+    padding-left: 1em;
 }
 
 .dialog {

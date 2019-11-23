@@ -12,7 +12,7 @@ requirejs.config({
     }
 });
 
-requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui", "jquery-mousewheel"], function(Three, Survey, Selection, UTM) {
+requirejs(["three", "js/OrthographicController", "js/PerspectiveController", "js/Container", "js/Network", "js/UTM", "jquery", "jquery-ui", "jquery-mousewheel"], function(Three, OrthographicController, PerspectiveController, Container, Network, UTM) {
     $(function(){
         $(".dialog").dialog({
             autoOpen: false,
@@ -21,10 +21,29 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
             hide: "blind"
         });
 
-        let $canvas = $("#canvas");
-        let survey = new Survey($canvas);
         let saver;
 
+        // Create the three.js scene. This is shared between the canvases.
+        let scene = new Three.Scene();
+        scene.background = new Three.Color(0xF0F0F0);
+
+        let orthographic = new OrthographicController("#orthographic", scene);
+        let perspective = new PerspectiveController("#perspective", scene);
+        let rootContainer = new Container("root");
+        orthographic.setVisual(rootContainer);
+        perspective.setVisual(rootContainer);
+        orthographic.animate();
+        perspective.animate();
+
+        $(window).on("resize", function() {
+            // Resize the canvases
+            let $a = $("#orthographic");
+            let w = $a.parent().innerWidth();
+            let h = $a.parent().innerHeight();
+            orthographic.resize(w, h);
+            perspective.resize(w, h);
+        });
+          
         /**
          * Format a point for display as a lat,long
          */
@@ -32,21 +51,7 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
             return new UTM(p.x, p.y).stringify();
         }
 
-        /**
-         * Convert an event on the canvas into a ray
-         * @param e event
-         */
-        function event2ray(e) {
-            let r = survey.canvas2ray({
-                x: e.offsetX / $canvas.width(),
-                y: e.offsetY / $canvas.height()
-            });
-            if (r)
-                $(document).trigger("cursorchanged");
-            return r;
-        }
-
-        function formatBox(b) {
+        function wgsBox(b) {
             return wgsCoords(b.min) + " -> " + wgsCoords(b.max);
         }
 
@@ -54,157 +59,6 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
             $("#save").prop("disabled", !saver);
         }
         
-        let mouse_down; // button flags
-        let selection = new Selection(sln => {
-            let $report = $("<ul></ul>");
-            for (let sel of sln.items) {
-                let r = sel.report;
-                let $item = $("<li>" + r.shift() + "</li>");
-                if (r.length > 0) {
-                    let $block = $("<ul></ul>");
-                    for (let line of r)
-                        $block.append("<li>" + line + "</li>");
-                    $item.append($block);
-                }
-                $report.append($item);
-            }
-            $("#report").empty().append($report);
-        });
-
-        let dragging = false;
-        let lastPt;
-
-        $("#noform").on("submit", () => false);
-        
-        $canvas.on("keydown", function(e) {
-            let sel;
-            switch (e.keyCode) {
-            case 46: // delete selection
-                for (sel of selection.items)
-                    // Remove the item completely
-                    sel.remove();
-                selection.clear();
-                break;
-
-            case 37: // left, prev sibling
-                sel = selection.items.slice();
-                for (let s of sel) {
-                    if (s.prev) {
-                        selection.remove(s);
-                        selection.add(s.prev);
-                    }
-                }
-                break;
-                
-            case 38: // up, move up in selection
-                sel = selection.items.slice();
-                for (let s of sel) {
-                    if (s.parent !== survey) {
-                        selection.remove(s);
-                        selection.add(s.parent);
-                    }
-                }
-                break;
-
-            case 39: // right
-                sel = selection.items.slice();
-                for (let s of sel) {
-                    if (s.next) {
-                        selection.remove(s);
-                        selection.add(s.next);
-                    }
-                }
-                break;
-
-            case 40: // down, select first child
-                sel = selection.items.slice();
-                for (let s of sel) {
-                    if (s.children && s.children.length > 0) {
-                        selection.remove(s);
-                        selection.add(s.children[0]);
-                    }
-                }
-                break;
-
-            case 77: // m, set measure point
-                survey.measureFrom();
-                break;
-            }
-            return false;
-        })
-        .on("mouseenter", function() {
-            $canvas.focus();
-            mouse_down = false;
-            dragging = false;
-        })
-
-        .on("mouseleave", function() {
-            mouse_down = false;
-            dragging = false;
-        })
-
-        .on('mousedown', function(e) {
-            mouse_down = {x: e.offsetX, y: e.offsetY};
-            let ray = event2ray(e);
-            if (ray) {
-                lastPt = ray.start.clone();
-                if (selection.size > 0) {
-                    let hit = survey.projectRay(ray);
-                    if (hit && selection.contains(hit.closest))
-                        dragging = true;
-                }
-            }
-        })
-
-        .on('mouseup', function(e) {
-            if (!mouse_down)
-                return false;
-            if (!dragging) {
-                if (e.offsetX === mouse_down.x && e.offsetY === mouse_down.y) {
-                    let ray = event2ray(event);
-                    if (ray) {
-                        if (!e.shiftKey)
-                            selection.clear();
-                        let proj = survey.projectRay(ray);
-                        if (proj)
-                            selection.add(proj.closest);
-                        else
-                            selection.clear();
-                    }
-                } else
-                    selection.clear();
-            }
-            mouse_down = null;
-            dragging = false;
-        })
-
-        .on('mousemove', function(e) {
-            let ray = event2ray(e);
-            if (mouse_down && ray) {
-                let p = ray.start;
-                let delta = p.clone().sub(lastPt);
-                if (dragging) {
-                    let mat = new Three.Matrix4().makeTranslation(
-                        delta.x, delta.y, 0);
-                    selection.applyTransform(mat);
-                } else
-                    survey.panBy(delta.negate());
-                lastPt = p;
-            }
-        })
-
-        // Zoom in/out
-        .on('mousewheel', function(event) {
-            event.stopPropagation();
-
-            if (event.deltaY < 0)
-                survey.zoom(0.8);
-            else
-                survey.zoom(1.2);
-            
-            return false;
-        });
-
         $("#load").on("change", function(evt) {
             let f = evt.target.files[0];
             let fn = f.name;
@@ -217,10 +71,16 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
                     let data = e.target.result;
                     new Loader().load(fn, data)
                     .then(result => {
-                        survey.addChild(result);
+                        rootContainer.addChild(result);
+                        result.addToScene(scene);
                         console.log("Loaded", fn);
-                        survey.fitScene();
+                        $("#scene").html(wgsBox(rootContainer.boundingBox));
+                        orthographic.fit();
+                        perspective.fit();
                         enableSave();
+                    })
+                    .catch((e) => {
+                        console.debug(e);
                     });
                 };
 
@@ -228,34 +88,41 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
                 reader.readAsText(f);
             });
         });
-        
+
+        // Information tab
+        $(document).on("cursorchanged", function() {
+            $("#cursor_wgs").html(wgsCoords(orthographic.cursor));
+            $("#cursor_length").text(orthographic.rulerLength);
+            $("#cursor_bearing").text(orthographic.rulerBearing);
+        });
+
+        // Controls - do something smarter with these, a la inkscape
         $("#refocus").on("click", function() {
-            survey.fitScene();
+            orthographic.fit();
+            perspective.fit();
             return false;
         });
 
         $("#zoomin").on("click", function() {
-            survey.zoom(1.2);
+            orthographic.zoom(1.2);
             return false;
         });
         
         $("#zoomout").on("click", function() {
-            survey.zoom(0.8);
+            orthographic.zoom(0.8);
+            return false;
+        });
+
+        $("#toggle").on("click", function() {
+            $("#perspective").toggle();
+            $("#orthographic").toggle();
             return false;
         });
 
         $("#meshify").on("click", function() {
-            survey.meshify();
-        });
-                         
-        $(document).on("scenechanged", function () {
-            $("#scene").html(formatBox(survey.boundingBox));
-        });
-
-        $(document).on("cursorchanged", function() {
-            $("#cursor_wgs").html(wgsCoords(survey.cursor));
-            $("#cursor_length").text(survey.rulerLength);
-            $("#cursor_bearing").text(survey.rulerBearing);
+            let mesh = Network.meshify(rootContainer);
+            rootContainer.addChild(mesh);
+            mesh.addToScene(scene);
         });
 
         $("#save").prop("disabled", true);
@@ -277,16 +144,20 @@ requirejs(["three", "js/Survey", "js/Selection", "js/UTM", "jquery", "jquery-ui"
         });
         
         $("#save").on("click", function() {
-            // If save() returns a promise, then it has used a dialog and we
+            let str = saver.save(rootContainer);
+            // If saver.save() returns null, then it has used a dialog and we
             // don't require native event handling
-            let str = saver.save(survey);
-            if (str) {
-                // The format wants to use the Save button to trigger the save
-                this.href = URL.createObjectURL(new Blob([str]));
-                this.download = "survey." + $("#save_format").val();
-            }
+            if (!str)
+                return false; // suppress native event handling
+
+            // The format wants to use the Save button to trigger the save
+            this.href = URL.createObjectURL(new Blob([str]));
+            this.download = "survey." + $("#save_format").val();
+
             // Pass on for native event handling
             return true;
         });
+
+        $("#perspective").toggle();
     });
 });

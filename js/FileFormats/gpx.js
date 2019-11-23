@@ -1,4 +1,4 @@
-define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Edge", "js/Network", "js/Container", "js/UTM"], function(XML, Three, Vertex, Edge, Network, Container, UTM) {
+define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Network", "js/Container", "js/UTM"], function(XML, Three, Vertex, Network, Container, UTM) {
 
     let counter = 0;
     
@@ -38,7 +38,7 @@ define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                                     utm.easting, utm.northing, 0));
                             track.addChild(v);
                             if (lastVert)
-                                track.addEdge(new Edge(lastVert, v));
+                                track.addEdge(lastVert, v);
                             lastVert = v;
                         }
                     });

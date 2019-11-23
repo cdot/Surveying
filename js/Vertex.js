@@ -109,7 +109,6 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
             return s;
         }
 
-        // @Override Point
         condense(coords, mapBack) {
             if (this.parent && this.parent.prop("type") === "isobath")
                 super.condense(coords, mapBack);

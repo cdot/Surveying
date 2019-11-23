@@ -1,4 +1,4 @@
-define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Vertex", "js/Edge", "js/Container", "js/Network", "js/UTM"], function(XML, Three, Vertex, Edge, Container, Network, UTM) {
+define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Vertex", "js/Container", "js/Network", "js/UTM"], function(XML, Three, Vertex, Container, Network, UTM) {
 
     class OSM extends XML {
 
@@ -38,10 +38,10 @@ define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ed
                     let v = new Vertex(
                         pt.time,
                         new Three.Vector3(utm.easting, utm.northing, 0));
-                    // Networks in Survey don't share vertices
+                    // Networks don't share vertices
                     way.addChild(v);
                     if (lastVert)
-                        way.addEdge(new Edge(lastVert, v));
+                        way.addEdge(lastVert, v);
                     lastVert = v;
                 });
                 ways.addChild(way);

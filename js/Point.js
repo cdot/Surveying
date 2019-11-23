@@ -21,7 +21,7 @@ define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Vi
         prop(k, v) {
             if (k === "depth" && typeof v === "number") {
                 let vec = new Three.Vector3(
-                    this.mCurPos.x, this.mCurPos.y, v);
+                    this.mCurPos.x, this.mCurPos.y, -v);
                 this.setPosition(vec);
             }
             return super.prop(k, v);
@@ -96,7 +96,7 @@ define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Vi
             let np = new Three.Vector3();
             ray.closestPointToPoint(this.mCurPos, false, np);
             let dist2 = np.clone().sub(this.mCurPos).lengthSq();
-            if (dist2 > 4 * this.handleScale2)
+            if (dist2 > 4)// * this.handleScale2)
                 return null;
             return {
                 closest: this,
@@ -127,8 +127,6 @@ define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Vi
         // Soundings are always added to point clouds
         condense(coords, mapBack) {
             console.log("Condensed ", this.name);
-            this.removeFromScene();
-            this.parent.removeChild(this);
             coords.push([this.position.x, this.position.y]);
             mapBack.push(this);
         }

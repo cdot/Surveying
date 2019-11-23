@@ -1,4 +1,4 @@
-define("js/Container", ["js/Visual", "three"], function(Visual, Three) {
+define("js/Container", ["js/Visual", "three", "js/Point", "js/Vertex"], function(Visual, Three, Point, Vertex, Network) {
 
     /**
      * A graphical object that can contain other objects
@@ -91,13 +91,14 @@ define("js/Container", ["js/Visual", "three"], function(Visual, Three) {
         
         // @Override Visual
          get boundingBox() {
-            let bb = new Three.Box3();
-            for (let g of this.mObjects) {
-                let gbb = g.boundingBox;
-                bb.expandByPoint(gbb.min);
-                bb.expandByPoint(gbb.max);
-            }
-            return bb;
+             let bb = new Three.Box3();
+             for (let g of this.mObjects) {
+                 let gbb = g.boundingBox;
+                 bb.expandByPoint(gbb.min);
+                 bb.expandByPoint(gbb.max);
+             }
+
+             return bb;
         }
         
         // @Override
@@ -138,17 +139,8 @@ define("js/Container", ["js/Visual", "three"], function(Visual, Three) {
         
         // @Override Visual
         condense(coords, mapBack) {
-            let kids = this.mObjects.slice();
-            for (let g of kids)
+            for (let g of this.mObjects)
                 g.condense(coords, mapBack);
-            if (this.prop("type") === "isobath") {
-                this.removeFromScene();
-                if (this.mObjects.length === 0 && this.parent) {
-                    // Decouple for garbage collection
-                    this.parent.removeChild(this);
-                    delete this.parent;
-                }
-            }
         }
     }
 

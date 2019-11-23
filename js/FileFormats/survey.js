@@ -1,4 +1,4 @@
-define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Point", "js/Vertex", "js/Edge", "js/Container", "js/Network", "js/ImagePlane", "js/Survey"], function(XML, Three, UTM, Point, Vertex, Edge, Container, Network, ImagePlane, Survey) {
+define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Point", "js/Vertex", "js/Edge", "js/Container", "js/Network", "js/ImagePlane"], function(XML, Three, UTM, Point, Vertex, Edge, Container, Network, ImagePlane) {
 
     class SURVEY extends XML {
 
@@ -111,12 +111,8 @@ define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Po
                         dom.append(db2xml(e, doc));
                     break;
                 case "Container":
-                    dom = doc.createElement("container");                   
-                    for (let g of visual.children)
-                        dom.append(db2xml(g, doc));
-                    break;
-                case "Survey":
-                    dom = doc.createElement("survey");
+                    dom = doc.createElement(
+                        visual.parent ? "container" : "survey");
                     for (let g of visual.children)
                         dom.append(db2xml(g, doc));
                     break;

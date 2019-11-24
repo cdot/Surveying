@@ -14,13 +14,12 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
          * @param name vertex name (may not be unique)
          * @param v Three.Vector3 position of vertex or x, y, z
          */
-        constructor(x, y, z) {
-            super(x, y, z);
+        constructor(p) {
+            super(p);
             this.mVid = counter++;
             // Edges are not OWNED by Vertex, just referred to. They
-            // are owned by the parent Networl.
+            // are owned by the parent Network.
             this.mEdges = [];
-            this.prop("type", "vertex");
         }
 
         /**
@@ -75,8 +74,8 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
         }
 
         // @Override Point
-        setPosition(x, y, z) {
-            super.setPosition(x, y, z);
+        setPosition(p) {
+            super.setPosition(p);
             for (let e of this.mEdges)
                 e.vertexMoved();
         }
@@ -102,19 +101,19 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
         }
 
         // @Override Point
-        get scheme() {
-            let s = super.scheme;
-            s.push("Vertex: " + this.mVid);
+        scheme(skip) {
+            let s = super.scheme(skip + "'name'");
+            s.push("Vertex #" + this.mVid);
             for (let e of this.mEdges)
-                s.push("Edge to " + e.otherEnd(this).vid);
+                s.push("\tedge to #" + e.otherEnd(this).vid);
             return s;
         }
 
         condense(coords, mapBack) {
-            if (this.parent && this.parent.prop("type") === "contour")
+            if (this.parent instanceof Contour)
                 super.condense(coords, mapBack);
             else
-                console.log("Parent of",this.name,"NOT ISOBATH");
+                console.log("Parent of",this.name,"NOT CONTOUR");
         }
     }
     return Vertex;

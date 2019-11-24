@@ -68,8 +68,8 @@ define("js/ImagePlane", ["js/Visual", "three"], function(Visual, Three) {
         }
 
         // @Override Visual
-        get scheme() {
-            let s = super.scheme;
+        scheme(skip) {
+            let s = super.scheme(skip);
             s.push({
                 title: "URL",
                 type: "string",

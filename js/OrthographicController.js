@@ -67,7 +67,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             this.mSelection = new Selection(sln => {
                 let $report = $("<ul></ul>");
                 for (let sel of sln.items) {
-                    let $s = makeControls(sel.scheme);
+                    let $s = makeControls(sel.scheme(""));
                     if ($s)
                         $report.append($s);
                 }

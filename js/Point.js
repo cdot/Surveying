@@ -8,37 +8,23 @@ define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Vi
      */
     class Point extends Visual {
         /**
-         * @param v Three.Vector3 position of vertex
+         * @param v {x, y, z} position of vertex
          * @param name vertex name (may not be unique)
          */
-        constructor(x, y, z, name) {
+        constructor(p, name) {
             super(name);
-            this.mCurPos = new Three.Vector3(x, y, z);
+            this.mCurPos = new Three.Vector3(p.x, p.y, p.z);
             // {Three.SphereGeometry} this.mGeometry
-            // {Three.Scene} this.mScene
-            this.prop("type", "point");
-        }
-
-        // @Override Visual
-        prop(k, v) {
-            if (k === "z" && typeof v === "number")
-                this.setPosition(this.mCurPos.x, this.mCurPos.y, v);
-            return super.prop(k, v);
         }
 
         /**
          * Set position of vertex
-         * @param v Three.Vector3 position or x, y, z ordinates
+         * @param v {x, y, z} position
          */
-        setPosition(x, y, z) {
-            if (typeof x === "object") {
-                z = x.z;
-                y = x.y;
-                x = x.x;
-            }
-            this.mCurPos.set(x, y, z);
+        setPosition(p) {
+            this.mCurPos.set(p.x, p.y, p.z);
             if (this.object3D)
-                this.object3D.position.set(x, y, z);
+                this.object3D.position.set(p.x, p.y, p.z);
         }
 
         /**
@@ -118,15 +104,15 @@ define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Vi
         }
 
         // @Override Visual
-        get scheme() {
-            let s = super.scheme;
+        scheme(skip) {
+            let s = super.scheme(skip);
             let self = this;
             s.push({
                 title: "X",
                 type: "number",
                 get: () => { return self.mCurPos.x; },
                 set: (v) => {
-                    self.setPosition(v, self.mCurPos.y, self.mCurPos.z);
+                    self.setPosition({x: v, y: self.mCurPos.y, z: self.mCurPos.z});
                 }
             });
             s.push({
@@ -134,17 +120,19 @@ define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Vi
                 type: "number",
                 get: () => { return self.mCurPos.y; },
                 set: (v) => {
-                    self.setPosition(self.mCurPos.x, v, self.mCurPos.z);
+                    self.setPosition({x: self.mCurPos.x, y: v, z: self.mCurPos.z});
                 }
             });
-            s.push({
-                title: "Z",
-                type: "number",
-                get: () => { return self.mCurPos.z; },
-                set: (v) => {
-                    self.setPosition(self.mCurPos.x, self.mCurPos.y, v);
-                }
-            });
+            if (!/'Z'/.test(skip)) {
+                s.push({
+                    title: "Z",
+                    type: "number",
+                    get: () => { return self.mCurPos.z; },
+                    set: (v) => {
+                        self.setPosition({x: self.mCurPos.x, y: self.mCurPos.y, z: v});
+                    }
+                });
+            }
             s.push({
                 title: "Lat",
                 type: "number",
@@ -158,7 +146,7 @@ define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Vi
                         .toLatLong();
                     let utm = UTM.fromLatLong(v, ll.longitude);
                     self.setPosition(
-                        utm.easting, this.mCurPos.y, this.mCurPos.z);
+                        { x: utm.easting, y: this.mCurPos.y, z: this.mCurPos.z });
                 }
             });
             s.push({
@@ -174,7 +162,7 @@ define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Vi
                         .toLatLong()
                     let utm = UTM.fromLatLong(ll.latitude, v);
                     self.setPosition(
-                        this.mCurPos.x, utm.northing, this.mCurPos.z);
+                        {x:this.mCurPos.x, y:utm.northing, z:this.mCurPos.z});
                 }
             });
             

@@ -15,6 +15,16 @@ define("js/Network", ["js/Container", "js/Vertex", "js/Edge", "delaunator"], fun
         }
 
         /**
+         * Add a vertex at the given point
+         * @return {Vertex} added
+         */
+        addVertex(p) {
+            let v = new Vertex(p);
+            this.addChild(v);
+            return v;
+        }
+        
+        /**
          * Add an edge to the network. The edge must refer to vertices
          * in the network (not in subnets). Two signatures,
          * (Edge) and (Vertex, Vertex)
@@ -27,6 +37,9 @@ define("js/Network", ["js/Container", "js/Vertex", "js/Edge", "delaunator"], fun
             return e;
         }
 
+        /**
+         * Get the edges in the network
+         */
         get edges() {
             return this.mEdges;
         }
@@ -92,9 +105,9 @@ define("js/Network", ["js/Container", "js/Vertex", "js/Edge", "delaunator"], fun
         }
 
         // @Override Container
-        get scheme() {
-            let s = super.scheme;
-            if (this.mEdges.length > 0)
+        scheme(skip) {
+            let s = super.scheme(skip);
+            if (this.mEdges.length > 0 && !/'counts'/.test(skip))
                 s.push(this.mEdges.length + " edge"
                        + (this.mEdges.length == 1 ? "" : "s"));
             return s;
@@ -123,8 +136,7 @@ define("js/Network", ["js/Container", "js/Vertex", "js/Edge", "delaunator"], fun
             for (let i in mapBack) {
                 let c = mapBack[i];
                 let p = c.position;
-                mapBack[i] = c = new Vertex(c.x, c.y, c.z);
-                result.addChild(c);
+                mapBack[i] = c = result.addVertex(c);
             }
             
             // Iterate over the forward edges

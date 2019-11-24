@@ -27,7 +27,7 @@ define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Vertex", "js/Co
                     if ($(this).attr("k") === "name")
                         id = $(this).attr("v");
                 });
-                let way = new Network(id);
+                let way = new Path(id);
                 let lastVert;
                 $way.children("nd").each(function() {
                     let nid = $(this).attr("ref");
@@ -35,9 +35,9 @@ define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Vertex", "js/Co
                     if (!pt)
                         throw new Error("Corrupt osm; " + nid + " missing");
                     let utm = UTM.fromLatLong(pt.lat, pt.lon);
-                    let v = new Vertex(utm.easting, utm.northing, 0);
+                    let v = way.addVertex(
+                        {x: utm.easting, y: utm.northing, z: 0});
                     // Networks don't share vertices
-                    way.addChild(v);
                     if (lastVert)
                         way.addEdge(lastVert, v);
                     lastVert = v;

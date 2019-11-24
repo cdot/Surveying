@@ -130,9 +130,9 @@ define("js/Container", ["js/Visual", "three", "js/Point", "js/Vertex"], function
         }
 
         // @Override Visual
-        get scheme() {
-            let s = super.scheme;
-            if (this.mObjects.length > 0)
+        scheme(skip) {
+            let s = super.scheme(skip);
+            if (this.mObjects.length > 0 && !/'counts'/.test(skip))
                 s.push(this.mObjects.length + " object"
                        + (this.mObjects.length == 1 ? "" : "s"));
             return s;

@@ -21,9 +21,18 @@ define("js/Path", ["js/Network", "js/Edge"], function(Network, Edge) {
                 super.addEdge(new Edge(last, v));
         }
 
+        get isClosed() {
+            return this.mIsClosed;
+        }
+        
         close() {
             super.addEdge(new Edge(this.children[this.children.length - 1],
-                                  this.children[0]));
+                                   this.children[0]));
+            this.mIsClosed = true;
+        }
+        
+        scheme(skip) {
+            return super.scheme(skip);
         }
     }
 

@@ -135,18 +135,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
         return parseFloat($el.attr(attrn));
     }
 
-    /**
-     * Add a vertex to the given network element
-     * @param {Network} el
-     * @param x ordinate
-     * @param y ordinate
-     */
-    function addVertex(el, x, y) {
-        let v = new Vertex(x, y, 0);
-        el.addChild(v);
-        return v;
-    }
-    
     class SVG extends XML {
 
         constructor() {
@@ -165,23 +153,29 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             let y = getAttrN($rect, "y");
             let w = getAttrN($rect, "width");
             let h = getAttrN($rect, "height");
-            let path = props.type === "contour" ?
+            let obj = props.type === "contour" ?
                 new Contour(name) : new Path(name);
-            addVertex(path, x, y);
-            addVertex(path, x + w, y);
-            addVertex(path, x + w, y + h);
-            addVertex(path, x, y + h);
-            path.close();
-            return path;
+            let z = props.z ? parseFloat(props.z) : 0;
+            obj.addVertex({ x: x,     y: y,     z: z });
+            obj.addVertex({ x: x + w, y: y,     z: z });
+            obj.addVertex({ x: x + w, y: y + h, z: z });
+            obj.addVertex({ x: x,     y: y + h, z: z });
+            if (obj instanceof Contour)
+                obj.setZ(z);
+            obj.close();
+            return obj;
         }
 
         _load_polyline($poly, name, props) {
-            let path = props.type === "contour" ?
+            let obj = props.type === "contour" ?
                 new Contour(name) : new Path(name);
+            let z = props.z ? parseFloat(props.z) : 0;
             let pts = $poly.getAttribute("points").split(/[,\s]+/);
             for (let i = 0; i < pts.length; i += 2)
-                addVertex(path, pts[i], pts[i + 1]);
-            return path;
+                obj.addVertex({ x: pts[i], y: pts[i + 1], z: z });
+            if (obj instanceof Contour)
+                obj.setZ(z);
+            return obj;
         }
         
         _load_polygon($poly, name, props) {
@@ -191,12 +185,15 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
         }
 
         _load_line($poly, name, props) {
-            let path = new Path(name);
-            addVertex(path, getAttrN($rect, "x1"),
-                      getAttrN($rect, "y1"));
-            addVertex(path, getAttrN($rect, "x2"),
-                      getAttrN($rect, "y2"));
-            return path;
+            let obj = new Path(name);
+            let z = props.z ? parseFloat(props.z) : 0;
+            obj.addVertex({ x: getAttrN($rect, "x1"),
+                            y: getAttrN($rect, "y1"),
+                            z: z });
+            obj.addVertex({ x: getAttrN($rect, "x2"),
+                            y: getAttrN($rect, "y2"),
+                            z: z });
+            return obj;
         }
 
         // Treat paths as sequences of connected vertices
@@ -206,8 +203,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             let cmd;
             let closed = false;
 
-            function addPV() { vertices.push({ x: pos.x, y: pos.y }); }
-
             function getN() { return parseFloat(points.shift()); }
             
             function getXY() {
@@ -216,11 +211,13 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 return { x : x, y: y };
             }
 
-            function delta(p) {
+            function getNextPos() {
+                let p = getXY();
                 if (/[A-Z]/.test(cmd))
                     pos.x = p.x, pos.y = p.y;
                 else
                     pos.x += p.x, pos.y += p.y;
+                vertices.push({ x: pos.x, y: pos.y });
             }
 
             let points = $path.attr("d").split(/[,\s]+/);
@@ -230,12 +227,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
 
                 case "M": case "m":
                 case "L": case "l":
-                    delta(getXY());
-                    addPV();
-                    while (IS_NUMBER.test(points[0])) {
-                        delta(getXY());
-                        addPV();
-                    }
+                    while (IS_NUMBER.test(points[0]))
+                        getNextPos();
                     break;
                     
                 case "H": case "V":
@@ -247,7 +240,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     case "h": pos.x += p; break;
                     case "v": pos.y += p; break;
                     }
-                    addPV();
+                    vertices.push({ x: pos.x, y: pos.y });
                     while (IS_NUMBER.test(points[0])) {
                         p = getN();
                         switch (cmd) {
@@ -256,7 +249,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                         case "h": pos.x += p; break;
                         case "v": pos.y += p; break;
                         }
-                        addPV();
+                        vertices.push({ x: pos.x, y: pos.y });
                     }
                     break;
                 }
@@ -275,8 +268,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                         if (/[CSQ]/i.test(cmd))
                             getXY(); // Cubic has 2 control points
                         // T has no control points
-                        delta(getXY());
-                        addPV();
+                        getNextPos();
                     }
                     break;
                     
@@ -286,8 +278,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     getN(); // angle
                     getN(); // large-arc-flag
                     getN(); // sweep-flag
-                    delta(getXY());
-                    addPV();
+                    getNextPos();
                     break;
                 }
             }
@@ -300,10 +291,10 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             let obj = (props.type === "contour") ?
                 new Contour(name) : new Path(name);
             let z = props.z ? parseFloat(props.z) : 0;
-            for (let v of vertices) {
-                let vx = new Vertex(v.x, v.y, z);
-                obj.addChild(vx);
-            }
+            for (let v of vertices)
+                obj.addVertex({ x: v.x, y: v.y, z: z });
+            if (obj instanceof Contour)
+                obj.setZ(z);
             if (closed)
                 obj.close();
             
@@ -318,39 +309,38 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
 
             let x = getAttrN($image, "x");
             let y = getAttrN($image, "y");
+            let z = props.z ? parseFloat(props.z) : 0;
             let h = getAttrN($image, "height");
             let w = getAttrN($image, "width");
             let plane = new ImagePlane(
                 name,
                 url,
-                new Three.Vector3(x, y, 0),
-                new Three.Vector3(x + w, y + h, 0));
+                new Three.Vector3(x, y, z),
+                new Three.Vector3(x + w, y + h, z));
 
             return plane;
         }
 
         _load_circle($xml, name, props) {
-            let pt;
             if (props.type === "point") {
-                pt = new Point(
-                    getAttrN($xml, "cx"), getAttrN($xml, "cy"), 0, name);
+                let z = props.z ? parseFloat(props.z) : 0;
+                return new Point(
+                    { x: getAttrN($xml, "cx"), y: getAttrN($xml, "cy"), z: z },
+                    name);
             }
-            else
-                console.debug("\tnon-point circle ignored");
-            
-            return pt;
+            console.debug("\tnon-point circle ignored");
+            return undefined;
         }
         
         _load_ellipse($xml, name, props) {
-            let pt;
             if (props.type === "point") {
-                pt = new Point(
-                    getAttrN($xml, "cx"), getAttrN($xml, "cy"), 0, name);
+                let z = props.z ? parseFloat(props.z) : 0;
+                return new Point(
+                    { x: getAttrN($xml, "cx"), y: getAttrN($xml, "cy"), z: z },
+                    name);
             }
-            else
-                console.debug("\tnon-point ellipse ignored");
-            
-            return pt;
+            console.debug("\tnon-point ellipse ignored");
+            return undefined;
         }
         
         _load_g($xml, name, props) {
@@ -376,8 +366,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     console.debug("Ignore", this.tagName);
 
                 if (obj) {
-                    for (let k in props)
-                        obj.prop(k, props[k]);
                     let txs = $(this).attr("transform");
                     if (txs) {
                         let m = parseSVGTransforms(txs);
@@ -515,7 +503,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             $svg.attr("sodipodi:docname", visual.name);
 
             // Make an XML DOM element of the given tag for the given Visual
-            function makeEl(tag, visual) {
+            function makeEl(tag, visual, props) {
                 let el = document.createElementNS(SVG_NS, tag);
                 if (visual.name) {
                     let tit = document.createElementNS(SVG_NS, "title");
@@ -523,8 +511,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     el.appendChild(tit);
                 }
                 let vs = [];
-                for (let k of visual.props) {
-                    let v = visual.prop(k);
+                for (let k of props) {
+                    let v = props[k];
                     if (typeof v === "number")
                         vs.push(k + ':' + v);
                     else if (typeof v !== "undefined")
@@ -541,12 +529,32 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             // Make the SVG for the given Visual, adding the XML DOM to the
             // given container
             function makeSVG(visual, container) {
+                let props = {};
                 switch (visual.constructor.name) {
+                    
+                case "Contour":
+                    props.type = "contour";
+                    props.z = visual.z;
+                    // Fall-through deliberate
+                    
+                case "Path":
+                    let path = makeEl("path", visual, props);
+                    let lines = [ "M" ];
+                    for (let e of visual.children) {
+                        let v = utm2svg(e.position);
+                        lines.push(v.x, v.y);
+                    }
+                    if (visual.isClosed)
+                        lines.push("z");
+                    path.setAttribute("d", lines.join(" "));
+                    path.setAttribute("style", PATH_STYLE);
+                    container.appendChild(path);
+                    break;
                     
                 case "Network": {
                     // Serialise the network as individual edges in a
                     // path
-                    let path = makeEl("path", visual);
+                    let path = makeEl("path", visual, props);
                     let lines = [];
                     let last;
                     for (let e of visual.edges) {

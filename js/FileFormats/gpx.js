@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - ALl rights reserved */
-define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Network", "js/Container", "js/UTM"], function(XML, Three, Vertex, Network, Container, UTM) {
+define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Path", "js/Container", "js/UTM"], function(XML, Three, Vertex, Path, Container, UTM) {
 
     let counter = 0;
     
@@ -22,7 +22,7 @@ define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ne
                     let $seg = $(this);
                     let id = counter++;
                     console.debug("Loading track", id);
-                    let track = new Network(id);
+                    let track = new Path(id);
                     let lastVert, lastLat = NaN, lastLon = NaN;
                     $seg.children("trkpt").each(function() {
                         let $tpt = $(this);
@@ -33,7 +33,8 @@ define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Vertex", "js/Ne
                             lastLat = lat; lastLon = lon;
                             let time = $tpt.children("time").text();
                             let utm = UTM.fromLatLong(lat, lon);
-                            let v = new Vertex(utm.easting, utm.northing, 0);
+                            let v = track.addVertex(
+                                {x: utm.easting, y: utm.northing, z: 0});
                             track.addChild(v);
                             if (lastVert)
                                 track.addEdge(lastVert, v);

@@ -28,38 +28,6 @@ define("js/Visual", ["three"], function(Three) {
         }
 
         /**
-         * All visuals can carry any number of arbitrary properties.
-         * Two signatures: prop(k) get the value of the property and
-         * prop(k, v) set the value of the property.
-         */
-        prop(k, v) {
-            if (typeof v !== "undefined")
-                this.mProp[k] = v;
-            return this.mProp[k];
-        }
-
-        /**
-         * Get a list of the properties defined on this visual
-         */
-        get props() {
-            if (this.mProp.keys)
-                return this.mProp.keys();
-            let ks = [];
-            for (let k in this.mProp)
-                ks.push(k);
-            return ks;
-        }
-        
-        /**
-         * Remove the given property. If the property isn't present,
-         * does nothing. Note that subclasses may define properties that
-         * can't be removed (such as "type")
-         */
-        removeProp(k) {
-            delete this.mProp[k];
-        }
-        
-        /**
          * Get the handle size for visuals that
          * have handles in 3-space
          */
@@ -194,25 +162,18 @@ define("js/Visual", ["three"], function(Three) {
         /**
          * Generate a report on this object for use in the UI
          */
-        get scheme() {
+        scheme(skip) {
             let s = [];
             let self = this;
-            s.push({
-                title: self.constructor.name,
-                type: "string",
-                get: () => { return self.mName; },
-                set: (v) => { self.mName = v; }
-            });
-
-            let props = [];
-            for (let p in this.mProp)
-                props.push({
-                    title: p,
+            if (/'name'/.test(skip))
+                s.push(self.constructor.name);
+            else
+                s.push({
+                    title: self.constructor.name,
                     type: "string",
-                    get: () => { return self.mProp[p]; },
-                    set: (v) => { self.prop(p, v); }
+                    get: () => { return self.mName; },
+                    set: (v) => { self.mName = v; }
                 });
-            s.push(props);
             return s;
         }
 

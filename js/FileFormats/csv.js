@@ -49,7 +49,8 @@ define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Point", "js/Containe
                     }
                     let utm = UTM.fromLatLong(r.lat, r.lon);
                     let v = new Point(
-                        utm.easting, utm.northing, -r.depth, r.name | r.time);
+                        {x: utm.easting, y: utm.northing, z: -r.depth},
+                        r.name | r.time);
                     group.addChild(v);
                 }
             }

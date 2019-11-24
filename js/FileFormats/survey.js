@@ -45,11 +45,9 @@ define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Po
                 let p;
                 switch (tag) {
                 case "point":
-                    p = getPoint($nd);
-                    return new Point(p.x, p.y, p.z, name);
+                    return new Point(getPoint($nd), name);
                 case "vertex": {
-                    p = getPoint($nd);
-                    let v = new Vertex(p.x, p.y, p.z);
+                    let v = new Vertex(getPoint($nd));
                     vid2vertex[$nd.attr("id")] = v;
                     return v;
                 }
@@ -134,11 +132,6 @@ define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Po
                     dom = doc.createElement("point");
                     putPoint(visual.position, dom);
                     break;
-                case "Vertex":
-                    dom = doc.createElement("vertex");
-                    dom.setAttribute("id", visual.vid);
-                    putPoint(visual.position, dom);
-                    break;
                 case "Edge":
                     dom = doc.createElement("edge");
                     dom.setAttribute("p1", visual.p1.vid);
@@ -146,20 +139,43 @@ define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Po
                     break;
                 case "Network":
                     dom = doc.createElement("network");
-                    for (let g of visual.children)
-                        dom.append(db2xml(g, doc));
+                    for (let g of visual.children) {
+                        let d = doc.createElement("v");
+                        d.setAttribute("id", g.vid);
+                        d.setAttribute("x", g.position.x);
+                        d.setAttribute("y", g.position.y);
+                        d.setAttribute("z", g.position.z);
+                        dom.append(d);
+                    }
                     for (let e of visual.edges)
                         dom.append(db2xml(e, doc));
                     break;
+                case "Path": {
+                    // A path is a chain of vertices that may be closed
+                    // Don't need to save edges
+                    dom = doc.createElement("path");
+                    dom.setAttribute("closed", visual.isClosed);
+                    let v = [];
+                    for (let g of visual.children) {
+                        let d = doc.createElement("v");
+                        d.setAttribute("x", g.position.x);
+                        d.setAttribute("y", g.position.y);
+                        d.setAttribute("z", g.position.z);
+                        dom.append(d);
+                    }
+                    break;
+                }
                 case "Contour": {
                     // A contour is a closed loop, don't need to save
                     // edges
                     dom = doc.createElement("contour");
                     dom.setAttribute("z", visual.children[0].position.z);
-                    let v = [];
-                    for (let g of visual.children)
-                        v.push([g.position.x, g.position.y]);
-                    dom.setAttribute("d", JSON.stringify(v));
+                    for (let g of visual.children) {
+                        let d = doc.createElement("v");
+                        d.setAttribute("x", g.position.x);
+                        d.setAttribute("y", g.position.y);
+                        dom.append(d);
+                    }
                     break;
                 }
                 case "Container":

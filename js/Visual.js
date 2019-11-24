@@ -193,16 +193,26 @@ define("js/Visual", ["three"], function(Three) {
         /**
          * Generate a report on this object for use in the UI
          */
-        get report() {
-            let s = this.constructor.name;
-            if (this.mName)
-                s += " '" + this.mName + "'";
-            let prs = [];
+        get scheme() {
+            let s = [];
+            let self = this;
+            s.push({
+                title: self.constructor.name,
+                type: "string",
+                get: () => { return self.mName; },
+                set: (v) => { self.mName = v; }
+            });
+
+            let props = [];
             for (let p in this.mProp)
-                prs.push(p + ":" + this.mProp[p])
-            if (prs.length > 0)
-                s += " {" + prs.join(",") + "}";
-            return [ s ];
+                props.push({
+                    title: p,
+                    type: "string",
+                    get: () => { return self.mProp[p]; },
+                    set: (v) => { self.prop(p, v); }
+                });
+            s.push(props);
+            return s;
         }
 
         /**

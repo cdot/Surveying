@@ -468,7 +468,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 // SVG coords have 0,0, at the top left, so
                 // flip the Y axis so that the bottom left becomes 0, 0
                 let height = getAttrN($xml, "height");
-                mats.push(new Three.Matrix4().makeTranslation(0, -height, 1));
+                mats.push(new Three.Matrix4().makeTranslation(0, -height, 0));
                 mats.push(new Three.Matrix4().makeScale(1, -1, 1));
 
                 // Translate reference point to 0, 0

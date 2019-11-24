@@ -74,8 +74,8 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
         }
 
         // @Override Point
-        setPosition(v) {
-            super.setPosition(v);
+        setPosition(x, y, z) {
+            super.setPosition(x, y, z);
             for (let e of this.mEdges)
                 e.vertexMoved();
         }
@@ -101,9 +101,9 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
         }
 
         // @Override Point
-        get report() {
-            let s = super.report;
-            s.push("vertex: " + this.mVid);
+        get scheme() {
+            let s = super.scheme;
+            s.push("Vertex: " + this.mVid);
             for (let e of this.mEdges)
                 s.push("Edge to " + e.otherEnd(this).vid);
             return s;

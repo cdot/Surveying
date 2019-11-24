@@ -68,9 +68,22 @@ define("js/ImagePlane", ["js/Visual", "three"], function(Visual, Three) {
         }
 
         // @Override Visual
-        get report() {
-            let s = super.report;
-            s.push("Image: " + this.mImage);
+        get scheme() {
+            let s = super.scheme;
+            s.push({
+                title: "URL",
+                type: "string",
+                get: () => { return self.mImage; },
+                set: (v) => {
+                    self.mImage = v;
+                    self.mMaterial = new Three.MeshBasicMaterial({
+                        map: loader.load(v),
+                        opacity: 0.9,
+                        transparent: true
+                    });
+                    this.object3D.material = self.mMaterial;
+                }
+            });
             return s;
         }
     }

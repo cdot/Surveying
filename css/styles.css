@@ -13,8 +13,11 @@ body {
     height: 100%;
 }
 
+input.property {
+}
+
 /* Consistent look and feel for controls */
-.button, input, button {
+.button, button {
     display: inline-block;
     -webkit-appearance: button;
     -webkit-writing-mode: horizontal-tb !important;

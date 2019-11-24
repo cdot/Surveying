@@ -1,7 +1,9 @@
 define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Visual, Three, UTM, Materials) {
 
     /**
-     * An isolated point sounding
+     * Base class of points. The default behaviour is a point sounding i.e
+     * a point that stands on it's own as an object in a scene. Vertex
+     * is subclassed off this to add behaviours for a point in a path/mesh.
      */
     class Point extends Visual {
         /**
@@ -20,21 +22,24 @@ define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Vi
         // @Override Visual
         prop(k, v) {
             if (k === "depth" && typeof v === "number") {
-                let vec = new Three.Vector3(
-                    this.mCurPos.x, this.mCurPos.y, -v);
-                this.setPosition(vec);
+                this.setPosition(this.mCurPos.x, this.mCurPos.y, -v);
             }
             return super.prop(k, v);
         }
 
         /**
          * Set position of vertex
-         * @param v Three.Vector3 position
+         * @param v Three.Vector3 position or x, y, z ordinates
          */
-        setPosition(v) {
-            this.mCurPos.copy(v);
+        setPosition(x, y, z) {
+            if (typeof x === "object") {
+                z = x.z;
+                y = x.y;
+                x = x.x;
+            }
+            this.mCurPos.set(x, y, z);
             if (this.object3D)
-                this.object3D.position.set(v.x, v.y, v.z);
+                this.object3D.position.set(x, y, z);
         }
 
         /**
@@ -114,17 +119,70 @@ define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Vi
         }
 
         // @Override Visual
-        get report() {
-            let s = super.report;
-            s.push("(" + this.mCurPos.x +
-                   "," + this.mCurPos.y +
-                   "," + this.mCurPos.z + ")");
-            s.push(new UTM(this.mCurPos.x, this.mCurPos.y).stringify());
+        get scheme() {
+            let s = super.scheme;
+            let self = this;
+            s.push({
+                title: "X",
+                type: "number",
+                get: () => { return self.mCurPos.x; },
+                set: (v) => {
+                    self.setPosition(v, self.mCurPos.y, self.mCurPos.z);
+                }
+            });
+            s.push({
+                title: "Y",
+                type: "number",
+                get: () => { return self.mCurPos.y; },
+                set: (v) => {
+                    self.setPosition(self.mCurPos.x, v, self.mCurPos.z);
+                }
+            });
+            s.push({
+                title: "Z",
+                type: "number",
+                get: () => { return self.mCurPos.z; },
+                set: (v) => {
+                    self.setPosition(self.mCurPos.x, self.mCurPos.y, v);
+                }
+            });
+            s.push({
+                title: "Lat",
+                type: "number",
+                get: () => {
+                    let ll = new UTM(this.mCurPos.x, this.mCurPos.y)
+                        .toLatLong();
+                    return ll.latitude;
+                },
+                set: (v) => {
+                    let ll = new UTM(this.mCurPos.x, this.mCurPos.y)
+                        .toLatLong();
+                    let utm = UTM.fromLatLong(v, ll.longitude);
+                    self.setPosition(
+                        utm.easting, this.mCurPos.y, this.mCurPos.z);
+                }
+            });
+            s.push({
+                title: "Long",
+                type: "number",
+                get: () => {
+                    let ll = new UTM(this.mCurPos.x, this.mCurPos.y)
+                        .toLatLong();
+                    return ll.longitude;
+                },
+                set: (v) => {
+                    let ll = new UTM(this.mCurPos.x, this.mCurPos.y)
+                        .toLatLong()
+                    let utm = UTM.fromLatLong(ll.latitude, v);
+                    self.setPosition(
+                        this.mCurPos.x, utm.northing, this.mCurPos.z);
+                }
+            });
+            
             return s;
         }
 
         // @Override Visual
-        // Soundings are always added to point clouds
         condense(coords, mapBack) {
             console.log("Condensed ", this.name);
             coords.push([this.position.x, this.position.y]);

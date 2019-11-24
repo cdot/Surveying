@@ -102,8 +102,8 @@ define("js/Network", ["js/Container", "js/Vertex", "js/Edge", "delaunator"], fun
         }
 
         // @Override Container
-        get report() {
-            let s = super.report;
+        get scheme() {
+            let s = super.scheme;
             if (this.mEdges.length > 0)
                 s.push(this.mEdges.length + " edge"
                        + (this.mEdges.length == 1 ? "" : "s"));

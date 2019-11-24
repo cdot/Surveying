@@ -31,19 +31,45 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
  
             $("#noform").on("submit", () => false);
 
+            function makeControl(scheme) {
+                if (scheme instanceof Array)
+                    return makeControls(scheme);
+                
+                let $li = $("<li></li>");
+                if (typeof scheme === "string") {
+                    $li.text(scheme);
+                    return $li;
+                }
+                $li.append(scheme.title + " ");
+                let $in = $('<input class="property"/>');
+                $in.attr("type", scheme.type);
+                $in.attr("value", scheme.get());
+                $in.on("change", function() {
+                    let v = $(this).val();
+                    if (scheme.type === "number")
+                        v = parseFloat(v);
+                    scheme.set(v);
+                });
+                $li.append($in);
+                return $li;
+            }
+            
+            function makeControls(schemes) {
+                if (schemes.length === 0)
+                    return null;
+                let $block = $("<ul></ul>");
+                for (let scheme of schemes)
+                    $block.append(makeControl(scheme));
+                return $block;
+            }
+            
             // Set up the selection manager
             this.mSelection = new Selection(sln => {
                 let $report = $("<ul></ul>");
                 for (let sel of sln.items) {
-                    let r = sel.report;
-                    let $item = $("<li>" + r.shift() + "</li>");
-                    if (r.length > 0) {
-                        let $block = $("<ul></ul>");
-                        for (let line of r)
-                            $block.append("<li>" + line + "</li>");
-                        $item.append($block);
-                    }
-                    $report.append($item);
+                    let $s = makeControls(sel.scheme);
+                    if ($s)
+                        $report.append($s);
                 }
                 $("#report").empty().append($report);
             });

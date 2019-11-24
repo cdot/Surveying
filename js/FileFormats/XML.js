@@ -1,3 +1,4 @@
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
 define("js/FileFormats/XML", ["js/FileFormat", "jquery"], function(FileFormat) {
 
     /**

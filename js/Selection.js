@@ -1,3 +1,4 @@
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
 define("js/Selection", function() {
     /**
      * A collection of Visuals

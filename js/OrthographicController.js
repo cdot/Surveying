@@ -195,7 +195,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
 
             // Scale handles appropriately so they appear as
             // a fraction of the canvas width
-            this.mHandleSize = viewSize / 200;
+            this.mHandleSize = viewSize / 100;
             this.mVisual.setHandleScale(this.mHandleSize);
 
             let c = this.mCamera;

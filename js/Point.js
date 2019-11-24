@@ -1,3 +1,4 @@
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
 define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Visual, Three, UTM, Materials) {
 
     /**
@@ -7,23 +8,21 @@ define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Vi
      */
     class Point extends Visual {
         /**
-         * @param name vertex name (may not be unique)
          * @param v Three.Vector3 position of vertex
+         * @param name vertex name (may not be unique)
          */
-        constructor(name, v) {
+        constructor(x, y, z, name) {
             super(name);
-            this.mCurPos = new Three.Vector3(v.x, v.y, v.z);
+            this.mCurPos = new Three.Vector3(x, y, z);
             // {Three.SphereGeometry} this.mGeometry
             // {Three.Scene} this.mScene
             this.prop("type", "point");
-            super.prop("depth", v.z);
         }
 
         // @Override Visual
         prop(k, v) {
-            if (k === "depth" && typeof v === "number") {
-                this.setPosition(this.mCurPos.x, this.mCurPos.y, -v);
-            }
+            if (k === "z" && typeof v === "number")
+                this.setPosition(this.mCurPos.x, this.mCurPos.y, v);
             return super.prop(k, v);
         }
 

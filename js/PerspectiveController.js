@@ -1,3 +1,4 @@
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
 define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitControls"], function(CanvasController, Three, OrbitControls) {
 
     /**

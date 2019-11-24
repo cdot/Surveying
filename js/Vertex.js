@@ -1,3 +1,4 @@
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
 define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(Point, Three, Materials, Edge) {
     
     // Every Visual is uniquely numbered within this system
@@ -11,10 +12,10 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
     class Vertex extends Point {
         /**
          * @param name vertex name (may not be unique)
-         * @param v Three.Vector3 position of vertex
+         * @param v Three.Vector3 position of vertex or x, y, z
          */
-        constructor(name, v) {
-            super(name, v);
+        constructor(x, y, z) {
+            super(x, y, z);
             this.mVid = counter++;
             // Edges are not OWNED by Vertex, just referred to. They
             // are owned by the parent Networl.
@@ -110,7 +111,7 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
         }
 
         condense(coords, mapBack) {
-            if (this.parent && this.parent.prop("type") === "isobath")
+            if (this.parent && this.parent.prop("type") === "contour")
                 super.condense(coords, mapBack);
             else
                 console.log("Parent of",this.name,"NOT ISOBATH");

@@ -1,3 +1,4 @@
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
 define("js/CanvasController", ["js/Container", "three", "js/Selection", "js/UTM", "js/Materials", "jquery"], function(Container, Three, Selection, UTM, Materials) {
 
     /**

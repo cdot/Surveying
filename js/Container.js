@@ -1,3 +1,4 @@
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
 define("js/Container", ["js/Visual", "three", "js/Point", "js/Vertex"], function(Visual, Three, Point, Vertex, Network) {
 
     /**
@@ -18,9 +19,9 @@ define("js/Container", ["js/Visual", "three", "js/Point", "js/Vertex"], function
          * Add a child visual to this container
          * @param {Visual} g
          */
-        addChild(g) {
-            g.setParent(this);
-            this.mObjects.push(g);
+        addChild(obj) {
+            obj.setParent(this);
+            this.mObjects.push(obj);
         }
         
         // @Override Visual

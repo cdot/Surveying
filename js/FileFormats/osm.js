@@ -35,9 +35,7 @@ define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Vertex", "js/Co
                     if (!pt)
                         throw new Error("Corrupt osm; " + nid + " missing");
                     let utm = UTM.fromLatLong(pt.lat, pt.lon);
-                    let v = new Vertex(
-                        pt.time,
-                        new Three.Vector3(utm.easting, utm.northing, 0));
+                    let v = new Vertex(utm.easting, utm.northing, 0);
                     // Networks don't share vertices
                     way.addChild(v);
                     if (lastVert)

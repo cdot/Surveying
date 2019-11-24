@@ -1,3 +1,4 @@
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
 define("js/Visual", ["three"], function(Three) {
 
     /**
@@ -224,9 +225,9 @@ define("js/Visual", ["three"], function(Three) {
         }
 
         /**
-         * Add the points in visuals that have the properties isobath or point
-         * and depth to a flat array suitable for passing to delaunator, with
-         * a map back to the actual Point
+         * Add the points in visuals that have the properties
+         * type:contour or type:point to a flat array suitable for
+         * passing to delaunator, with a map back to the actual Point
          * object.
          * @param coords array of [x0, y0, x1, y1, ...] 
          * @param mapBack array indexed by the index into coords/2, mapping

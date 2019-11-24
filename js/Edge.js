@@ -1,3 +1,4 @@
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
 define("js/Edge", ["js/Visual", "three", "js/Materials"], function(Visual, Three, Materials) {
 
     /**

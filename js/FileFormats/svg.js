@@ -1,4 +1,5 @@
-define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Vertex", "js/Container", "js/Network", "js/ImagePlane", "js/UTM", "jquery-ui"], function(XML, Three, Point, Vertex, Container, Network, ImagePlane, UTM) {
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
+define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Vertex", "js/Container", "js/Network", "js/Contour", "js/Path", "js/ImagePlane", "js/UTM", "jquery-ui"], function(XML, Three, Point, Vertex, Container, Network, Contour, Path, ImagePlane, UTM) {
 
     /**
      * Specialised loader/saver for an SVG used to carry survey information.
@@ -25,7 +26,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
      * SVG entities may be annotated with key=value pairs in their
      * descriptions.
      * type: <entity type>
-     * type: point, when applied to a circle, defines a point depth
+     * type: point, when applied to a circle, defines a sounding
      * measurement.
      */
 
@@ -44,61 +45,67 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
 
     // Loader
     
-    function applySVGTransforms(transforms, net) {
-        if (!transforms) return;
+    function parseSVGTransform(tx) {
 
-        let mat = new Three.Matrix4();
-        let step = new Three.Matrix4();
-        let txs = transforms.split(/(\w+\(.*?\))/);
-        for (let tx of txs) {
-            if (/^\w+\(.*?\)/.test(tx)) {
-                let parts = tx.split(/[(, ]+/);
-                let fn = parts.shift();
-                let vs = [];
-                for (let p of parts)
-                    vs.push(parseFloat(p));
-                switch(fn) {
-                case "matrix":
-                    //[a c e]
-                    //[b d f]
-                    step.set(vs[0], vs[2], 0, vs[4],
-                             vs[1], vs[3], 0, vs[5],
-                             0, 0, 1, 0,
-                             0, 0, 0, 1);
-                    mat.multiply(step);
-                    break;
+        let parts = tx.replace(/\s*\)\s*$/, "").split(/[(, ]+/);
+        let fn = parts.shift();
+        let vs = [];
+        for (let p of parts)
+            vs.push(parseFloat(p));
+        
+        let matrix = new Three.Matrix4();
+        switch(fn) {
+        case "matrix":
+            //[a c e]
+            //[b d f]
+            matrix.set(vs[0], vs[2], 0, vs[4],
+                       vs[1], vs[3], 0, vs[5],
+                       0, 0, 1, 0,
+                       0, 0, 0, 1);
+            break;
                     
-                case "rotate":
-                    rot = -vs[0] * Math.PI / 180;
-                    if (vs.length === 3) {
-                        step.makeTranslation(-vs[1], -vs[2], 0);
-                        mat.multiply(step);
-                    }
-                    step.makeRotationZ(rot);
-                    mat.multiply(step);
-                    if (vs.length === 3) {
-                        step.makeTranslation(vs[1], vs[2], 0);
-                        mat.multiple(step);
-                    }
-                    break;
-                    
-                case "translate":
-                    step.makeTranslation(vs[0], vs[1], 0);
-                    mat.multiply(step);
-                    break;
+        case "rotate": {
+            if (vs.length === 3)
+                matrix.makeTranslation(-vs[1], -vs[2], 0);
 
-                case "scale":
-                    if (vs.length === 1)
-                        vs[1] = vs[0];
-                    step.makeScale(vs[0], vs[1], 1);
-                    mat.multiply(step);
-                    break;
-                default:
-                    console.error("transform not supported:", fn);
-                }
+            let step = new Three.Matrix4();
+            step.makeRotationZ(-vs[0] * Math.PI / 180);
+            matrix.multiply(step);
+
+            if (vs.length === 3) {
+                step.makeTranslation(vs[1], vs[2], 0);
+                matrix.multiply(step);
             }
+            break;
+        }    
+            
+        case "translate":
+            matrix.makeTranslation(vs[0], vs[1], 0);
+            break;
+
+        case "scale":
+            if (vs.length === 1)
+                vs[1] = vs[0];
+            matrix.makeScale(vs[0], vs[1], 1);
+            break;
+
+        default:
+            throw new Error("transform not supported: " + tx);
         }
-        net.applyTransform(mat);
+
+        return matrix;
+    }
+    
+    function parseSVGTransforms(transforms) {
+        let mat = new Three.Matrix4();
+        let txs = transforms.split(/(\w+\s*\(.*?\))/);
+        for (let tx of txs) {
+            if (/^\w+\s*\(.*?\)$/.test(tx))
+                mat.multiply(parseSVGTransform(tx));
+            else if (!/^[\s,]*$/.test(tx))
+                throw new Error("Bad transform " + tx + " in " + transforms);
+        }
+        return mat;
     }
 
     /**
@@ -119,12 +126,23 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
         return props;
     }
 
-    function getAttrN($el, attrn, def) {
+    /**
+     * Get the value of a numeric attribute
+     * @param $el XML element
+     * @param attrn attribute name
+     */
+    function getAttrN($el, attrn) {
         return parseFloat($el.attr(attrn));
     }
 
-    function addVertex(el, name, vx) {
-        let v = new Vertex(name, vx.clone());
+    /**
+     * Add a vertex to the given network element
+     * @param {Network} el
+     * @param x ordinate
+     * @param y ordinate
+     */
+    function addVertex(el, x, y) {
+        let v = new Vertex(x, y, 0);
         el.addChild(v);
         return v;
     }
@@ -147,129 +165,89 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             let y = getAttrN($rect, "y");
             let w = getAttrN($rect, "width");
             let h = getAttrN($rect, "height");
-            let path = new Network(name);
-            let v0 = addVertex(
-                path, name + "_xy", new Three.Vector3(x, y, 0));
-            let v1 = addVertex(
-                path, name + "_Xy", new Three.Vector3(x + w, y, 0));
-            let v2 = addVertex(
-                path, name + "_XY", new Three.Vector3(x + w, y + h, 0));
-            let v3 = addVertex(
-                path, name + "_xY", new Three.Vector3(x, y + h, 0));
-            path.addEdge(v0, v1);
-            path.addEdge(v1, v2);
-            path.addEdge(v2, v3);
-            path.addEdge(v3, v0);
+            let path = props.type === "contour" ?
+                new Contour(name) : new Path(name);
+            addVertex(path, x, y);
+            addVertex(path, x + w, y);
+            addVertex(path, x + w, y + h);
+            addVertex(path, x, y + h);
+            path.close();
             return path;
         }
 
-        _load_polyline($poly, name, props, closed) {
-            let path = new Network(name);
+        _load_polyline($poly, name, props) {
+            let path = props.type === "contour" ?
+                new Contour(name) : new Path(name);
             let pts = $poly.getAttribute("points").split(/[,\s]+/);
-            let sv;
-            for (let i = 0; i < pts.length; i += 2) {
-                let v = addVertex(
-                    path, name + "_" + (i / 2),
-                    new Three.Vector3(pts[i], pts[i + 1], 0));
-                if (!sv) sv = v;
-                if (vp)
-                    path.addEdge(vp, v);
-                vp = v;
-            }
-            if (closed && vp && sv && vp !== sv)
-                path.addEdge(vp, sv);
+            for (let i = 0; i < pts.length; i += 2)
+                addVertex(path, pts[i], pts[i + 1]);
             return path;
         }
         
         _load_polygon($poly, name, props) {
-            return this.load_polyline($poly, name, props, true);
+            let p = this.load_polyline($poly, name, props);
+            p.close();
+            return p;
         }
 
         _load_line($poly, name, props) {
-            let path = new Network(name);
-            let v0 = addVertex(getAttrN($rect, "x1"),
-                               getAttrN($rect, "y1"), 0);
-            let v1 = addVertex(getAttrN($rect, "x2"),
-                               getAttrN($rect, "y2"), 0);
-            path.addEdge(v0, v1);
+            let path = new Path(name);
+            addVertex(path, getAttrN($rect, "x1"),
+                      getAttrN($rect, "y1"));
+            addVertex(path, getAttrN($rect, "x2"),
+                      getAttrN($rect, "y2"));
             return path;
         }
-        
+
+        // Treat paths as sequences of connected vertices
         _load_path($path, name, props) {
-            let path = new Network(name);
-            let vertindex = {};
-            let pos = new Three.Vector3(0, 0, 0);
-
-            let cmd, j;
-            function addPV(vx) {
-                let i = vx.x + "," + vx.y + "," + vx.z;
-                let known = vertindex[i];
-                if (known)
-                    return known;
-                known = addVertex(path, name + ":" + cmd + j++, vx);
-                vertindex[i] = known;
-                return known;
-            }
-
-            let points = $path.attr("d").split(/[,\s]+/);
-            let startVert, lastVert, p, v;
             let vertices = [];
+            let pos = { x: 0, y: 0 };
+            let cmd;
+            let closed = false;
 
-            function getN() {
-                return parseFloat(points.shift());
-            }
+            function addPV() { vertices.push({ x: pos.x, y: pos.y }); }
+
+            function getN() { return parseFloat(points.shift()); }
             
             function getXY() {
                 let x = getN();
                 let y = getN();
-                return new Three.Vector3(x, y, 0);
+                return { x : x, y: y };
             }
 
+            function delta(p) {
+                if (/[A-Z]/.test(cmd))
+                    pos.x = p.x, pos.y = p.y;
+                else
+                    pos.x += p.x, pos.y += p.y;
+            }
+
+            let points = $path.attr("d").split(/[,\s]+/);
             while (points.length > 0) {
                 cmd = points.shift();
-                j = 0;
                 switch (cmd) {
 
-                case "L": case "M":
-                case "l": case "m":
-                    p = getXY();
-                    if (/[A-Z]/.test(cmd))
-                        pos.copy(p);
-                    else {
-                        pos.x += p.x; pos.y += p.y;
-                    }
-                    v = addPV(pos);
-                    if (!startVert) startVert = v;
-                    if (lastVert && (cmd === "L" || cmd === "l"))
-                        path.addEdge(lastVert, v);
-                    lastVert = v;
+                case "M": case "m":
+                case "L": case "l":
+                    delta(getXY());
+                    addPV();
                     while (IS_NUMBER.test(points[0])) {
-                        p = getXY();
-                        if (/[A-Z]/.test(cmd))
-                            pos.copy(p);
-                        else {
-                            pos.x += p.x; pos.y += p.y;
-                        }
-                        v = addPV(pos);
-                        path.addEdge(lastVert, v);
-                        lastVert = v;
+                        delta(getXY());
+                        addPV();
                     }
                     break;
                     
                 case "H": case "V":
-                case "h": case "v":
-                    p = getN();
+                case "h": case "v": {
+                    let p = getN();
                     switch (cmd) {
                     case "H": pos.x = p; break;
                     case "V": pos.y = p; break;
                     case "h": pos.x += p; break;
                     case "v": pos.y += p; break;
                     }
-                    v = addPV(pos);
-                    if (lastVert)
-                        path.addEdge(lastVert, v);
-                    lastVert = v;
-                    if (!startVert) startVert = v;
+                    addPV();
                     while (IS_NUMBER.test(points[0])) {
                         p = getN();
                         switch (cmd) {
@@ -278,18 +256,13 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                         case "h": pos.x += p; break;
                         case "v": pos.y += p; break;
                         }
-                        v = addPV(pos);
-                        path.addEdge(lastVert, v);
-                        lastVert = v;
+                        addPV();
                     }
                     break;
+                }
                     
                 case "Z": case "z": // close path
-                    if (lastVert && startVert) {
-                        path.addEdge(lastVert, startVert);
-                        lastVert = startVert;
-                        pos.copy(lastVert.position);
-                    }
+                    closed = true;
                     break;
 
                 case "C": case "c":
@@ -302,37 +275,39 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                         if (/[CSQ]/i.test(cmd))
                             getXY(); // Cubic has 2 control points
                         // T has no control points
-                        p = getXY();
-                        if (/[A-Z]/.test(cmd))
-                            pos.copy(p);
-                        else
-                            pos.x += p.x, pos.y += p.y;
-                        v = addPV(pos);
-                        path.addEdge(lastVert, v);
-                        lastVert = v;
+                        delta(getXY());
+                        addPV();
                     }
                     break;
                     
                 case "A": case "a": // arcs - ignore
+                    console.debug("Ignoring", cmd);
                     getXY(); // rx, ry
                     getN(); // angle
                     getN(); // large-arc-flag
                     getN(); // sweep-flag
-                    lastVert = addPV(pos);
-                    p = getXY();
-                    if (/[A-Z]/.test(cmd))
-                        pos.copy(p);
-                    else
-                        pos.x += p.x, pos.y += p.y;
+                    delta(getXY());
+                    addPV();
                     break;
                 }
             }
 
-            if (path.children.length === 0) {
+            if (vertices.length === 0) {
                 console.debug("\tempty path ignored"); 
                 return undefined;
             }
-            return path;
+
+            let obj = (props.type === "contour") ?
+                new Contour(name) : new Path(name);
+            let z = props.z ? parseFloat(props.z) : 0;
+            for (let v of vertices) {
+                let vx = new Vertex(v.x, v.y, z);
+                obj.addChild(vx);
+            }
+            if (closed)
+                obj.close();
+            
+            return obj;
         }
 
         _load_image($image, name, props) {
@@ -358,9 +333,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             let pt;
             if (props.type === "point") {
                 pt = new Point(
-                    name, new Three.Vector3(
-                        getAttrN($xml, "cx"),
-                        getAttrN($xml, "cy"), 0));
+                    getAttrN($xml, "cx"), getAttrN($xml, "cy"), 0, name);
             }
             else
                 console.debug("\tnon-point circle ignored");
@@ -372,9 +345,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             let pt;
             if (props.type === "point") {
                 pt = new Point(
-                    name, new Three.Vector3(
-                        getAttrN($xml, "cx"),
-                        getAttrN($xml, "cy"), 0));
+                    getAttrN($xml, "cx"), getAttrN($xml, "cy"), 0, name);
             }
             else
                 console.debug("\tnon-point ellipse ignored");
@@ -407,7 +378,11 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 if (obj) {
                     for (let k in props)
                         obj.prop(k, props[k]);
-                    applySVGTransforms($(this).attr("transform"), obj);
+                    let txs = $(this).attr("transform");
+                    if (txs) {
+                        let m = parseSVGTransforms(txs);
+                        obj.applyTransform(m);
+                    }
                     group.addChild(obj);
                 }
             });

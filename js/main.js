@@ -1,3 +1,4 @@
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
 requirejs.config({
     baseUrl: ".",
     urlArgs: "t=" + Date.now(),

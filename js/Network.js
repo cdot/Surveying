@@ -14,16 +14,6 @@ define("js/Network", ["js/Container", "js/Vertex", "js/Edge", "delaunator"], fun
             this.mEdges = [];
         }
 
-        // @Override Visual
-        prop(k, v) {
-            // Impose depth on all children (which will be Vertex)
-            if (k === "depth" && typeof v === "number") {
-                for (let c of this.children)
-                    c.prop(k, v);
-            }
-            return super.prop(k, v);
-        }
-
         /**
          * Add an edge to the network. The edge must refer to vertices
          * in the network (not in subnets). Two signatures,
@@ -121,7 +111,7 @@ define("js/Network", ["js/Container", "js/Vertex", "js/Edge", "delaunator"], fun
                 return (e % 3 === 2) ? e - 2 : e + 1;
             }
 
-            // Condense isobaths and soundings into a cloud of points
+            // Condense Contours and Points into a cloud of points
             let coords = [];
             let mapBack = [];
             visual.condense(coords, mapBack);
@@ -132,7 +122,8 @@ define("js/Network", ["js/Container", "js/Vertex", "js/Edge", "delaunator"], fun
             // Construct a mesh, adding condensed points back in as vertices
             for (let i in mapBack) {
                 let c = mapBack[i];
-                mapBack[i] = c = new Vertex(c.name, c.position);
+                let p = c.position;
+                mapBack[i] = c = new Vertex(c.x, c.y, c.z);
                 result.addChild(c);
             }
             

@@ -1,3 +1,4 @@
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
 define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Point", "js/Container", "js/UTM", "jquery-csv"], function(FileFormat, Three, Point, Container, UTM) {
 
     /**
@@ -47,8 +48,8 @@ define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Point", "js/Containe
                         }
                     }
                     let utm = UTM.fromLatLong(r.lat, r.lon);
-                    let point = new Three.Vector3(utm.easting, utm.northing, r.depth);
-                    let v = new Point(r.name | r.time, point);
+                    let v = new Point(
+                        utm.easting, utm.northing, -r.depth, r.name | r.time);
                     group.addChild(v);
                 }
             }

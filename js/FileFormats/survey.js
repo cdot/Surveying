@@ -1,4 +1,5 @@
-define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Point", "js/Vertex", "js/Edge", "js/Container", "js/Network", "js/ImagePlane"], function(XML, Three, UTM, Point, Vertex, Edge, Container, Network, ImagePlane) {
+/* @copyright 2019 Crawford Currie - ALl rights reserved */
+define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Point", "js/Vertex", "js/Edge", "js/Container", "js/Network", "js/Contour", "js/ImagePlane"], function(XML, Three, UTM, Point, Vertex, Edge, Container, Network, Contour, ImagePlane) {
 
     class SURVEY extends XML {
 
@@ -10,23 +11,45 @@ define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Po
         load(source, data) {
             let $xml = this.parse(source, data);
             let vid2vertex = {};
-            
+            let utm_zone = $xml.find("survey").attr("utm_zone");
+            if (utm_zone) {
+                if (UTM.defaultZone() && UTM.defaultZone() !== utm_zone)
+                    changeZone = true;
+            }
+   
             function getPoint($el) {
-                let lat = parseFloat($el.attr("lat"));
-                let lon = parseFloat($el.attr("lon"));
-                let d = parseFloat($el.attr("depth"));
-                let utm = UTM.fromLatLong(lat, lon);
-                return new Three.Vector3(utm.easting, utm.northing, d);
+                let x, y, z;
+                if ($el.attr("x")) {
+                    x = parseFloat($el.attr("x")),
+                    y = parseFloat($el.attr("y"));
+                    if (changeZone) {
+                        let utm = new UTM(x, y, utm_zone);
+                        utm.changeZone(UTM.defaultZone());
+                        x = utm.easting, y = utm.northing;
+                    }
+                } else {
+                    let utm = UTM.fromLatLong(parseFloat($el.attr("lat")),
+                                              parseFloat($el.attr("lon")));
+                    x = utm.easting, y = utm.northing;
+                }
+                if ($el.attr("z"))
+                    z = parseFloat($el.attr("z"));
+                else
+                    z = -parseFloat($el.attr("depth"));
+                return new Three.Vector3(x, y, z);
             }
             
             function xml2db($nd) {
                 let name = $nd.attr("name");
                 let tag = $nd.prop("tagName");
+                let p;
                 switch (tag) {
                 case "point":
-                    return new Point(name, getPoint($nd));
+                    p = getPoint($nd);
+                    return new Point(p.x, p.y, p.z, name);
                 case "vertex": {
-                    let v = new Vertex(name, getPoint($nd));
+                    p = getPoint($nd);
+                    let v = new Vertex(p.x, p.y, p.z);
                     vid2vertex[$nd.attr("id")] = v;
                     return v;
                 }
@@ -51,8 +74,23 @@ define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Po
                         if (kid instanceof Edge)
                             net.addEdge(kid);
                         else
-                            net.addChild(xml2db($(this)));
+                            net.addChild(kid);
                     });
+                }
+                case "contour": {
+                    let path = new Contour(name);
+                    let firstV, lastV;
+                    $nd.children().each(function() {
+                        let v = xml2db($(this));
+                        path.addChild(v);
+                        if (!firstV)
+                            firstV = v;
+                        if (lastV)
+                            path.addEdge(lastV, v);
+                        lastV = v;
+                    });
+                    if (firstV && lastV)
+                        path.addEdge(lastV, firstV);
                 }
                 case "survey":
                     // A root level survey is added as a container
@@ -71,10 +109,13 @@ define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Po
 
         save(survey) {
             function putPoint(p, dd) {
-                let utm = new UTM(p.x, p.y).toLatLong();
-                dd.setAttribute("lat", utm.latitude);
-                dd.setAttribute("lon", utm.longitude);
-                dd.setAttribute("depth", p.z);
+                dd.setAttribute("x", p.x);
+                dd.setAttribute("y", p.y);
+                dd.setAttribute("z", p.z);
+                /*let ll = new UTM(p.x, p.y).toLatLong();
+                  dd.setAttribute("lat", ll.latitude);
+                  dd.setAttribute("lon", ll.longitude);
+                  dd.setAttribute("depth", -p.z);*/
                 return dd;
             }
             
@@ -110,6 +151,17 @@ define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Po
                     for (let e of visual.edges)
                         dom.append(db2xml(e, doc));
                     break;
+                case "Contour": {
+                    // A contour is a closed loop, don't need to save
+                    // edges
+                    dom = doc.createElement("contour");
+                    dom.setAttribute("z", visual.children[0].position.z);
+                    let v = [];
+                    for (let g of visual.children)
+                        v.push([g.position.x, g.position.y]);
+                    dom.setAttribute("d", JSON.stringify(v));
+                    break;
+                }
                 case "Container":
                     dom = doc.createElement(
                         visual.parent ? "container" : "survey");
@@ -142,6 +194,7 @@ define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Po
                 dom = doc.createElement("survey");
                 if (root.name)
                     dom.setAttribute("name", root.name);
+                dom.setAttribute("utm_zone", UTM.defaultZone());
                 for (let c of root.children)
                     dom.append(db2xml(c, doc));
             } else // root has multiple children

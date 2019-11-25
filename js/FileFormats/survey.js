@@ -249,11 +249,12 @@ define("js/FileFormats/survey", ["js/FileFormats/XML", "three", "js/UTM", "js/Po
                 xml = doc.createElement("survey");
                 if (root.name)
                     xml.setAttribute("name", root.name);
-                xml.setAttribute("utm_zone", UTM.defaultZone());
                 for (let c of root.children)
                     xml.append(db2xml(c, doc));
-            } else // root has multiple children
+            } else { // root has multiple children
                 xml = db2xml(survey, doc);
+            }
+            xml.setAttribute("utm_zone", UTM.defaultZone());
             doc.append(xml);
             
             return '<?xml version="1.0" encoding="UTF-8"?>'

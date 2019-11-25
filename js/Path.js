@@ -18,11 +18,11 @@ define("js/Path", ["js/Network", "js/Edge"], function(Network, Edge) {
             super.addChild(v);
             // Extend the path edges
             if (last)
-                super.addEdge(new Edge(last, v));
+                super.addEdge(last, v);
         }
 
         get isClosed() {
-            return this.mIsClosed;
+            return this.mIsClosed ? true : false;
         }
         
         close() {

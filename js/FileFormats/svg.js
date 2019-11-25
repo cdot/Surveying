@@ -307,16 +307,14 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                                  || $image.attr("xlink:href"))
                 .replace(/.*\//, "");
 
-            let x = getAttrN($image, "x");
-            let y = getAttrN($image, "y");
-            let z = props.z ? parseFloat(props.z) : 0;
-            let h = getAttrN($image, "height");
-            let w = getAttrN($image, "width");
+            let tx = JSON.parse(getAttrN($image, "transform"));
+
             let plane = new ImagePlane(
                 name,
                 url,
-                new Three.Vector3(x, y, z),
-                new Three.Vector3(x + w, y + h, z));
+                getAttrN($image, "width"),
+                getAttrN($image, "height"),
+                tx);
 
             return plane;
         }

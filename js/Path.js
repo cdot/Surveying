@@ -7,12 +7,6 @@ define("js/Path", ["js/Network", "js/Edge"], function(Network, Edge) {
      */
     class Path extends Network {
 
-        // @Override Network
-        addEdge(e, p) {
-            // Not meaningful
-            throw new Error("addEdge on a Path?");
-        }
-
         addChild(v) {
             let last = this.children[this.children.length - 1];
             super.addChild(v);

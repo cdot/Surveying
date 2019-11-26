@@ -32,6 +32,10 @@ define("js/CanvasController", ["js/Container", "three", "js/Selection", "js/UTM"
             this.mRenderer.setSize(w, h);
             this.fit();
         }
+
+        get scene() {
+            return this.mScene;
+        }
         
         /**
          * Set the Visual being displayed in this canvas

@@ -10,7 +10,8 @@ define("js/Visual", ["three"], function(Three) {
          * @param name may not be unique!
          */
         constructor(name) {
-            this.mName = name;
+            if (name)
+                this.mName = name;
             this.mHandleScale = 1;
             this.mProp = {};
         }
@@ -171,7 +172,7 @@ define("js/Visual", ["three"], function(Three) {
                 s.push({
                     title: self.constructor.name,
                     type: "string",
-                    get: () => { return self.mName; },
+                    get: () => { return self.mName || ""; },
                     set: (v) => { self.mName = v; }
                 });
             return s;

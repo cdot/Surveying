@@ -77,7 +77,7 @@ define("js/Edge", ["js/Visual", "three", "js/Materials"], function(Visual, Three
                 (on ? Materials.EDGE_SELECTED : Materials.EDGE);
             }
         }
-        
+
         // @Override Visual
         projectRay(ray) {
             // TODO:

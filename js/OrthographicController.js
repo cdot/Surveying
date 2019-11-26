@@ -1,4 +1,4 @@
-define("js/OrthographicController", ["js/CanvasController", "three", "js/Selection", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Selection, UTM, Materials) {
+define("js/OrthographicController", ["js/CanvasController", "three", "js/Selection", "js/Point", "js/Vertex", "js/Contour", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Selection, Point, Vertex, Contour, UTM, Materials) {
 
     /**
      * Interactive orthographic projection
@@ -28,7 +28,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             
             // Size of a handle in world coordinates
             this.mHandleSize = 1;
- 
+            this.mHandleScale = 1;
+            
             $("#noform").on("submit", () => false);
 
             function makeControl(scheme) {
@@ -67,6 +68,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             this.mSelection = new Selection(sln => {
                 let $report = $("<ul></ul>");
                 for (let sel of sln.items) {
+                    if (sln.setHandleScale)
+                        this.mVisual.setHandleScale(this.mHandleSize / this.mCamera.zoom);
                     let $s = makeControls(sel.scheme(""));
                     if ($s)
                         $report.append($s);
@@ -114,8 +117,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
         zoom(factor) {
             if (this.mCamera) {
                 this.mCamera.zoom *= factor;
-                this.mVisual.setHandleScale(
-                    this.mHandleSize / this.mCamera.zoom);
+                this.mVisual.setHandleScale(this.mHandleSize / this.mCamera.zoom);
                 this.mCamera.updateProjectionMatrix();
             }
         }
@@ -166,6 +168,26 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             return Math.round(quad + 180 * Math.atan(dx / dy) / Math.PI);
         }
 
+        _splitSelectedEdges() {
+            let sel = this.mSelection.items;
+            // Split edges where both end points are in the selection
+            let split = [];
+            for (let s of sel) {
+                if (s instanceof Vertex) {
+                    for (let e of s.edges) {
+                        let oe = e.otherEnd(s);
+                        if (sel.indexOf(oe) >= 0 && split.indexOf(e) < 0) {
+                            split.push(e);
+                        }
+                    }
+                }
+            }
+            for (let e of split) {
+                console.debug("split", e.p1.vid, e.p2.vid);
+                this.mSelection.add(e.parent.splitEdge(e));
+            }
+        }
+        
         // @Override CanvasController
         fit() {
             // Reposition the cameras so they are looking down on the
@@ -196,9 +218,10 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             // Scale handles appropriately so they appear as
             // a fraction of the canvas width
             this.mHandleSize = viewSize / 100;
-            this.mVisual.setHandleScale(this.mHandleSize);
+            this.mVisual.setHandleScale(this.mHandleScale);
 
             let c = this.mCamera;
+            c.zoom = 1;
             c.left = -this.mAspectRatio * viewSize / 2;
             c.right = this.mAspectRatio * viewSize / 2;
             c.top = viewSize / 2;
@@ -220,16 +243,48 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
         // Canvas event handlers - private
         
         _handle_keydown(e) {
+            // Keys on mobile are going to need buttons or menu items
             let sel;
 
+            switch (e.key) {
+            case "v":
+                this._splitSelectedEdges();
+                this.mSelection.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+                return false;
+                
+            case "p":
+                // Add a new point under the cursor
+                let pt = new Point(this.mCursor, "New point");
+                this.mVisual.addChild(pt);
+                pt.addToScene(this.scene);
+                this.mSelection.add(pt);
+                this.mSelection.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+                return false;
+
+            case "c":
+                // Add a new contour, three points centred on the cursor, 1m radius
+                let c = new Contour("New point");
+                c.addVertex({ x: this.mCursor.x, y: this.mCursor.y + 1});
+                c.addVertex({ x: this.mCursor.x + 0.866, y: this.mCursor.y - 0.5 });
+                c.addVertex({ x: this.mCursor.x - 0.866, y: this.mCursor.y - 0.5 });
+                c.close();
+                this.mVisual.addChild(c);
+                c.addToScene(this.scene);
+                this.mSelection.add(c);
+                this.mSelection.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+                return false;
+
+            case "-":
+                this.zoom(0.8);
+                return false;
+
+            case "=":
+                this.zoom(1.2);
+                return false;
+            }
+            
             switch (e.keyCode) {
-            case 46: // delete selection
-                for (sel of this.mSelection.items)
-                    // Remove the item completely
-                    sel.remove();
-                this.mSelection.clear();
-                break;
-                    
+                
             case 37: // left, prev sibling
                 sel = this.mSelection.items.slice();
                 for (let s of sel) {
@@ -238,7 +293,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                         this.mSelection.add(s.prev);
                     }
                 }
-                break;
+                return false;
                 
             case 38: // up, move up in selection
                 sel = this.mSelection.items.slice();
@@ -248,7 +303,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                         this.mSelection.add(s.parent);
                     }
                 }
-                break;
+                return false;
 
             case 39: // right
                 sel = this.mSelection.items.slice();
@@ -258,7 +313,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                         this.mSelection.add(s.next);
                     }
                 }
-                break;
+                return false;
 
             case 40: // down, select first child
                 sel = this.mSelection.items.slice();
@@ -268,13 +323,24 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                         this.mSelection.add(s.children[0]);
                     }
                 }
-                break;
+                return false;
 
+            case 43: // +, split selected edges
+                return false;
+                
+            case 46: // delete selection
+                for (sel of this.mSelection.items)
+                    // Remove the item completely
+                    sel.remove();
+                this.mSelection.clear();
+                return false;
+                    
             case 77: // m, set measure point
                 this.measureFrom();
-                break;
+                return false;
             }
-            return false;
+            
+            return true;
         }
     
         _handle_mouseenter() {

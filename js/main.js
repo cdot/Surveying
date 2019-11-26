@@ -120,12 +120,6 @@ requirejs(["three", "js/OrthographicController", "js/PerspectiveController", "js
             return false;
         });
 
-        $("#meshify").on("click", function() {
-            let mesh = Network.meshify(rootContainer);
-            rootContainer.addChild(mesh);
-            mesh.addToScene(scene);
-        });
-
         $("#save").prop("disabled", true);
 
         // Cannot set the saver from inside the save handler because

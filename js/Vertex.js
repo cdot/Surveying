@@ -6,7 +6,7 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
 
     /**
      * A vertex in a Network. A vertex is a Point with edges and
-     * slightly different highlighting behaviours (it is rmeoved from
+     * slightly different highlighting behaviours (it is removed from
      * the scene when highlight is off)
      */
     class Vertex extends Point {
@@ -38,6 +38,10 @@ define("js/Vertex", ["js/Point", "three", "js/Materials", "js/Edge"], function(P
             this.mEdges.push(e);
         }
 
+        get edges() {
+            return this.mEdges;
+        }
+        
         /**
          * Remove a reference to an edge, if it's there
          */

@@ -19,8 +19,12 @@ define("js/Contour", ["js/Path", "js/Vertex"], function(Path, Vertex) {
      */
     class Contour extends Path {
 
+        newVertex(p) {
+            return new ContourVertex(p);
+        }
+        
         addVertex(p) {
-            let v = new ContourVertex(p);
+            let v = this.newVertex(p);
             this.addChild(v);
             return v;
         }

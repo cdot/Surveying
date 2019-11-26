@@ -85,6 +85,14 @@ define("js/Selection", function() {
                 s.applyTransform(mat);
             this._changed();
         }
+
+        /**
+         * Set the handle size on selected items
+         */
+        setHandleScale(scale) {
+            for (let s of this.mItems)
+                s.setHandleScale(scale);
+        }
     }
     return Selection;
 });

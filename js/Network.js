@@ -14,12 +14,16 @@ define("js/Network", ["js/Container", "js/Vertex", "js/Edge", "delaunator"], fun
             this.mEdges = [];
         }
 
+        newVertex(p) {
+            return new Vertex(p);
+        }
+        
         /**
          * Add a vertex at the given point
          * @return {Vertex} added
          */
         addVertex(p) {
-            let v = new Vertex(p);
+            let v = this.newVertex(p);
             this.addChild(v);
             return v;
         }
@@ -35,6 +39,35 @@ define("js/Network", ["js/Container", "js/Vertex", "js/Edge", "delaunator"], fun
             e.setParent(this);
             this.mEdges.push(e);
             return e;
+        }
+
+        /**
+         * Split the given edge and add a new vertex at the midpoint
+         */
+        splitEdge(e) {
+            // Don't use addVertex because subclasses may have overridden it.
+            // Instead splice the new vertex in after the first of the endpoints
+            // encountered in children
+            let a = e.p1;
+            let b = e.p2;
+
+            let v = this.newVertex(a.position.clone().lerp(b.position, 0.5));
+            for (let i in this.children) {
+                let c = this.children[i];
+                if (c === a || c === b) {
+                    this.children.splice(i + 1, 0, v);
+                    break;
+                }
+            }
+            let e1 = this.addEdge(a, v);
+            let e2 = this.addEdge(v, b);
+            if (e.object3D) {
+                e1.addToScene(e.object3D.parent);
+                e2.addToScene(e.object3D.parent);
+                v.addToScene(e.object3D.parent);
+            }
+            this.removeEdge(e);
+            return v;
         }
 
         /**
@@ -78,6 +111,7 @@ define("js/Network", ["js/Container", "js/Vertex", "js/Edge", "delaunator"], fun
          * Remove the given edge from our edge list
          */
         removeEdge(e) {
+            e.removeFromScene();
             let i = this.mEdges.indexOf(e);
             if (i >= 0)
                 this.mEdges.splice(i, 1);

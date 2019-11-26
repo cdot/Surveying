@@ -83,7 +83,7 @@ define("js/Container", ["js/Visual", "three", "js/Point", "js/Vertex"], function
                 i = -1;
             return this.mObjects[i + 1];
         }
-        
+
         // @Override Visual
         applyTransform(mat) {
             for (let g of this.mObjects)

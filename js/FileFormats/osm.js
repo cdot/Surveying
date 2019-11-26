@@ -1,4 +1,4 @@
-define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Vertex", "js/Container", "js/Network", "js/UTM"], function(XML, Three, Vertex, Container, Network, UTM) {
+define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Container", "js/Contour", "js/Path", "js/UTM"], function(XML, Three, Container, Contour, Path, UTM) {
 
     class OSM extends XML {
 
@@ -12,36 +12,37 @@ define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Vertex", "js/Co
             
             let nodes = {};
             $xml.children("node").each(function() {
-                let $node = $(this)
-                nodes[$node.attr("id")] = {
-                    time: $node.attr("timestamp"),
-                    lat: parseFloat($node.attr("lat")),
-                    lon: parseFloat($node.attr("lon"))
-                };
+                let utm = UTM.fromLatLong(
+                    parseFloat($(this).attr("lat")),
+                    parseFloat($(this).attr("lon")));
+                nodes[$(this).attr("id")] =
+                { x: utm.easting, y: utm.northing, z: 0 };
             });
+            
             let ways = new Container(source);
             $xml.children("way").each(function() {
                 let $way = $(this);
-                let id = $way.attr("id");
-                $way.children("tag").each(function() {
-                    if ($(this).attr("k") === "name")
-                        id = $(this).attr("v");
-                });
-                let way = new Path(id);
-                let lastVert;
+                let id =  $way.children("tag[k='name']").attr("v");
+                if (!id)
+                    id = $way.attr("user") + ":" + $way.attr("id");
+                
+                let vs = [];
                 $way.children("nd").each(function() {
-                    let nid = $(this).attr("ref");
-                    let pt = nodes[nid];
-                    if (!pt)
-                        throw new Error("Corrupt osm; " + nid + " missing");
-                    let utm = UTM.fromLatLong(pt.lat, pt.lon);
-                    let v = way.addVertex(
-                        {x: utm.easting, y: utm.northing, z: 0});
-                    // Networks don't share vertices
-                    if (lastVert)
-                        way.addEdge(lastVert, v);
-                    lastVert = v;
+                    vs.push($(this).attr("ref"));
                 });
+                
+                let closed = false;
+                if (vs[vs.length - 1] === vs[0]) {
+                    closed = true;
+                    vs.pop();
+                }
+                
+                let way = closed ? new Contour(id) : new Path(id);
+                for (let nid of vs)
+                    way.addVertex(nodes[nid]);
+                if (closed)
+                    way.close();
+                
                 ways.addChild(way);
             });
             return Promise.resolve(ways);

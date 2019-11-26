@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - ALl rights reserved */
-define("js/FileFormats/json", ["js/FileFormat", "three", "js/UTM", "js/Point", "js/Vertex", "js/Container", "js/Network", "js/Path", "js/Contour", "js/ImagePlane"], function(FileFormat, Three, UTM, Point, Vertex, Container, Network, Path, Contour, ImagePlane) {
+define("js/FileFormats/json", ["js/FileFormat", "three", "js/UTM", "js/Point", "js/Vertex", "js/Container", "js/Network", "js/Path", "js/Contour"], function(FileFormat, Three, UTM, Point, Vertex, Container, Network, Path, Contour) {
 
     class Json extends FileFormat {
 
@@ -36,14 +36,6 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/UTM", "js/Point", "
                     visual = new Point(getPoint(json), json.name);
                     break;
 
-                case "image":
-                    visual = new ImagePlane(
-                        json.url,
-                        json.width,
-                        json.height,
-                        json.transform);
-                    break;
-                    
                 case "network": {
                     let visual = new Network(json.name);
                     for (let c of json.v) {
@@ -96,16 +88,6 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/UTM", "js/Point", "
             
             function db2json(visual) {
                 let type = visual.constructor.name;
-                    
-                if (type == "ImagePlane")
-                    return {
-                        type: "image",
-                        name: visual.name,
-                        url: visual.filename,
-                        width: visual.width,
-                        height: visual.height,
-                        transform: visual.transform
-                    };
                     
                 if (type === "Point") {
                     let p = visual.position;

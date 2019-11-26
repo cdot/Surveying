@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - ALl rights reserved */
-define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Vertex", "js/Container", "js/Network", "js/Contour", "js/Path", "js/ImagePlane", "js/UTM", "jquery-ui"], function(XML, Three, Point, Vertex, Container, Network, Contour, Path, ImagePlane, UTM) {
+define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Vertex", "js/Container", "js/Network", "js/Contour", "js/Path", "js/UTM", "jquery-ui"], function(XML, Three, Point, Vertex, Container, Network, Contour, Path, UTM) {
 
     /**
      * Specialised loader/saver for an SVG used to carry survey information.
@@ -19,9 +19,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
      * might expect, the bottom left!)
      * Only paths and images are read from the document. Other graphical
      * objects are ignored.
-     * Images should be linked in the SVG. The last path component of the
-     * image URL path is appended to "data/" to retrieve the image data
-     * relative to the application. TODO: put URL in desc?
      *
      * SVG entities may be annotated with key=value pairs in their
      * descriptions.
@@ -301,24 +298,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
             return obj;
         }
 
-        _load_image($image, name, props) {
-            // Always get images from data/
-            let url = "data/" + ($image.attr("href")
-                                 || $image.attr("xlink:href"))
-                .replace(/.*\//, "");
-
-            let tx = JSON.parse(getAttrN($image, "transform"));
-
-            let plane = new ImagePlane(
-                name,
-                url,
-                getAttrN($image, "width"),
-                getAttrN($image, "height"),
-                tx);
-
-            return plane;
-        }
-
         _load_circle($xml, name, props) {
             if (props.type === "point") {
                 let z = props.z ? parseFloat(props.z) : 0;
@@ -594,11 +573,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     circle.setAttribute("cy", v.y);
                     circle.setAttribute("r", 2);
                     container.appendChild(circle);
-                    break;
-                }
-                    
-                case "ImagePlane": {
-                    console.debug("Reminder: support ImagePlane");
                     break;
                 }
                     

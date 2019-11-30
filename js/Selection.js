@@ -1,4 +1,4 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
+/* @copyright 2019 Crawford Currie - All rights reserved */
 define("js/Selection", function() {
     /**
      * A collection of Visuals
@@ -40,7 +40,7 @@ define("js/Selection", function() {
 
         /**
          * Add an item to the selection
-         * @param {Vertex|Network} item 
+         * @param {Visual} item 
          */
         add(item) {
             if (!this.contains(item)) {
@@ -54,7 +54,7 @@ define("js/Selection", function() {
          * Remove the given item from the selection. Does *not* do a
          * contains test, the item must be in the selection, not just
          * in the graph under the seleced items
-         * @param {Vertex|Network} item 
+         * @param {Visual} item 
          */
         remove(item) {
             item.highlight(false);
@@ -65,7 +65,7 @@ define("js/Selection", function() {
         /**
          * Return true if the item exists somwehere in the graph for the
          * items in the selection
-         * @param {Vertex|Network} item 
+         * @param {Visual} item 
          */
         contains(item) {
             if (this.mItems.indexOf(item) >= 0)

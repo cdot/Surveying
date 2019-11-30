@@ -1,12 +1,12 @@
-define("js/OrthographicController", ["js/CanvasController", "three", "js/Selection", "js/Point", "js/Vertex", "js/Contour", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Selection, Point, Vertex, Contour, UTM, Materials) {
+define("js/OrthographicController", ["js/CanvasController", "three", "js/Selection", "js/Point", "js/Contour", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Selection, Point, Contour, UTM, Materials) {
 
     /**
      * Interactive orthographic projection
      */
     class OrthographicController extends CanvasController {
 
-        constructor(selector, scene) {
-            super(selector, scene,
+        constructor($canvas, visual, scene) {
+            super($canvas, visual, scene,
                  new Three.OrthographicCamera(-1, 1, 1, -1));
             
             // Set up ruler geometry
@@ -24,7 +24,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             // Centre of the viewing frustum - will be set when
             // we refocus()
             this.mLookAt = new Three.Vector3(0, 0, 0);
-            this.mCamera.position.set(0, 0, 0);
+            this.mCamera.position.set(0, 0, 10);
             
             // Size of a handle in world coordinates
             this.mHandleSize = 1;
@@ -69,7 +69,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 let $report = $("<ul></ul>");
                 for (let sel of sln.items) {
                     if (sln.setHandleScale)
-                        this.mVisual.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+                        this.mVisual.setHandleScale(
+                            this.mHandleSize / this.mCamera.zoom);
                     let $s = makeControls(sel.scheme(""));
                     if ($s)
                         $report.append($s);
@@ -90,6 +91,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                     return self["_handle_" + event].apply(self, arguments);
                 });
             }
+
+            this.mConstructed = true;
         }
 
         /**
@@ -114,14 +117,6 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             return new Three.Line3(pos, tgt);
         }
 
-        zoom(factor) {
-            if (this.mCamera) {
-                this.mCamera.zoom *= factor;
-                this.mVisual.setHandleScale(this.mHandleSize / this.mCamera.zoom);
-                this.mCamera.updateProjectionMatrix();
-            }
-        }
-        
         panBy(delta) {
             this.mLookAt.x += delta.x;
             this.mLookAt.y += delta.y;
@@ -173,7 +168,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             // Split edges where both end points are in the selection
             let split = [];
             for (let s of sel) {
-                if (s instanceof Vertex) {
+                if (s.edges) {
                     for (let e of s.edges) {
                         let oe = e.otherEnd(s);
                         if (sel.indexOf(oe) >= 0 && split.indexOf(e) < 0) {
@@ -188,12 +183,19 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             }
         }
         
+        zoom(factor) {
+            this.mCamera.zoom *= factor;
+            this.mVisual.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+            this.mCamera.updateProjectionMatrix();
+       }
+
         // @Override CanvasController
         fit() {
+            if (!this.mConstructed)
+                return;
+            
             // Reposition the cameras so they are looking down on the
             // entire scene
-            if (!this.mVisual)
-                return;
             let bounds = this.mVisual.boundingBox;
 
             if (bounds.isEmpty() && !this.parent) {
@@ -207,7 +209,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                     new Three.Vector3(ll.easting, ll.northing, -10)),
                 bounds.expandByPoint(
                     new Three.Vector3(ur.easting, ur.northing, 10));
-             }
+            }
 
             // Look at the centre of the scene
             bounds.getCenter(this.mLookAt);
@@ -234,9 +236,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             c.updateProjectionMatrix();
 
             // Ruler/cursor
-            bounds.getCenter(this.mRulerStart);
-            bounds.getCenter(this.mCursor);
-
+            this.mRulerStart.set(this.mLookAt);
+            this.mCursor.set(this.mLookAt);
             this.mRulerGeom.verticesNeedUpdate = true;
         }
 
@@ -258,20 +259,24 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 this.mVisual.addChild(pt);
                 pt.addToScene(this.scene);
                 this.mSelection.add(pt);
-                this.mSelection.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+                this.mSelection.setHandleScale(
+                    this.mHandleSize / this.mCamera.zoom);
                 return false;
 
             case "c":
                 // Add a new contour, three points centred on the cursor, 1m radius
                 let c = new Contour("New point");
                 c.addVertex({ x: this.mCursor.x, y: this.mCursor.y + 1});
-                c.addVertex({ x: this.mCursor.x + 0.866, y: this.mCursor.y - 0.5 });
-                c.addVertex({ x: this.mCursor.x - 0.866, y: this.mCursor.y - 0.5 });
+                c.addVertex({ x: this.mCursor.x + 0.866,
+                              y: this.mCursor.y - 0.5 });
+                c.addVertex({ x: this.mCursor.x - 0.866,
+                              y: this.mCursor.y - 0.5 });
                 c.close();
                 this.mVisual.addChild(c);
                 c.addToScene(this.scene);
                 this.mSelection.add(c);
-                this.mSelection.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+                this.mSelection.setHandleScale(
+                    this.mHandleSize / this.mCamera.zoom);
                 return false;
 
             case "-":
@@ -359,14 +364,12 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
         _handle_mousedown(e) {
             this.mMouseDownPt = {x: e.offsetX, y: e.offsetY};
             let ray = this.event2ray(e);
-            if (this.mVisual) {
-                this.mLastRayPt = ray.start.clone();
-                this.mLastCanvasPt = {x: e.offsetX, y: e.offsetY};
-                if (this.mSelection.size > 0) {
-                    let hit = this.mVisual.projectRay(ray);
-                    if (hit && this.mSelection.contains(hit.closest))
-                        this.mIsDragging = true;
-                }
+            this.mLastRayPt = ray.start.clone();
+            this.mLastCanvasPt = {x: e.offsetX, y: e.offsetY};
+            if (this.mSelection.size > 0) {
+                let hit = this.mVisual.projectRay(ray);
+                if (hit && this.mSelection.contains(hit.closest))
+                    this.mIsDragging = true;
             }
             return true; // Get focus behaviour
         }
@@ -376,15 +379,13 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             if (this.mMouseDownPt && !this.mIsDragging) {
                 if (e.offsetX === this.mMouseDownPt.x
                     && e.offsetY === this.mMouseDownPt.y) {
-                    if (this.mVisual) {
-                        if (!e.shiftKey)
-                            this.mSelection.clear();
-                        let proj = this.mVisual.projectRay(ray);
-                        if (proj)
-                            this.mSelection.add(proj.closest);
-                        else
-                            this.mSelection.clear();
-                    }
+                    if (!e.shiftKey)
+                        this.mSelection.clear();
+                    let proj = this.mVisual.projectRay(ray);
+                    if (proj)
+                        this.mSelection.add(proj.closest);
+                    else
+                        this.mSelection.clear();
                 } else
                     this.mSelection.clear();
             }

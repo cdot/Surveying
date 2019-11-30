@@ -1,4 +1,4 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
+/* @copyright 2019 Crawford Currie - All rights reserved */
 define("js/UTM", function() {
 
     const R = 6378137;

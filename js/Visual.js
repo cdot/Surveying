@@ -1,4 +1,4 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
+/* @copyright 2019 Crawford Currie - All rights reserved */
 define("js/Visual", ["three"], function(Three) {
 
     /**
@@ -69,7 +69,7 @@ define("js/Visual", ["three"], function(Three) {
         /**
          * See if the given ray "hits" this visual
          * @return {
-         *     Vertex closest: this
+         *     Point closest: this
          *     {double} dist2: square of dist from ray
          *     {Three.Vector3} edgePt closest point on the ray, if edge hit
          *     {Three.Vector3} rayPt closest point on the ray

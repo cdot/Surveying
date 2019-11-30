@@ -1,5 +1,5 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
-define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Vertex", "js/Container", "js/Network", "js/Contour", "js/Path", "js/UTM", "jquery-ui"], function(XML, Three, Point, Vertex, Container, Network, Contour, Path, UTM) {
+/* @copyright 2019 Crawford Currie - All rights reserved */
+define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Container", "js/Network", "js/Contour", "js/Path", "js/UTM", "jquery-ui"], function(XML, Three, Point, Container, Network, Contour, Path, UTM) {
 
     /**
      * Specialised loader/saver for an SVG used to carry survey information.
@@ -321,7 +321,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
         }
         
         _load_g($xml, name, props) {
-            let loader = this;               
+            let loader = this;
             let group = new Container(name);
             $xml.children().each(function() {
                 let cname = $(this).attr("id") || counter++;
@@ -337,7 +337,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
 
                 let obj;
                 if (fn) {
-                    console.debug("Load", this.tagName, cname);
+                    console.debug("Load", props.type, this.tagName, cname);
                     obj = fn.call(loader, $(this), cname, props);
                 } else
                     console.debug("Ignore", this.tagName);
@@ -488,7 +488,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     el.appendChild(tit);
                 }
                 let vs = [];
-                for (let k of props) {
+                for (let k in props) {
                     let v = props[k];
                     if (typeof v === "number")
                         vs.push(k + ':' + v);
@@ -558,7 +558,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                 }
                     
                 case "Container": {
-                    let group = makeEl("g", visual);
+                    let group = makeEl("g", visual, props);
                     for (let o of visual.children)
                         makeSVG(o, group);
                     container.appendChild(group);
@@ -567,7 +567,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Ver
                     
                 case "Point": {
                     let v = utm2svg(visual.position);
-                    let circle = makeEl("circle", visual);
+                    let circle = makeEl("circle", visual, props);
                     circle.setAttribute("style", POINT_STYLE);
                     circle.setAttribute("cx", v.x);
                     circle.setAttribute("cy", v.y);

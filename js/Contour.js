@@ -1,17 +1,5 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
-define("js/Contour", ["js/Path", "js/Vertex"], function(Path, Vertex) {
-
-    class ContourVertex extends Vertex {
-
-        setZ(z) {
-            let p = this.position;
-            this.setPosition({ x: p.x, y: p.y, z: z });
-        }
-        
-        scheme(skip) {
-            return super.scheme(skip + "'Z'");
-        }
-    }
+/* @copyright 2019 Crawford Currie - All rights reserved */
+define("js/Contour", ["js/Path"], function(Path) {
 
     /**
      * A contour is a specialisation of Path where the vertices
@@ -19,16 +7,11 @@ define("js/Contour", ["js/Path", "js/Vertex"], function(Path, Vertex) {
      */
     class Contour extends Path {
 
-        newVertex(p) {
-            return new ContourVertex(p);
+        constructor(name) {
+            super(name);
+            super.close();
         }
         
-        addVertex(p) {
-            let v = this.newVertex(p);
-            this.addChild(v);
-            return v;
-        }
-
         get z() {
             this.mZ;
         }

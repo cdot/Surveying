@@ -16,6 +16,10 @@ body {
 input.property {
 }
 
+.ui-controlgroup.ui-controlgroup-vertical > .ui-controlgroup-label {
+    text-align: center;
+}
+
 /* Consistent look and feel for controls */
 .button, button {
     display: inline-block;

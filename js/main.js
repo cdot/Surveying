@@ -1,4 +1,4 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
+/* @copyright 2019 Crawford Currie - All rights reserved */
 requirejs.config({
     baseUrl: ".",
     urlArgs: "t=" + Date.now(),
@@ -28,11 +28,11 @@ requirejs(["three", "js/OrthographicController", "js/PerspectiveController", "js
         let scene = new Three.Scene();
         scene.background = new Three.Color(0xF0F0F0);
 
-        let orthographic = new OrthographicController("#orthographic", scene);
-        let perspective = new PerspectiveController("#perspective", scene);
         let rootContainer = new Container("root");
-        orthographic.setVisual(rootContainer);
-        perspective.setVisual(rootContainer);
+        let orthographic = new OrthographicController(
+            $("#orthographic"), rootContainer, scene);
+        let perspective = new PerspectiveController(
+            $("#perspective"), rootContainer, scene);
         orthographic.animate();
         perspective.animate();
 

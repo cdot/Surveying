@@ -1,5 +1,5 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
-define("js/Container", ["js/Visual", "three", "js/Point", "js/Vertex"], function(Visual, Three, Point, Vertex, Network) {
+/* @copyright 2019 Crawford Currie - All rights reserved */
+define("js/Container", ["js/Visual", "three", "js/Point"], function(Visual, Three, Point) {
 
     /**
      * A graphical object that can contain other objects

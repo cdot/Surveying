@@ -1,4 +1,4 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
+/* @copyright 2019 Crawford Currie - All rights reserved */
 define("js/FileFormats/gpx", ["js/FileFormats/XML", "three", "js/Path", "js/Container", "js/UTM"], function(XML, Three, Path, Container, UTM) {
 
     let counter = 0;

@@ -1,4 +1,4 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
+/* @copyright 2019 Crawford Currie - All rights reserved */
 define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Point", "js/Container", "js/UTM", "jquery-csv"], function(FileFormat, Three, Point, Container, UTM) {
 
     /**

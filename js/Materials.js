@@ -1,4 +1,4 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
+/* @copyright 2019 Crawford Currie - All rights reserved */
 define("js/Materials", ["three"], function(Three) {
     return {
         RULER: new Three.LineBasicMaterial({color: 0xFF0F0F}),

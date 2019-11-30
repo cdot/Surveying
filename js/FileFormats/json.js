@@ -1,4 +1,4 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
+/* @copyright 2019 Crawford Currie - All rights reserved */
 define("js/FileFormats/json", ["js/FileFormat", "three", "js/UTM", "js/Point", "js/Vertex", "js/Container", "js/Network", "js/Path", "js/Contour"], function(FileFormat, Three, UTM, Point, Vertex, Container, Network, Path, Contour) {
 
     class Json extends FileFormat {
@@ -38,10 +38,8 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/UTM", "js/Point", "
 
                 case "network": {
                     let visual = new Network(json.name);
-                    for (let c of json.v) {
-                        let v = new Vertex(getPoint(c));
-                        visual.addChild(v);
-                    }
+                    for (let c of json.v)
+                        visual.addVertex(getPoint(c));
                     for (let e of json.e) {
                         visual.addEdge(
                             visual.children[e.a],

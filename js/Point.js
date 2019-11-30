@@ -1,10 +1,9 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
+/* @copyright 2019 Crawford Currie - All rights reserved */
 define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Visual, Three, UTM, Materials) {
 
     /**
      * Base class of points. The default behaviour is a point sounding i.e
-     * a point that stands on it's own as an object in a scene. Vertex
-     * is subclassed off this to add behaviours for a point in a path/mesh.
+     * a point that stands on it's own as an object in a scene.
      */
     class Point extends Visual {
         /**

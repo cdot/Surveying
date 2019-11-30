@@ -1,4 +1,4 @@
-/* @copyright 2019 Crawford Currie - ALl rights reserved */
+/* @copyright 2019 Crawford Currie - All rights reserved */
 define("js/CanvasController", ["js/Container", "three", "js/Selection", "js/UTM", "js/Materials", "jquery"], function(Container, Three, Selection, UTM, Materials) {
 
     /**
@@ -6,15 +6,15 @@ define("js/CanvasController", ["js/Container", "three", "js/Selection", "js/UTM"
      * interactive controls and a camera.
      */
     class CanvasController {
-        constructor(selector, scene, camera) {
-            // connect the canvas
-            let $canvas = $(selector);
+        
+        constructor($canvas, visual, scene, camera) {
            
             $canvas.data("controller", this);
             this.$mCanvas = $canvas;
-
+            this.mVisual = visual;
             this.mCamera = camera;
             this.mScene = scene;
+
             scene.add(camera);
             
             this.mRenderer = new Three.WebGLRenderer();

@@ -11,6 +11,13 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
         }
 
         // @Override Point
+        setPosition(p) {
+            super.setPosition(p);
+            if (this.parent.mGeometry)
+                this.parent.mGeometry.verticesNeedUpdate = true;
+        }
+        
+        // @Override Point
         highlight(on) {
             if (!on) {
                 if (this.object3D && this.object3D.parent)
@@ -67,6 +74,43 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
             this.mIsClosed = true;
         }
 
+        /**
+         * @private
+         * Find the index of the vertex on this edge that is first
+         *  in the path list
+         */
+        _findEdge(v1, v2) {
+            if (v1.parent !== this || v2.parent !== this)
+                throw "Internal error";
+            if (v1 === v2)
+                return -1;
+            for (let v = 0; v < this.children.length - 1; v++)
+                if (this.children[v] === v1 && this.children[v + 1] === v2 ||
+                    this.children[v] === v2 && this.children[v + 1] === v1)
+                    return v;
+            return -1;
+        }
+        
+        // @Override Container
+        hasEdge(v1, v2) {
+            return this._findEdge(v1, v2) >= 0;
+        }
+        
+        // @Override Container
+        splitEdge(v1, v2) {
+            let i = this._findEdge(v1, v2);
+            let a = this.children[i];
+            let b = this.children[i + 1];
+
+            let v = new PVertex(a.position.clone().lerp(b.position, 0.5));
+            this.children.splice(i + 1, 0, v);
+            if (this.mGeometry) {
+                this.mGeometry.vertices.splice(i + 1, v.position);
+                this.mGeometry,verticesNeedUpdate = true;
+            }
+        }
+        
+        // @Override Container
         addToScene(scene) {
             super.addToScene(scene);
             if (!this.mGeometry) {

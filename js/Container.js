@@ -42,6 +42,18 @@ define("js/Container", ["js/Visual", "three", "js/Point"], function(Visual, Thre
             for (let g of this.mObjects)
                 g.setHandleScale(s);
         }
+
+        /**
+         * Detect if this container expresses an edge between two
+         * vertices.
+         * @param {Point} v1 first vertex
+         * @param {Point} v2 second vertex
+         * @return true if the derived object has an edge between these
+         * two vertices
+         */
+        hasEdge(v1, v2) {
+            return false;
+        }
         
         // @Override Visual
         remove() {

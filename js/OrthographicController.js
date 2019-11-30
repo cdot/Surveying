@@ -167,19 +167,22 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             let sel = this.mSelection.items;
             // Split edges where both end points are in the selection
             let split = [];
-            for (let s of sel) {
-                if (s.edges) {
-                    for (let e of s.edges) {
-                        let oe = e.otherEnd(s);
-                        if (sel.indexOf(oe) >= 0 && split.indexOf(e) < 0) {
-                            split.push(e);
-                        }
+            for (let i = 0; i < sel.length; i++) {
+                let s = sel.items[i];
+                if (s instanceof Point) {
+                    for (let j = i + 1; j < sel.length; j++) {
+                        let ss = sel.items[j];
+                        if (ss !== s
+                            && ss.parent === s.parent
+                            && s.parent.hasEdge(s, ss))
+                            split.push({ p: ss.parent, a: s, b: ss });
                     }
                 }
             }
             for (let e of split) {
-                console.debug("split", e.p1.vid, e.p2.vid);
-                this.mSelection.add(e.parent.splitEdge(e));
+                let v = e.p.splitEdge(e.a, e.b);
+                if (v)
+                    this.mSelection.add(v);
             }
         }
         

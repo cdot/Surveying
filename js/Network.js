@@ -242,35 +242,6 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         }
 
         /**
-         * Split the given edge and add a new vertex at the midpoint
-         */
-        splitEdge(e) {
-            // Don't use addVertex because subclasses may have overridden it.
-            // Instead splice the new vertex in after the first of the endpoints
-            // encountered in children
-            let a = e.p1;
-            let b = e.p2;
-
-            let v = new NVertex(a.position.clone().lerp(b.position, 0.5));
-            for (let i in this.children) {
-                let c = this.children[i];
-                if (c === a || c === b) {
-                    this.children.splice(i + 1, 0, v);
-                    break;
-                }
-            }
-            let e1 = this.addEdge(a, v);
-            let e2 = this.addEdge(v, b);
-            if (e.object3D) {
-                e1.addToScene(e.object3D.parent);
-                e2.addToScene(e.object3D.parent);
-                v.addToScene(e.object3D.parent);
-            }
-            this.removeEdge(e);
-            return v;
-        }
-
-        /**
          * Get the edges in the network
          */
         get edges() {
@@ -305,6 +276,43 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
             for (let e of es)
                 e.remove();
             super.remove();
+        }
+
+        _findEdge(v1, v2) {
+            if (v1.parent !== this || v2.parent !== this)
+                throw "Internal error";
+            if (v1 === v2)
+                return null;
+            for (let e of v1.edges)
+                if (e.otherEnd(v1) === v2)
+                    return e;
+            return null
+        }
+        
+        // @Override Container
+        hasEdge(v1, v2) {
+            return this._findEdge(v1, v2) !== null;
+        }
+        
+        /**
+         * Split the given edge and add a new vertex at the midpoint
+         */
+        splitEdge(v1, v2) {
+            let e = this._findEdge(v1, v2);
+            
+            let a = e.p1;
+            let b = e.p2;
+
+            let v = this.addVertex(a.position.clone().lerp(b.position, 0.5));
+            let e1 = this.addEdge(a, v);
+            let e2 = this.addEdge(v, b);
+            this.removeEdge(e);
+            if (e.object3D) {
+                e1.addToScene(e.object3D.parent);
+                e2.addToScene(e.object3D.parent);
+                v.addToScene(e.object3D.parent);
+            }
+            return v;
         }
 
         /**

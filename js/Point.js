@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Visual, Three, UTM, Materials) {
+define("js/Point", ["js/Visual", "three", "js/Units", "js/Materials"], function(Visual, Three, Units, Materials) {
 
     /**
      * Base class of points. The default behaviour is a point sounding i.e
@@ -136,32 +136,34 @@ define("js/Point", ["js/Visual", "three", "js/UTM", "js/Materials"], function(Vi
                 title: "Lat",
                 type: "number",
                 get: () => {
-                    let ll = new UTM(this.mCurPos.x, this.mCurPos.y)
-                        .toLatLong();
-                    return ll.latitude;
+                    let ll = Units.convert(
+                        Units.IN, this.mCurPos.x, Units.LONLAT);
+                    return ll.lat;
                 },
                 set: (v) => {
-                    let ll = new UTM(this.mCurPos.x, this.mCurPos.y)
-                        .toLatLong();
-                    let utm = UTM.fromLatLong(v, ll.longitude);
-                    self.setPosition(
-                        { x: utm.easting, y: this.mCurPos.y, z: this.mCurPos.z });
+                    let ll = Units.convert(
+                        Units.IN, this.mCurPos, Units.LONLAT);
+                    ll.lat = v;
+                    let i = Units.convert(Units.LONLAT, ll, Units.IN);
+                    i.z = this.mCurPos.z;
+                    self.setPosition(i);
                 }
             });
             s.push({
                 title: "Long",
                 type: "number",
                 get: () => {
-                    let ll = new UTM(this.mCurPos.x, this.mCurPos.y)
-                        .toLatLong();
-                    return ll.longitude;
+                    let ll = Units.convert(
+                        Units.IN, this.mCurPos.x, Units.LONLAT);
+                    return ll.lon;
                 },
                 set: (v) => {
-                    let ll = new UTM(this.mCurPos.x, this.mCurPos.y)
-                        .toLatLong()
-                    let utm = UTM.fromLatLong(ll.latitude, v);
-                    self.setPosition(
-                        {x:this.mCurPos.x, y:utm.northing, z:this.mCurPos.z});
+                    let ll = Units.convert(
+                        Units.IN, this.mCurPos, Units.LONLAT);
+                    ll.lon = v;
+                    let i = Units.convert(Units.LONLAT, ll, Units.IN);
+                    i.z = this.mCurPos.z;
+                    self.setPosition(i);
                 }
             });
             

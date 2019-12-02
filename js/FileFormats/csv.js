@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Point", "js/Container", "js/UTM", "jquery-csv"], function(FileFormat, Three, Point, Container, UTM) {
+define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Units", "js/Point", "js/Container", "js/UTM", "jquery-csv"], function(FileFormat, Three, Units, Point, Container, UTM) {
 
     /**
      * Load a set of points from a CSV file into a container.
@@ -47,10 +47,9 @@ define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Point", "js/Containe
                             r[heads[h]] = row[h];
                         }
                     }
-                    let utm = UTM.fromLatLong(r.lat, r.lon);
-                    let v = new Point(
-                        {x: utm.easting, y: utm.northing, z: -r.depth},
-                        r.name | r.time);
+                    let i = Units.convert(Units.LONLAT, r, Units.IN);
+                    i.z = -r.depth;
+                    let v = new Point(i, r.name | r.time);
                     group.addChild(v);
                 }
             }

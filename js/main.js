@@ -13,7 +13,7 @@ requirejs.config({
     }
 });
 
-requirejs(["three", "js/OrthographicController", "js/PerspectiveController", "js/Container", "js/Network", "js/UTM", "jquery", "jquery-ui", "jquery-mousewheel"], function(Three, OrthographicController, PerspectiveController, Container, Network, UTM) {
+requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveController", "js/Container", "js/Network", "jquery", "jquery-ui", "jquery-mousewheel"], function(Three, Units, OrthographicController, PerspectiveController, Container, Network) {
     $(function(){
         $(".dialog").dialog({
             autoOpen: false,
@@ -49,7 +49,7 @@ requirejs(["three", "js/OrthographicController", "js/PerspectiveController", "js
          * Format a point for display as a lat,long
          */
         function wgsCoords(p) {
-            return new UTM(p.x, p.y).stringify();
+            return Units.stringify(Units.IN, p, Units.LONLAT);
         }
 
         function wgsBox(b) {
@@ -92,7 +92,10 @@ requirejs(["three", "js/OrthographicController", "js/PerspectiveController", "js
 
         // Information tab
         $(document).on("cursorchanged", function() {
-            $("#cursor_wgs").html(wgsCoords(orthographic.cursor));
+            try {
+                $("#cursor_wgs").html(wgsCoords(orthographic.cursor));
+            } catch (e) {
+            }
             $("#cursor_length").text(orthographic.rulerLength);
             $("#cursor_bearing").text(orthographic.rulerBearing);
         });

@@ -1,4 +1,4 @@
-define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Container", "js/Contour", "js/Path", "js/UTM"], function(XML, Three, Container, Contour, Path, UTM) {
+define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Units", "js/Container", "js/Contour", "js/Path", "js/UTM"], function(XML, Three, Units, Container, Contour, Path, UTM) {
 
     class OSM extends XML {
 
@@ -12,11 +12,11 @@ define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Container", "js
             
             let nodes = {};
             $xml.children("node").each(function() {
-                let utm = UTM.fromLatLong(
-                    parseFloat($(this).attr("lat")),
-                    parseFloat($(this).attr("lon")));
                 nodes[$(this).attr("id")] =
-                { x: utm.easting, y: utm.northing, z: 0 };
+                Units.convert(Units.LONLAT,
+                              { lat: parseFloat($(this).attr("lat")),
+                                lon: parseFloat($(this).attr("lon")) },
+                              Units.IN);
             });
             
             let ways = new Container(source);

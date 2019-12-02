@@ -1,4 +1,4 @@
-define("js/OrthographicController", ["js/CanvasController", "three", "js/Selection", "js/Point", "js/Contour", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Selection, Point, Contour, UTM, Materials) {
+define("js/OrthographicController", ["js/CanvasController", "three", "js/Selection", "js/Point", "js/Contour", "js/Units", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Selection, Point, Contour, Units, UTM, Materials) {
 
     /**
      * Interactive orthographic projection
@@ -6,25 +6,30 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
     class OrthographicController extends CanvasController {
 
         constructor($canvas, visual, scene) {
+            // Default 1km/1km scene
             super($canvas, visual, scene,
-                 new Three.OrthographicCamera(-1, 1, 1, -1));
+                 new Three.OrthographicCamera(-500, 500, 500, -500));
             
+            // Set up the camera
+            // Centre of the viewing frustum - will be set when
+            // we refocus()
+            this.mLookAt = new Three.Vector3(
+                (UTM.MIN_EASTING + UTM.MAX_EASTING) / 2,
+                (UTM.MIN_NORTHING + UTM.MAX_NORTHING) / 2,
+                0);
+
             // Set up ruler geometry
             this.mRulerGeom = new Three.Geometry();
             // Start of measure line
-            this.mRulerStart = new Three.Vector3(0, 0, 0);
+            this.mRulerStart = this.mLookAt.clone();
             this.mRulerGeom.vertices.push(this.mRulerStart);
             // End of measure line under the cursor
-            this.mCursor = new Three.Vector3(0, 0, 0);
+            this.mCursor = this.mLookAt.clone();
             this.mRulerGeom.vertices.push(this.mCursor);
             let rulerLine = new Three.Line(this.mRulerGeom, Materials.RULER);
             scene.add(rulerLine);
 
-            // Set up the camera
-            // Centre of the viewing frustum - will be set when
-            // we refocus()
-            this.mLookAt = new Three.Vector3(0, 0, 0);
-            this.mCamera.position.set(0, 0, 10);
+            this.mCamera.position.set(this.mLookAt.x, this.mLookAt.y, 10);
             
             // Size of a handle in world coordinates
             this.mHandleSize = 1;
@@ -204,14 +209,19 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             if (bounds.isEmpty() && !this.parent) {
                 // Deal with an empty visual
                 // A roughly 1nm square block of sea in the English Channel
-                let ll = UTM.fromLatLong(50, -0.5);
-                let ur = UTM.fromLatLong(50.017, -0.483);
+                let ll = Units.convert(Units.LONLAT,
+                                       { lon: -0.5, lat: 50 },
+                                       Units.IN);
+
+                ll.z = -10;
+
+                let ur = Units.convert(Units.LONLAT,
+                                       { lon: -0.483, lat: 50.017 },
+                                       Units.IN);
+                ur.z = 10;
                 
-                bounds = new Three.Box3();
-                bounds.expandByPoint(
-                    new Three.Vector3(ll.easting, ll.northing, -10)),
-                bounds.expandByPoint(
-                    new Three.Vector3(ur.easting, ur.northing, 10));
+                bounds = new Three.Box3(ll, ll);
+                bounds.expandByPoint(ur);
             }
 
             // Look at the centre of the scene
@@ -239,8 +249,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             c.updateProjectionMatrix();
 
             // Ruler/cursor
-            this.mRulerStart.set(this.mLookAt);
-            this.mCursor.set(this.mLookAt);
+            this.mRulerStart.copy(this.mLookAt);
+            this.mCursor.copy(this.mLookAt);
             this.mRulerGeom.verticesNeedUpdate = true;
         }
 

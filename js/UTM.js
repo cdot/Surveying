@@ -30,10 +30,6 @@ define("js/UTM", function() {
     // and are not supported
     const BAND_LETTERS = 'CDEFGHJKLMNPQRSTUVWXX';
 
-    // Default zone gets set on the first event that calculates
-    // a zone, and is used thereafter to provide a reference
-    let default_zone;
-    
     function latLonToZone(latitude, longitude) {
         if (56 <= latitude && latitude < 64 &&
             3 <= longitude && longitude < 12)
@@ -82,64 +78,37 @@ define("js/UTM", function() {
         /**
          * @param easting
          * @param northing
-         * @param zone longitude zone (default to default_zone)
+         * @param zone longitude zone
          * @param hemisphere 'N' (default) or 'S'
          */
         constructor(easting, northing, zone, hemisphere) {
-            this.hemisphere = hemisphere || 'N';
+            this.hemis = hemisphere || 'N';
 
-            if (easting < 100000 || 1000000 <= easting)
-                console.error('UTM easting 100000<=' + easting
-                              + '"<10000000 outside legal range');
-            this.easting = easting;
+            if (easting < UTM.MIN_EASTING || UTM.MAX_EASTING <= easting) {
+                throw new RangeError(
+                    'UTM easting ' + easting
+                    + ' outside legal range '
+                    + UTM.MIN_EASTING + '..' + UTM.MAX_EASTING);
+            }
+            this.east = easting;
 
-            if (northing < 0 || northing > 10000000)
-                console.error('UTM northing 10000000<=' + northing
-                              + '<=10000000 outside legal range');
+            if (northing < UTM.MIN_NORTHING || northing > UTM.MAX_NORTHING) {
+                throw new RangeError(
+                    'UTM northing' + northing
+                    + ' outside legal range'
+                    + UTM.MIN_NORTHING + '..' + UTM.MAX_NORTHING);
+            }
             
-            this.northing = northing;
+            this.north = northing;
 
-            if (typeof zone === "undefined")
-                zone = default_zone;
-            else if (zone < 1 || zone > 60)
-                throw new RangeError('zone must be between 1 and 60');
+            if (!zone || zone < 1 || zone > 60) {
+                throw new RangeError('zone ' + zone
+                                     + ' outside legal range 1..60');
+            }
 
             this.zone = zone;
         }
 
-        static setDefaultZone(z) {
-            default_zone = z;
-        }
-        
-        /**
-         * Return the UTM default zone. This is defined by the first 
-         * Lat/Long to be converted to UTM coords.
-         */
-        static defaultZone() {
-            return default_zone;
-        }
-        
-        /**
-         * Reset the UTM default zone. The next Lat/Long to be converted to
-         * UTM will define the zone for future unforced conversions.
-         */
-        static resetDefaultZone() {
-            default_zone = undefined;
-        }
-        
-        /**
-         * Format as a WGS84 lat/long string
-         */
-        stringify() {
-            function round(x, pos, neg) {
-                let v = Math.floor(100000 * x) / 100000;
-                return (v < 0) ? (-v + "°" + neg) : (v + "°" + pos)
-            }
-            let ll = this.toLatLong();
-            return round(ll.latitude, "N", "S") + " "
-            + round(ll.longitude, "E", "W");
-        }
-        
         /**
          * Convert to WGS84 lat/long
          * @return {
@@ -149,10 +118,10 @@ define("js/UTM", function() {
          */
         toLatLong() {
 
-            let x = this.easting - 500000;
-            let y = this.northing;
+            let x = this.east - 500000;
+            let y = this.north;
 
-            if (this.hemisphere === 'S') y -=1e7;
+            if (this.hemis === 'S') y -=1e7;
 
             let m = y / K0;
             let mu = m / (R * M1);
@@ -197,19 +166,11 @@ define("js/UTM", function() {
                              d5 / 120 * (5 - 2 * c + 28 * pTan2 - 3 * c2 + 8 * E_P2 + 24 * pTan4)) / pCos;
 
             return {
-                latitude: _rad2deg(latitude),
-                longitude: _rad2deg(longitude) + zoneToCentralLongitude(this.zone)
+                lat: _rad2deg(latitude),
+                lon: _rad2deg(longitude) + zoneToCentralLongitude(this.zone)
             };
         }
 
-        toDefaultZone() {
-            let ll = this.toLatLong();
-            let c = UTM.fromLatLong(ll.latitude, ll.longitude);
-            this.easting = c.easting,
-            this.northing = c.northing,
-            this.zone = c.zone;
-        }
-        
         /**
          * Parse UTM string. The easting and northing must be separated by
          * a space. NS are used to represent northern and southern hemispheres.
@@ -226,22 +187,27 @@ define("js/UTM", function() {
         }
 
         /**
-         * Note: max resolution of a UTM string is 1M
+         * WARNING: max resolution of a UTM string is 1M
          */
         toString() {
-            let n = this.northing;
-            return this.zone + this.hemisphere + Math.trunc(easting)
-            + " " + Math.trunc(northing);
+            return this.zone + this.hemis + Math.trunc(this.east)
+            + " " + Math.trunc(this.north);
         }
         
         /**
-         * Convert a lat/long into a UTM coordinate
+         * Convert a lat/long into a UTM coordinate latitude,longitude
+         * can be passed as {lat,lon} in the first parameter.
          * @param latitude decimal degrees
          * @param longitude decimal degrees
          * @param forceZone Optional, override computed zone
          * @return {UTM} coordinate
          */
         static fromLatLong(latitude, longitude, forceZone) {
+            if (typeof latitude === "object") {
+                forceZone = longitude;
+                longitude = latitude.lon;
+                latitude = latitude.lat;
+            }
             if (latitude > 84 || latitude < -80)
                 throw new RangeError('latitude -80<=' + latitude + '<=84');
 
@@ -259,8 +225,7 @@ define("js/UTM", function() {
             let latTan2 = Math.pow(latTan, 2);
             let latTan4 = Math.pow(latTan, 4);
 
-            let zone = forceZone || default_zone ||
-                latLonToZone(latitude, longitude);
+            let zone = forceZone || latLonToZone(latitude, longitude);
 
             let lonRad = _deg2rad(longitude);
             let centralLon = zoneToCentralLongitude(zone);
@@ -292,12 +257,14 @@ define("js/UTM", function() {
                                      + latTan4 + 600 * c - 330 * E_P2)));
             if (latitude < 0) northing += 1e7;
 
-            if (!forceZone && typeof default_zone === "undefined")
-                default_zone = zone;
-            
             return new UTM(easting, northing, zone, latitude < 0 ? 'S' : 'N');
         }
     }
+
+    UTM.MIN_EASTING  = 100000; 
+    UTM.MAX_EASTING  = 1000000;
+    UTM.MIN_NORTHING = 0;
+    UTM.MAX_NORTHING = 10000000;
 
     return UTM;
 });

@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Container", "js/Network", "js/Contour", "js/Path", "js/UTM", "jquery-ui"], function(XML, Three, Point, Container, Network, Contour, Path, UTM) {
+define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Container", "js/Network", "js/Contour", "js/Path", "js/UTM", "js/Units", "jquery-ui"], function(XML, Three, Point, Container, Network, Contour, Path, UTM, Units) {
 
     /**
      * Specialised loader/saver for an SVG used to carry survey information.
@@ -371,10 +371,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
             $xml.children("metadata").find("dc\\:description").each(function() {
                 $.extend(metadata, parseProps($(this).text()));
             });
-
-            // Seed the utm default zone if it's not already been done
-            UTM.fromLatLong(metadata.lat, metadata.lon);
-
+           
             // Populate dialog with values from metadata
             let $dlg = $("#svg_dialog");
             for (let f of METADATA)
@@ -405,9 +402,27 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
                 let g = this._load_g($xml, "root", {});
                 let mats = [];
 
+                let width = getAttrN($xml, "width");
+                let height = getAttrN($xml, "height");
+                debugger;
+               
+                Units.mapFromEX(
+                    {
+                        min: { x:     0, y:      0 },
+                        max: { x: width, y: height }
+                    },
+                    metadata.units_per_metre);
+            
+                // Set up conversions
+                let tx = Units.convert(Units.LONLAT, metadata, Units.IN);
+                console.debug("origin offset ", tx);
+
+                // We loaded the SVG applying all transformations from the
+                // document as we went along. Now need to transform those
+                // coordinates to the Units.IN system.
+                
                 // SVG coords have 0,0, at the top left, so
                 // flip the Y axis so that the bottom left becomes 0, 0
-                let height = getAttrN($xml, "height");
                 mats.push(new Three.Matrix4().makeTranslation(0, -height, 0));
                 mats.push(new Three.Matrix4().makeScale(1, -1, 1));
 
@@ -416,15 +431,16 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
                     mats.push(new Three.Matrix4().makeTranslation(
                         -metadata.x, -metadata.y, 0));
 
-                // Scale to metres
-                let scale = 1 / metadata.units_per_metre;
-                if (scale !== 1)
-                    mats.push(new Three.Matrix4().makeScale(scale, scale, 1));
+                // Scale to internal units
+                let scale = Units.convert(
+                    Units.EX, { x:1, y:-1, z: 1 }, Units.IN);
+                mats.push(new Three.Matrix4().makeScale(
+                    scale.x,
+                    scale.y,
+                    scale.z));
 
                 // Translate reference point to reference lat,lon
-                let utm = UTM.fromLatLong(metadata.lat, metadata.lon);
-                mats.push(new Three.Matrix4()
-                          .makeTranslation(utm.easting, utm.northing, 0));
+                mats.push(new Three.Matrix4().makeTranslation(tx.x, tx.y, 0));
 
                 for (let m of mats)
                     g.applyTransform(m);
@@ -437,44 +453,36 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
         // @Override FileFormat
         save(visual) {
 
-            let mump = 10; // SVG px  per metre
+            // Set up SVG pixels-per-metre
+            Units.UPM[Units.EX] = 10;
             
-            // Get position and width/height of the bounding box in
-            // UTM coords
+            // Get position and width/height of the bounding box
+            // to set up the transform to SVG units
             let bb = visual.boundingBox;
-            let minx = bb.min.x;
-            let miny = bb.min.y;
-            let width = (bb.max.x - minx) * mump;
-            let height = (bb.max.y - miny) * mump;
-
+            Units.BB[Units.IN] = bb;
+                
             // Lat/long of the origin
-            let llo = new UTM(bb.min.x, bb.min.y).toLatLong();
+            let llo = Units.convert(Units.IN, bb.min, Units.LONLAT);
             let metadata = {
-                lat: llo.latitude,
-                lon: llo.longitude,
+                lat: llo.lat,
+                lon: llo.lon,
                 x: 0, y: 0, // bottom left corner
-                units_per_metre: mump // 10px per metre
+                units_per_metre: 10 // px per metre
             };
 
-            // Convert a point or a box in UTM coords to SVG coords
-            function utm2svg(p) {
-                if (p instanceof Three.Box3)
-                    return new Three.Box3(utm2svg(p.min), utm2svg(p.max));
-                return new Three.Vector3(
-                    (p.x - minx) * mump,
-                    height - (p.y - miny) * mump,
-                    0);
-            }
-            
+            // Make a copy of the SVG template document
             let doc = this.mTemplate.cloneNode(true);
-            let $svg = $(doc).children("svg").first();
 
+            // Build metadata description
+            let $svg = $(doc).children("svg").first();
             let metas = [];
             for (let m in metadata)
                 metas.push(m + ":" + metadata[m]);                
             $svg.find("dc\\:description").text(metas.join(","));
 
+            let width = Units.BBwidth(Units.EX);
             $svg.attr("width", width);
+            let height = Units.BBheight(Units.EX);
             $svg.attr("height", height);
             $svg.attr("viewBox", "0 0 " + width + " " + height);
             $svg.attr("sodipodi:docname", visual.name);
@@ -518,7 +526,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
                     let path = makeEl("path", visual, props);
                     let lines = [ "M" ];
                     for (let e of visual.children) {
-                        let v = utm2svg(e.position);
+                        let v = Units.convert(Units.IN, e.position, Units.EX);
                         lines.push(v.x, v.y);
                     }
                     if (visual.isClosed)
@@ -536,16 +544,16 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
                     let last;
                     for (let e of visual.edges) {
                         if (e.p1 === last) {
-                            let v2 = utm2svg(e.p2.position);
+                            let v2 = Units.convert(Units.IN, e.p2.position, Units.EX);
                             lines.push(v2.x + " " + v2.y);
                             last = v2;
                         } else if (e.p2 === last) {
-                            let v1 = utm2svg(e.p1.position);
+                            let v1 = Units.convert(Units.IN, e.p1.position, Units.EX);
                             lines.push(v1.x + " " + v1.y);
                             last = v1;
                         } else {
-                            let v1 = utm2svg(e.p1.position);
-                            let v2 = utm2svg(e.p2.position);
+                            let v1 = Units.convert(Units.IN, e.p1.position, Units.EX);
+                            let v2 = Units.convert(Units.IN, e.p2.position, Units.EX);
                             lines.push("M " + v1.x + " " + v1.y
                                        + " " + v2.x + " " + v2.y);
                             last = e.p2;
@@ -566,12 +574,12 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
                 }
                     
                 case "Point": {
-                    let v = utm2svg(visual.position);
+                    let v = Units.convert(Units.IN, visual.position, Units.EX);
                     let circle = makeEl("circle", visual, props);
                     circle.setAttribute("style", POINT_STYLE);
                     circle.setAttribute("cx", v.x);
                     circle.setAttribute("cy", v.y);
-                    circle.setAttribute("r", 2);
+                    circle.setAttribute("r", Units.pointRadius(Units.EX));
                     container.appendChild(circle);
                     break;
                 }

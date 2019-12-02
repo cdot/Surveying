@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/FileFormats/json", ["js/FileFormat", "three", "js/UTM", "js/Point", "js/Vertex", "js/Container", "js/Network", "js/Path", "js/Contour"], function(FileFormat, Three, UTM, Point, Vertex, Container, Network, Path, Contour) {
+define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/UTM", "js/Point", "js/Container", "js/Network", "js/Path", "js/Contour"], function(FileFormat, Three, Units, UTM, Point, Container, Network, Path, Contour) {
 
     class Json extends FileFormat {
 
@@ -10,20 +10,12 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/UTM", "js/Point", "
         // @Override
         load(source, data) {
             let json = JSON.parse(data);
-            let utm_zone = json.utm_zone;
-            let changeZone = false;
-            if (utm_zone) {
-                if (UTM.defaultZone() && UTM.defaultZone() !== utm_zone)
-                    changeZone = true;
-            }
+            let origin = json.origin;
    
             function getPoint(el) {
-                if (changeZone) {
-                    let utm = new UTM(el.x, el.y, utm_zone);
-                    utm.changeZone(UTM.defaultZone());
-                    el.x = utm.easting, el.y = utm.northing;
-                }
-                return el;
+                let utm = { east: el.x, north: el.y,
+                            zone: origin.zone, hemis: origin.hemis };
+                return Units.convert(Units.UTM, utm, Units.IN);
             }
             
             function json2db(json) {
@@ -184,7 +176,8 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/UTM", "js/Point", "
                 json = db2json(visual.children[0]);
             else // root has multiple children
                 json = db2jsonl(visual);
-            json.utm_zone = UTM.defaultZone();
+
+            json.origin = Units.inOrigin;
             
             return JSON.stringify(json);
         }

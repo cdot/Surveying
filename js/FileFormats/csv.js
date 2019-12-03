@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Units", "js/Point", "js/Container", "js/UTM", "jquery-csv"], function(FileFormat, Three, Units, Point, Container, UTM) {
+define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Units", "js/Point", "js/Container", "jquery-csv"], function(FileFormat, Three, Units, Point, Container) {
 
     /**
      * Load a set of points from a CSV file into a container.

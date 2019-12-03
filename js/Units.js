@@ -115,11 +115,9 @@ define("js/Units", ["js/UTM"], function(UTM) {
                              zone: Units.inOrigin.zone,
                              hemis: Units.inOrigin.hemis || 'N' };
                 
-                if (outsys === Units.LONLAT) {
-                    let u = Units.convert(Units.IN, data, Units.UTM);
-                    return new UTM(u.east, u.north, u.zone, u.hemis)
-                    .toLatLong();
-                }
+                if (outsys === Units.LONLAT)
+                    return UTM.toLatLong(
+                        Units.convert(Units.IN, data, Units.UTM));
                 
                 // outsys === Units.EX
                 return {
@@ -146,10 +144,8 @@ define("js/Units", ["js/UTM"], function(UTM) {
                              y: (data.north - Units.inOrigin.north)
                              * Units.UPM[Units.IN],
                              z: 0 }
-                if (outsys === Units.LONLAT) {
-                    return new UTM(data.east, data.north, data.zone)
-                    .toLatLong();
-                }
+                if (outsys === Units.LONLAT)
+                    return UTM.toLatLong(data);
                 
                 return Units.convert( // Units.EX
                     Units.IN,

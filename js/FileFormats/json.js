@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/UTM", "js/Point", "js/Container", "js/Network", "js/Path", "js/Contour"], function(FileFormat, Three, Units, UTM, Point, Container, Network, Path, Contour) {
+define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point", "js/Container", "js/Network", "js/Path", "js/Contour"], function(FileFormat, Three, Units, Point, Container, Network, Path, Contour) {
 
     class Json extends FileFormat {
 

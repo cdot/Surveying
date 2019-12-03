@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/CanvasController", ["js/Container", "three", "js/Selection", "js/UTM", "js/Materials", "jquery"], function(Container, Three, Selection, UTM, Materials) {
+define("js/CanvasController", ["js/Container", "three", "js/Selection", "js/Materials", "jquery"], function(Container, Three, Selection, Materials) {
 
     /**
      * Base class of canvas controllers. A canvas controller encapsulates

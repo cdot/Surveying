@@ -45,7 +45,6 @@ requirejs(["test/TestRunner", "js/UTM", "js/Units"], function(TestRunner, UTM, U
     });
   
     tr.addTest("UTM -> IN", () => {
-        debugger;
         Units.inOrigin = { east: 5050, north: 7070, zone: 30 };
         let u = Units.convert(
             Units.UTM, { east: 0, north: 0, zone: 30 }, Units.IN);

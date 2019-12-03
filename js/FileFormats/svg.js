@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Container", "js/Network", "js/Contour", "js/Path", "js/UTM", "js/Units", "jquery-ui"], function(XML, Three, Point, Container, Network, Contour, Path, UTM, Units) {
+define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Container", "js/Network", "js/Contour", "js/Path", "js/Units", "jquery-ui"], function(XML, Three, Point, Container, Network, Contour, Path, Units) {
 
     /**
      * Specialised loader/saver for an SVG used to carry survey information.
@@ -404,7 +404,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
 
                 let width = getAttrN($xml, "width");
                 let height = getAttrN($xml, "height");
-                debugger;
                
                 Units.mapFromEX(
                     {

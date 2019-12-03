@@ -1,4 +1,4 @@
-define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Units", "js/Container", "js/Contour", "js/Path", "js/UTM"], function(XML, Three, Units, Container, Contour, Path, UTM) {
+define("js/FileFormats/osm", ["js/FileFormats/XML", "three", "js/Units", "js/Container", "js/Contour", "js/Path"], function(XML, Three, Units, Container, Contour, Path) {
 
     class OSM extends XML {
 

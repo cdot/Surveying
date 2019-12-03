@@ -150,8 +150,11 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
          * and the cursor
          */
         get rulerLength() {
-            let dx = this.mCursor.x - this.mRulerStart.x;
-            let dy = this.mCursor.y - this.mRulerStart.y;
+            // UTM units are metres, so convert via
+            let a = Units.convert(Units.IN, this.mRulerStart, Units.UTM);
+            let b = Units.convert(Units.IN, this.mCursor, Units.UTM);
+            let dx = a.east - b.east;
+            let dy = a.north - b.north;
             return Math.round(100 * Math.sqrt(dx * dx + dy * dy)) / 100;
         }
 

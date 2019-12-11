@@ -1,14 +1,14 @@
 define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "delaunator"], function(Container, Visual, Point, Materials, Delaunator) {
 
-    // Every NVertex is uniquely numbered within this system
+    // Every NetworkVertex is uniquely numbered within this system
     let counter = 1;
 
     /**
      * @private
-     * A vertex in a Network. A NVertex is a Point with a set of incident
+     * A vertex in a Network. A NetworkVertex is a Point with a set of incident
      * edges and slightly different highlighting behaviours.
      */
-    class NVertex extends Point {
+    class NetworkVertex extends Point {
         /**
          * @param name vertex name (may not be unique)
          * @param v Three.Vector3 position of vertex or x, y, z
@@ -16,7 +16,7 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         constructor(p) {
             super(p);
             this.mVid = counter++;
-            // NEdges are not OWNED by NVertex, just referred to. They
+            // NetworkEdges are not OWNED by NetworkVertex, just referred to. They
             // are owned by the parent Network.
             this.mEdges = [];
         }
@@ -103,9 +103,9 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         }
 
         // @Override Point
-        scheme(skip) {
-            let s = super.scheme(skip + "'name'");
-            s.push("NVertex #" + this.mVid);
+        scheme() {
+            let s = super.scheme();
+            s.push("NetworkVertex #" + this.mVid);
             for (let e of this.mEdges)
                 s.push("\tedge to #" + e.otherEnd(this).vid);
             return s;
@@ -119,12 +119,12 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
      * @private
      * An edge in a Network. Note that edges are Visuals but do
      * not participate in the general object hierarchy; instead they
-     * are stored local to Network, and referenced in NVertex.
+     * are stored local to Network, and referenced in NetworkVertex.
      */
-    class NEdge extends Visual {
+    class NetworkEdge extends Visual {
         /**
-         * @param p1 NVertex
-         * @param p2 NVertex
+         * @param p1 NetworkVertex
+         * @param p2 NetworkVertex
          */
         constructor(p1, p2) {
             super(); // edges have no name
@@ -182,7 +182,7 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         }
 
         /**
-         * Called from NVertex when a vertex on this edge moves
+         * Called from NetworkVertex when a vertex on this edge moves
          */
         vertexMoved() {
             if (this.mGeometry)
@@ -205,7 +205,7 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
     }
 
     /**
-     * A network of interconnected vertices (NVertex) joined by edges (NEdge)
+     * A network of interconnected vertices (NetworkVertex) joined by edges (NetworkEdge)
      * A network can be a simple path, or could be a mesh.
      */
     class Network extends Container {
@@ -220,10 +220,10 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
 
         /**
          * Add a vertex at the given point
-         * @return {NVertex} added
+         * @return {NetworkVertex} added
          */
         addVertex(p) {
-            let v = new NVertex(p);
+            let v = new NetworkVertex(p);
             this.addChild(v);
             return v;
         }
@@ -231,11 +231,11 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         /**
          * Add an edge to the network. The edge must refer to vertices
          * in the network (not in subnets). Two signatures,
-         * @param {NVertex} p1 first vertex
-         * @param {NVertex} p2 sceond vertex
+         * @param {NetworkVertex} p1 first vertex
+         * @param {NetworkVertex} p2 sceond vertex
          */
         addEdge(p1, p2) {
-            let e = new NEdge(p1, p2);
+            let e = new NetworkEdge(p1, p2);
             e.setParent(this);
             this.mEdges.push(e);
             return e;
@@ -278,6 +278,10 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
             super.remove();
         }
 
+        noPointScheme() {
+            return "name";
+        }
+        
         _findEdge(v1, v2) {
             if (v1.parent !== this || v2.parent !== this)
                 throw "Internal error";
@@ -347,9 +351,9 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         }
 
         // @Override Container
-        scheme(skip) {
-            let s = super.scheme(skip);
-            if (this.mEdges.length > 0 && !/'counts'/.test(skip))
+        scheme() {
+            let s = super.scheme();
+            if (this.mEdges.length > 0)
                 s.push(this.mEdges.length + " edge"
                        + (this.mEdges.length == 1 ? "" : "s"));
             return s;
@@ -394,5 +398,6 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
             return result;
         }
     }
+    
     return Network;
 });

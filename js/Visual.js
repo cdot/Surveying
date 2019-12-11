@@ -163,19 +163,13 @@ define("js/Visual", ["three"], function(Three) {
         /**
          * Generate a report on this object for use in the UI
          */
-        scheme(skip) {
-            let s = [];
-            let self = this;
-            if (/'name'/.test(skip))
-                s.push(self.constructor.name);
-            else
-                s.push({
-                    title: self.constructor.name,
-                    type: "string",
-                    get: () => { return self.mName || ""; },
-                    set: (v) => { self.mName = v; }
-                });
-            return s;
+        scheme() {
+            return [{
+                title: this.constructor.name,
+                type: "string",
+                get: () => { return this.mName || ""; },
+                set: (v) => { this.mName = v; }
+            }];
         }
 
         /**

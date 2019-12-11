@@ -292,32 +292,42 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
                 obj.addVertex({ x: v.x, y: v.y, z: z });
             if (obj instanceof Contour)
                 obj.setZ(z);
+
             if (closed)
                 obj.close();
             
             return obj;
         }
 
-        _load_circle($xml, name, props) {
-            if (props.type === "point") {
-                let z = props.z ? parseFloat(props.z) : 0;
-                return new Point(
-                    { x: getAttrN($xml, "cx"), y: getAttrN($xml, "cy"), z: z },
-                    name);
+        // Handle circle or ellipse
+        _spot($xml, name, props, rx, ry) {
+            let cx = getAttrN($xml, "cx");
+            let cy = getAttrN($xml, "cy");
+            let z = props.z ? parseFloat(props.z) : 0;
+            if (props.type === "point")
+                return new Point({ x: cx, y: cy, z: z }, name);
+
+            // Not tagged as "point", treat as a contour
+            let c = new Contour(name);
+            c.setZ(z);
+            for (let i = 0; i < 10; i++) {
+                let a = i * Math.PI / 5;
+                c.addVertex({ x: cx + rx * Math.cos(a),
+                              y: cy + ry * Math.sin(a) });
             }
-            console.debug("\tnon-point circle ignored");
-            return undefined;
+            c.close();
+            return c;
+        }
+        
+        _load_circle($xml, name, props) {
+            let r = getAttrN($xml, "r")
+            return this._spot($xml, name, props, r, r);
         }
         
         _load_ellipse($xml, name, props) {
-            if (props.type === "point") {
-                let z = props.z ? parseFloat(props.z) : 0;
-                return new Point(
-                    { x: getAttrN($xml, "cx"), y: getAttrN($xml, "cy"), z: z },
-                    name);
-            }
-            console.debug("\tnon-point ellipse ignored");
-            return undefined;
+            let rx = getAttrN($xml, "rx");
+            let ry = getAttrN($xml, "ry");
+            return this._spot($xml, name, props, rx, ry);
         }
         
         _load_g($xml, name, props) {
@@ -333,6 +343,9 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
                 if ($desc.length > 0)
                     props = parseProps($desc.text());
 
+                if (props.type === "ignore")
+                    return;
+                
                 let fn = loader["_load_" + this.tagName];
 
                 let obj;
@@ -399,22 +412,23 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
                 $dlg.dialog("open");
             })
             .then(() => {
-                let g = this._load_g($xml, "root", {});
-                let mats = [];
-
                 let width = getAttrN($xml, "width");
                 let height = getAttrN($xml, "height");
                
-                Units.mapFromEX(
+                 Units.mapFromEX(
                     {
                         min: { x:     0, y:      0 },
                         max: { x: width, y: height }
                     },
-                    metadata.units_per_metre);
+                    metadata.units_per_metre,
+                    true);
             
                 // Set up conversions
                 let tx = Units.convert(Units.LONLAT, metadata, Units.IN);
                 console.debug("origin offset ", tx);
+
+                let g = this._load_g($xml, "root", {});
+                let mats = [];
 
                 // We loaded the SVG applying all transformations from the
                 // document as we went along. Now need to transform those
@@ -578,7 +592,8 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
                     circle.setAttribute("style", POINT_STYLE);
                     circle.setAttribute("cx", v.x);
                     circle.setAttribute("cy", v.y);
-                    circle.setAttribute("r", Units.pointRadius(Units.EX));
+                    // Radius 0.25m = 25cm
+                    circle.setAttribute("r", Units.UPM[Units.EX] / 4);
                     container.appendChild(circle);
                     break;
                 }

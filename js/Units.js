@@ -33,7 +33,7 @@ define("js/Units", ["js/UTM"], function(UTM) {
             10          // EX, pixels per metre
         ],
 
-        // Origin of the inner coordinate system as a UTM point.
+        // Origin of the inner coordinate system in the UTM system.
         // When we start up, no zone is defined, the first conversion
         // to/from a Lat/Long will initialise it.
         inOrigin: undefined,
@@ -50,8 +50,9 @@ define("js/Units", ["js/UTM"], function(UTM) {
          * Set up parameters for EX.
          * @param bb bounds of the EX box to be transformed to IN
          * @param exUPM units-per-metre in the EX space
+         * @param flipY true to invert the EX Y axis
          */
-        mapFromEX(bb, exUPM) {
+        mapFromEX(bb, exUPM, flipY) {
             Units.UPM[Units.EX] = exUPM;
             Units.BB[Units.EX] = bb;
             Units.BB[Units.IN] = {
@@ -61,14 +62,16 @@ define("js/Units", ["js/UTM"], function(UTM) {
                        y: Units.BBheight(Units.EX)
                        * Units.UPM[Units.IN] / Units.UPM[Units.EX] }
             };
+            Units.flipEXy = flipY;
         },
         
         /**
          * Set up parameters for EX.
          * @param bb bounds of the IN box to be transformed to EX
          * @param exUPM units-per-metre in the EX space
+         * @param flipY true to invert the Y axis
          */
-        mapToEX(bb, exUPM) {
+        mapToEX(bb, exUPM, flipY) {
             Units.UPM[Units.EX] = exUPM;
             Units.BB[Units.IN] = bb;
             Units.BB[Units.EX] = {
@@ -78,6 +81,7 @@ define("js/Units", ["js/UTM"], function(UTM) {
                        y: Units.BBheight(Units.IN)
                        * Units.UPM[Units.EX] / Units.UPM[Units.IN] }
             };
+            Units.flipEXy = flipY;
         },
         
          /**
@@ -103,30 +107,37 @@ define("js/Units", ["js/UTM"], function(UTM) {
                 throw "Unrecognised outsys" + outsys;
 
             if (insys === Units.IN) {
+           
+                if (outsys === Units.UTM) {
+                    if (!Units.inOrigin)
+                        throw "Cannot convert to UTM without an origin";
 
-                if (!Units.inOrigin)
-                    throw "Cannot convert from IN without an origin";
-            
-                if (outsys === Units.UTM)
                     return { east: data.x / Units.UPM[Units.IN]
                              + Units.inOrigin.east,
                              north: data.y / Units.UPM[Units.IN]
                              + Units.inOrigin.north,
                              zone: Units.inOrigin.zone,
                              hemis: Units.inOrigin.hemis || 'N' };
+                }
                 
                 if (outsys === Units.LONLAT)
                     return UTM.toLatLong(
                         Units.convert(Units.IN, data, Units.UTM));
                 
                 // outsys === Units.EX
-                return {
+                let res = {
                     x: (data.x - Units.BB[Units.IN].min.x)
                     * Units.UPM[Units.EX] / Units.UPM[Units.IN],
-                    y: Units.BBheight(Units.EX)
-                    - (data.y - Units.BB[Units.IN].min.y)
+                    y: (data.y - Units.BB[Units.IN].min.y)
                     * Units.UPM[Units.EX] / Units.UPM[Units.IN]
                 };
+                if (typeof data.x !== "undefined")
+                    res.z = data.z * Units.UPM[Units.EX] / Units.UPM[Units.IN]
+                
+                if (Units.flipEXy)
+                    res.y = Units.BBheight(Units.EX) - res.y;
+                
+                return res;
             }
                 
             if (insys === Units.UTM) {
@@ -147,7 +158,7 @@ define("js/Units", ["js/UTM"], function(UTM) {
                 if (outsys === Units.LONLAT)
                     return UTM.toLatLong(data);
                 
-                return Units.convert( // Units.EX
+                return Units.convert( // outsys === Units.EX
                     Units.IN,
                     Units.convert(Units.UTM, data, Units.IN),
                     Units.EX);
@@ -170,14 +181,18 @@ define("js/Units", ["js/UTM"], function(UTM) {
             }
 
             // insys === Units.EX
-            if (outsys === Units.IN)
-                return {
+            if (outsys === Units.IN) {
+                let res = {
                     x: (data.x - Units.BB[Units.EX].min.x)
                     * Units.UPM[Units.IN] / Units.UPM[Units.EX],
-                    y: -(data.y - Units.BB[Units.EX].min.y)
+                    y: (data.y - Units.BB[Units.EX].min.y)
                     * Units.UPM[Units.IN] / Units.UPM[Units.EX],
-                    z: data.z * Units.UPM[Units.IN]
+                    z: data.z * Units.UPM[Units.IN] / Units.UPM[Units.EX]
                 };
+                if (Units.flipEXy)
+                    res.y = -res.y;
+                return res;
+            }
 
             // else convert via IN
             let i = Units.convert(Units.EX, data, Units.IN);
@@ -186,13 +201,20 @@ define("js/Units", ["js/UTM"], function(UTM) {
         
         pointRadius: (system) => {
             if (system === Units.IN)
-                return Units.handleSize;
+                return Units.handleSize * Units.UPM[Units.IN];
 
             if (system === Units.UTM)
                 return Units.handleSize / Units.UPM[Units.IN];
             
             if (system === Units.EX)
                 return 2;
+        },
+
+        pointRadius2: (system) => {
+            if (system === Units.IN)
+                return Units.handleSize * Units.handleSize;
+
+            return Math.pow(Units.pointRadius(system), 2);
         },
 
         /**

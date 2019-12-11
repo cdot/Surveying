@@ -85,8 +85,6 @@ define("js/Point", ["js/Visual", "three", "js/Units", "js/Materials"], function(
             let np = new Three.Vector3();
             ray.closestPointToPoint(this.mCurPos, false, np);
             let dist2 = np.clone().sub(this.mCurPos).lengthSq();
-            if (dist2 > 4)// * this.handleScale2)
-                return null;
             return {
                 closest: this,
                 dist2: dist2,
@@ -103,16 +101,16 @@ define("js/Point", ["js/Visual", "three", "js/Units", "js/Materials"], function(
         }
 
         // @Override Visual
-        scheme(skip) {
-            let s = super.scheme(skip);
+        scheme() {
             let self = this;
+            let s = super.scheme();
             s.push({
-                title: "X",
-                type: "number",
-                get: () => { return self.mCurPos.x; },
-                set: (v) => {
-                    self.setPosition({x: v, y: self.mCurPos.y, z: self.mCurPos.z});
-                }
+                    title: "X",
+                    type: "number",
+                    get: () => { return self.mCurPos.x; },
+                    set: (v) => {
+                        self.setPosition({x: v, y: self.mCurPos.y, z: self.mCurPos.z});
+                    }
             });
             s.push({
                 title: "Y",
@@ -122,30 +120,28 @@ define("js/Point", ["js/Visual", "three", "js/Units", "js/Materials"], function(
                     self.setPosition({x: self.mCurPos.x, y: v, z: self.mCurPos.z});
                 }
             });
-            if (!/'Z'/.test(skip)) {
-                s.push({
-                    title: "Z",
-                    type: "number",
-                    get: () => { return self.mCurPos.z; },
-                    set: (v) => {
-                        self.setPosition({x: self.mCurPos.x, y: self.mCurPos.y, z: v});
-                    }
-                });
-            }
+            s.push({
+                title: "Z",
+                type: "number",
+                get: () => { return self.mCurPos.z; },
+                set: (v) => {
+                    self.setPosition({x: self.mCurPos.x, y: self.mCurPos.y, z: v});
+                }
+            });
             s.push({
                 title: "Lat",
                 type: "number",
                 get: () => {
                     let ll = Units.convert(
-                        Units.IN, this.mCurPos.x, Units.LONLAT);
+                        Units.IN, self.mCurPos, Units.LONLAT);
                     return ll.lat;
                 },
                 set: (v) => {
                     let ll = Units.convert(
-                        Units.IN, this.mCurPos, Units.LONLAT);
+                        Units.IN, self.mCurPos, Units.LONLAT);
                     ll.lat = v;
                     let i = Units.convert(Units.LONLAT, ll, Units.IN);
-                    i.z = this.mCurPos.z;
+                    i.z = self.mCurPos.z;
                     self.setPosition(i);
                 }
             });
@@ -154,19 +150,18 @@ define("js/Point", ["js/Visual", "three", "js/Units", "js/Materials"], function(
                 type: "number",
                 get: () => {
                     let ll = Units.convert(
-                        Units.IN, this.mCurPos.x, Units.LONLAT);
+                        Units.IN, self.mCurPos, Units.LONLAT);
                     return ll.lon;
                 },
                 set: (v) => {
                     let ll = Units.convert(
-                        Units.IN, this.mCurPos, Units.LONLAT);
+                        Units.IN, self.mCurPos, Units.LONLAT);
                     ll.lon = v;
                     let i = Units.convert(Units.LONLAT, ll, Units.IN);
-                    i.z = this.mCurPos.z;
+                    i.z = self.mCurPos.z;
                     self.setPosition(i);
                 }
             });
-            
             return s;
         }
 

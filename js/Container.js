@@ -142,15 +142,6 @@ define("js/Container", ["js/Visual", "three", "js/Point"], function(Visual, Thre
         }
 
         // @Override Visual
-        scheme(skip) {
-            let s = super.scheme(skip);
-            if (this.mObjects.length > 0 && !/'counts'/.test(skip))
-                s.push(this.mObjects.length + " object"
-                       + (this.mObjects.length == 1 ? "" : "s"));
-            return s;
-        }
-        
-        // @Override Visual
         condense(coords, mapBack) {
             for (let g of this.mObjects)
                 g.condense(coords, mapBack);

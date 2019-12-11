@@ -33,13 +33,15 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             
             // Size of a handle in world coordinates
             this.mHandleSize = 1;
-            this.mHandleScale = 1;
             
             $("#noform").on("submit", () => false);
 
             function makeControl(scheme) {
                 if (scheme instanceof Array)
                     return makeControls(scheme);
+
+                if (scheme.type === "ignore")
+                    return undefined;
                 
                 let $li = $("<li></li>");
                 if (typeof scheme === "string") {
@@ -47,16 +49,18 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                     return $li;
                 }
                 $li.append(scheme.title + " ");
-                let $in = $('<input class="property"/>');
-                $in.attr("type", scheme.type);
-                $in.attr("value", scheme.get());
-                $in.on("change", function() {
-                    let v = $(this).val();
-                    if (scheme.type === "number")
-                        v = parseFloat(v);
-                    scheme.set(v);
-                });
-                $li.append($in);
+                if (scheme.type !== "label") {
+                    let $in = $('<input class="property"/>');
+                    $in.attr("type", scheme.type);
+                    $in.attr("value", scheme.get());
+                    $in.on("change", function() {
+                        let v = $(this).val();
+                        if (scheme.type === "number")
+                            v = parseFloat(v);
+                        scheme.set(v);
+                    });
+                    $li.append($in);
+                }
                 return $li;
             }
             
@@ -64,8 +68,11 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 if (schemes.length === 0)
                     return null;
                 let $block = $("<ul></ul>");
-                for (let scheme of schemes)
-                    $block.append(makeControl(scheme));
+                for (let scheme of schemes) {
+                    let c = makeControl(scheme);
+                    if (c)
+                        $block.append(c);
+                }
                 return $block;
             }
             
@@ -74,8 +81,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 let $report = $("<ul></ul>");
                 for (let sel of sln.items) {
                     if (sln.setHandleScale)
-                        this.mVisual.setHandleScale(
-                            this.mHandleSize / this.mCamera.zoom);
+                        sln.setHandleScale(this.mHandleSize / this.mCamera.zoom);
                     let $s = makeControls(sel.scheme(""));
                     if ($s)
                         $report.append($s);
@@ -236,7 +242,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             // Scale handles appropriately so they appear as
             // a fraction of the canvas width
             this.mHandleSize = viewSize / 100;
-            this.mVisual.setHandleScale(this.mHandleScale);
+            this.mVisual.setHandleScale(this.mHandleSize);
 
             let c = this.mCamera;
             c.zoom = 1;
@@ -384,6 +390,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             this.mLastCanvasPt = {x: e.offsetX, y: e.offsetY};
             if (this.mSelection.size > 0) {
                 let hit = this.mVisual.projectRay(ray);
+                // TODO: is hit close enough in display space?
                 if (hit && this.mSelection.contains(hit.closest))
                     this.mIsDragging = true;
             }

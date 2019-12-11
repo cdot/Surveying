@@ -3,7 +3,7 @@ define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Units", "js/Point", 
 
     /**
      * Load a set of points from a CSV file into a container.
-     * Column headings Time, Lat, Long, and Depth are expected
+     * Column headings Name, Lat, Lon, and Depth are expected
      */
     class CSV extends FileFormat {
 
@@ -54,6 +54,35 @@ define("js/FileFormats/csv", ["js/FileFormat", "three", "js/Units", "js/Point", 
                 }
             }
             return Promise.resolve(group);
+        }
+
+        /**
+         * Generate a string containing CSV formatted data for the points in
+         * the visual. Only points are saved; paths and contours are lost.
+         */
+        save(visual) {
+            let s = [ "Name,Lat,Lon,Depth" ];
+            
+            function db2csv(visual) {
+                let type = visual.constructor.name;
+                    
+                if (type === "Point") {
+                    let p = Units.convert(Units.IN, visual.position, Units.LONLAT);
+                    s.push([
+                        '"' + visual.name + '"',
+                        p.lat, p.lon,
+                        visual.position.z / Units.UPM[Units.IN]
+                    ].join(","));
+                }
+                else if (type === "Container") {
+                    for (let g of visual.children)
+                        db2csv(g);
+                }
+            }
+
+            db2csv(visual);
+            
+            return s.join("\n");
         }
     }
 

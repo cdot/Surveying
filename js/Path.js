@@ -1,64 +1,77 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
 define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], function(Container, Three, Point, Materials) {
 
-    class PVertex extends Point {
-
-        // @Override Point
-        addToScene(scene) {
-            // A vertex only has a visual representation when
-            // it is highlighted
-            this.mScene = scene;
-        }
-
-        // @Override Point
-        setPosition(p) {
-            super.setPosition(p);
-            if (this.parent.mGeometry)
-                this.parent.mGeometry.verticesNeedUpdate = true;
-        }
-        
-        // @Override Point
-        highlight(on) {
-            if (!on) {
-                if (this.object3D && this.object3D.parent)
-                    this.object3D.parent.remove(this.object3D);
-                return;
-            }
-
-            if (!this.mScene)
-                return;
-
-            if (!this.object3D) {
-                // Once created, we keep the handle object around as it
-                // will be useful again
-                super.addToScene(this.mScene);
-                super.highlight(on);
-            } else
-                this.mScene.add(this.object3D);
-        }
-
-        // @Override Point
-        remove() {
-            this.parent.removeVertex(this);
-        }
-        
-        setZ(z) {
-            let p = this.position;
-            this.setPosition({ x: p.x, y: p.y, z: z });
-        }
-        
-        scheme(skip) {
-            return super.scheme(skip + "'Z'");
-        }
-    }
-
     /**
      * An open or closed path
      */
     class Path extends Container {
 
+        // Embedded class Path.Vertex
+        static get Vertex() {
+            return class extends Point {
+
+                // @Override Point
+                addToScene(scene) {
+                    // A vertex only has a visual representation when
+                    // it is highlighted
+                    this.mScene = scene;
+                }
+
+                // @Override Point
+                setPosition(p) {
+                    super.setPosition(p);
+                    if (this.parent.mGeometry)
+                        this.parent.mGeometry.verticesNeedUpdate = true;
+                }
+                
+                // @Override Point
+                highlight(on) {
+                    if (!on) {
+                        if (this.object3D && this.object3D.parent)
+                            this.object3D.parent.remove(this.object3D);
+                        return;
+                    }
+
+                    if (!this.mScene)
+                        return;
+
+                    if (!this.object3D) {
+                        // Once created, we keep the handle object around as it
+                        // will be useful again
+                        super.addToScene(this.mScene);
+                        super.highlight(on);
+                    } else
+                        this.mScene.add(this.object3D);
+                }
+
+                // @Override Point
+                remove() {
+                    this.parent.removeVertex(this);
+                }
+                
+                setZ(z) {
+                    this.position.z = z;
+                }
+
+                scheme() {
+                    let s = super.scheme();
+                    for (let i = 0; i < s.length; i++) {
+                        if (s[i].title === this.constructor.name) {
+                            s[i].type = "label";
+                            s[i].title = this.parent.constructor.name + " vertex";
+                        }
+                    }
+                    return s;
+                }
+            }
+        }
+
+        get Vertex() {
+            return Path.Vertex;
+        }
+        
         addVertex(p) {
-            let v = new PVertex(p);
+            let v = new this.Vertex(p);
             this.addChild(v);
             return v;
         }
@@ -102,7 +115,7 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
             let a = this.children[i];
             let b = this.children[i + 1];
 
-            let v = new PVertex(a.position.clone().lerp(b.position, 0.5));
+            let v = new PathVertex(a.position.clone().lerp(b.position, 0.5));
             this.children.splice(i + 1, 0, v);
             if (this.mGeometry) {
                 this.mGeometry.vertices.splice(i + 1, v.position);
@@ -127,10 +140,6 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
                                                     Materials.EDGE));
             }
             scene.add(this.mObject3D);
-        }
-        
-        scheme(skip) {
-            return super.scheme(skip);
         }
     }
 

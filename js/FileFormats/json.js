@@ -1,6 +1,15 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
 define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point", "js/Container", "js/Network", "js/Path", "js/Contour"], function(FileFormat, Three, Units, Point, Container, Network, Path, Contour) {
 
+    // 1 = round to 0 decimal places. Since the internal coordinate system
+    // is in millimetres, 0 should give us more than enough accuracy.
+    // This can be increased if more accuracy is required
+    const ROUNDER = 1;
+    
+    function round(n) {
+        return Math.round(n * ROUNDER) / ROUNDER;
+    }
+    
     class Json extends FileFormat {
 
         constructor() {
@@ -10,50 +19,55 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
         // @Override
         load(source, data) {
             let json = JSON.parse(data);
-            let origin = json.origin;
-   
-            function getPoint(el) {
-                let utm = { east: el.x, north: el.y,
-                            zone: origin.zone, hemis: origin.hemis };
-                return Units.convert(Units.UTM, utm, Units.IN);
+
+            Units.mapFromEX(json.bb, json.upm, false);
+            
+            if (!Units.inOrigin)
+                Units.inOrigin = json.origin;
+            
+            function e2i(el) {
+                return Units.convert(Units.EX, el, Units.IN);
             }
             
             function json2db(json) {
-                let tag = json.type;
-                let visual;
+                let visual, c;
                 
-                switch (tag) {
+                switch (json.type) {
 
                 case "point":
-                    visual = new Point(getPoint(json), json.name);
+                    visual = new Point(e2i({
+                        x: json.v[0],
+                        y: json.v[1],
+                        z: json.v[2]}), json.name);
                     break;
 
                 case "network": {
                     let visual = new Network(json.name);
-                    for (let c of json.v)
-                        visual.addVertex(getPoint(c));
-                    for (let e of json.e) {
+                    for (c = 0; c < json.v.length; c += 3)
+                        visual.addVertex(e2i({x: json.v[c],
+                                              y: json.v[c + 1],
+                                              z: json.v[c + 2]}));
+                    for (c = 0; c < json.e.length; c += 2)
                         visual.addEdge(
-                            visual.children[e.a],
-                            visual.children[e.b]);
-                    }
+                            visual.children[c], visual.children[c + 1]);
                     break;
                 }
                 case "path":
                     visual = new Path(json.name);
-                    for (let v of json.v)
-                        visual.addVertex(getPoint(v));
+                    for (c = 0; c < json.v.length; c += 3)
+                        visual.addVertex(e2i({x: json.v[c],
+                                              y: json.v[c + 1],
+                                              z: json.v[c + 2]}));
                     if (json.closed)
                         visual.close();
                     break;
 
                 case "contour":
                     visual = new Contour(json.name);
+                    for (c = 0; c < json.v.length; c += 2)
+                        visual.addVertex(e2i({x: json.v[c],
+                                              y: json.v[c + 1]}));
                     visual.setZ(json.z);
-                    for (let v of json.v) {
-                        v.z = json.z;
-                        visual.addVertex(getPoint(v));
-                    }
                     visual.close();
                     break;
 
@@ -64,7 +78,7 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
                     break;
                     
                 default:
-                    throw new Error("Unrecognised entity " + tag);
+                    throw new Error("Unrecognised entity " + json.type);
                 }
 
                 return visual;
@@ -84,9 +98,8 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
                     return {
                         type: "point",
                         name: visual.name,
-                        x: p.x,
-                        y: p.y,
-                        z: p.z };
+                        v: [ round(p.x), round(p.y), round(p.z) ]
+                    };
                 }
                     
                 if (type === "Network") {
@@ -100,16 +113,13 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
                     let i = 0;
                     for (let g of visual.children) {
                         vid2i[g.vid] = el.children.length;
-                        el.v.push({
-                            x: g.position.x,
-                            y: g.position.y,
-                            z: g.position.z});
+                        el.v.push(
+                            round(g.position.x),
+                            round(g.position.y),
+                            round(g.position.z));
                     }
-                    for (let e of visual.edges) {
-                        el.e.push({
-                            a: vid2i[e.p1.vid],
-                            b: vid2i[e.p2.vid]});
-                    }
+                    for (let e of visual.edges)
+                        el.e.push(vid2i[e.p1.vid], vid2i[e.p2.vid]);
                     return el;
                 }
                     
@@ -123,10 +133,10 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
                         v: []
                     };
                     for (let g of visual.children) {
-                        el.v.push({
-                            x: g.position.x,
-                            y: g.position.y,
-                            z: g.position.z});
+                        el.v.push(
+                            round(g.position.x),
+                            round(g.position.y),
+                            round(g.position.z));
                     }
                     return el;
                 }
@@ -137,13 +147,11 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
                     let el = {
                         type: "contour",
                         name: visual.name,
-                        z: visual.z,
+                        z: round(visual.z),
                         v: []
                     };
                     for (let g of visual.children) {
-                        el.v.push({
-                            x: g.position.x,
-                            y: g.position.y});
+                        el.v.push(round(g.position.x), round(g.position.y));
                     }
                     return el;
                 }
@@ -177,6 +185,8 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
             else // root has multiple children
                 json = db2jsonl(visual);
 
+            json.bb = visual.boundingBox;
+            json.upm = Units.UPM[Units.IN];
             json.origin = Units.inOrigin;
             
             return JSON.stringify(json);

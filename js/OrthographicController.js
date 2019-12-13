@@ -31,8 +31,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
 
             this.mCamera.position.set(this.mLookAt.x, this.mLookAt.y, 10);
             
-            // Size of a handle in world coordinates
-            this.mHandleSize = 1;
+            // Size of a handle in world coordinates = 10cm
+            this.mHandleSize = Units.UPM[Units.IN] / 10;
             
             $("#noform").on("submit", () => false);
 
@@ -140,11 +140,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
 	    let pos = new Three.Vector3(pt.x, pt.y, 0).unproject(this.mCamera);
             this.cursor = pos;
             $(document).trigger("cursorchanged");
-            // Make the ray line
-            let tgt = pos.clone();
-            pos.z = 1000000;
-            tgt.z = -1000000;
-            return new Three.Line3(pos, tgt);
+            pos.z = this.mCamera.position.z;
+            return new Three.Ray(pos, new Three.Vector3(0, 0, -1));
         }
 
         panBy(delta) {
@@ -404,11 +401,11 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
         _handle_mousedown(e) {
             this.mMouseDownPt = {x: e.offsetX, y: e.offsetY};
             let ray = this.event2ray(e);
-            this.mLastRayPt = ray.start.clone();
+            this.mLastRayPt = ray.origin.clone();
             this.mLastCanvasPt = {x: e.offsetX, y: e.offsetY};
             if (this.mSelection.size > 0) {
-                let hit = this.mVisual.projectRay(ray);
-                // TODO: is hit close enough in display space?
+                let hit = this.mVisual.projectRay(
+                    ray, Units.UPM[Units.IN] * Units.UPM[Units.IN]);
                 if (hit && this.mSelection.contains(hit.closest))
                     this.mIsDragging = true;
             }
@@ -422,10 +419,13 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                     && e.offsetY === this.mMouseDownPt.y) {
                     if (!e.shiftKey)
                         this.mSelection.clear();
-                    let proj = this.mVisual.projectRay(ray);
-                    if (proj)
-                        this.mSelection.add(proj.closest);
-                    else
+                    let hit = this.mVisual.projectRay(
+                        ray, Units.UPM[Units.IN] * Units.UPM[Units.IN]);
+                    if (hit) {
+                        this.mSelection.add(hit.closest);
+                        if (hit.closest2)
+                            this.mSelection.add(hit.closest2);
+                    } else
                         this.mSelection.clear();
                 } else
                     this.mSelection.clear();
@@ -438,7 +438,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
         _handle_mousemove(e) {
             let ray = this.event2ray(e);
             if (this.mMouseDownPt && ray) {
-                let p = ray.start;
+                let p = ray.origin;
                 let delta = p.clone().sub(this.mLastRayPt);
                 /*(console.log("can", this.mLastCanvasPt.x,",",this.mLastCanvasPt.y);
                 console.log("ray", p.x,",",p.y);

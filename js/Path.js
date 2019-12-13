@@ -97,7 +97,7 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
         /**
          * @private
          * Find the index of the vertex on this edge that is first
-         *  in the path list
+         * in the path list
          */
         _findEdge(v1, v2) {
             if (v1.parent !== this || v2.parent !== this)
@@ -147,6 +147,39 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
                                                     Materials.EDGE));
             }
             scene.add(this.mObject3D);
+        }
+
+        projectRay(ray, range2) {
+            let best = super.projectRay(ray, range2);
+            if (best)
+                return best;
+            let bestd2 = range2;
+            let rayPt = new Three.Vector3();
+            let edgePt = new Three.Vector3();
+            let i, a;
+            if (this.isClosed)
+                a = this.children[this.children.length - 1], i = 0;
+            else
+                a = this.children[0], i = 1;
+            for (; i < this.children.length; i++) {
+                let b = this.children[i];
+                let d2 = ray.distanceSqToSegment(a.position,
+                                                 b.position,
+                                                 rayPt,
+                                                 edgePt);
+                if (d2 < bestd2) {
+                    bestd2 = d2;
+                    best = {
+                        closest: a,
+                        closest2: b,
+                        dist2: d2,
+                        edgePt: edgePt.clone(),
+                        rayPt: rayPt.clone() };
+                }
+                a = b;
+            }
+                
+            return best;
         }
     }
 

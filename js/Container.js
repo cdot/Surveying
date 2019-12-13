@@ -115,11 +115,11 @@ define("js/Container", ["js/Visual", "three", "js/Point"], function(Visual, Thre
         }
         
         // @Override
-        projectRay(ray) {
+        projectRay(ray, range2) {
             let best;
 
             for (let g of this.mObjects) {
-                let d = g.projectRay(ray);
+                let d = g.projectRay(ray, range2);
                 if (d && (!best || d.dist2 < best.dist2))
                     best = d;
             }

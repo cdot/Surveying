@@ -193,8 +193,20 @@ define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "del
         }
 
         // @Override Visual
-        projectRay(ray) {
-            // TODO:
+        projectRay(ray, range2) {
+            let rayPt = new Three.Vector3();
+            let edgePt = new Three.Vector3();
+            let d2 = ray.distanceSqToSegment(this.mP0.position,
+                                             this.mP1.position,
+                                             rayPt,
+                                             edgePt);
+            if (d2 <= range2)
+                return {
+                    closest: this.mP0,
+                    closest2: this.mP1,
+                    dist2: d2,
+                    edgePt: edgePt };
+
             return null;
         }
     }
@@ -325,12 +337,12 @@ define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "del
         }
         
         // @Override Container
-        projectRay(ray) {
-            let best = super.projectRay(ray);
+        projectRay(ray, range2) {
+            let best = super.projectRay(ray, range2);
 
             // Check edges
             for (let e of this.mEdges) {
-                let d = e.projectRay(ray);
+                let d = e.projectRay(ray, range2);
                 if (d && (!best || d.dist2 < best.dist2))
                     best = d;
             }

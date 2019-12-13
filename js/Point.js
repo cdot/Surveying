@@ -81,17 +81,17 @@ define("js/Point", ["js/Visual", "three", "js/Units", "js/Materials"], function(
         }
 
         // @Override Visual
-        projectRay(ray) {
+        projectRay(ray, range2) {
             let np = new Three.Vector3();
-            ray.closestPointToPoint(this.mCurPos, false, np);
+            ray.closestPointToPoint(this.mCurPos, np);
             let dist2 = np.clone().sub(this.mCurPos).lengthSq();
-            if (dist2 > Units.UPM[Units.IN] * Units.UPM[Units.IN])
-                return null;
             // Hit within a metre
+            if (dist2 > range2)
+                return null;
             return {
                 closest: this,
                 dist2: dist2,
-                rayPt: np.clone()
+                rayPt: np
             };
         }
         

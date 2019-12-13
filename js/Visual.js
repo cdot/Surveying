@@ -68,14 +68,15 @@ define("js/Visual", ["three"], function(Three) {
 
         /**
          * See if the given ray "hits" this visual
+         * @param {Line3} ray
+         * @param range2 square of maximum range
          * @return {
          *     Point closest: this
          *     {double} dist2: square of dist from ray
          *     {Three.Vector3} edgePt closest point on the ray, if edge hit
-         *     {Three.Vector3} rayPt closest point on the ray
-         * } or null if it's too far away
+         * } or null if it's outside range2
          */
-        projectRay(ray) { return null; }
+        projectRay(ray, range2) { return null; }
 
         /**
          * Get the Object3D used to display this Visual
@@ -88,7 +89,7 @@ define("js/Visual", ["three"], function(Three) {
          * Set the Object3D used to display this Visual
          */
         setObject3D(o3d) {
-            o3d.mVisual = o3d;
+            o3d.userData.visual = this;
             this.mObject3D = o3d;
         }
         

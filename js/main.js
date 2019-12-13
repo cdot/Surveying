@@ -13,7 +13,7 @@ requirejs.config({
     }
 });
 
-requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveController", "js/Container", "js/Network", "jquery", "jquery-ui", "jquery-mousewheel"], function(Three, Units, OrthographicController, PerspectiveController, Container, Network) {
+requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveController", "js/Container", "jquery", "jquery-ui", "jquery-mousewheel"], function(Three, Units, OrthographicController, PerspectiveController, Container) {
     $(function(){
         $(".dialog").dialog({
             autoOpen: false,
@@ -123,6 +123,18 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
             return false;
         });
 
+        $("#addpoint").on("click", function() {
+            orthographic.addPoint();
+        });
+        
+        $("#addcontour").on("click", function() {
+            orthographic.addContour();
+        });
+        
+        $("#splitedges").on("click", function() {
+            orthographic.splitSelectedEdges();
+        });
+        
         $("#save").prop("disabled", true);
 
         // Cannot set the saver from inside the save handler because

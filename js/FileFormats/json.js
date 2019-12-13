@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point", "js/Container", "js/Network", "js/Path", "js/Contour"], function(FileFormat, Three, Units, Point, Container, Network, Path, Contour) {
+define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point", "js/Container", "js/Mesh", "js/Path", "js/Contour"], function(FileFormat, Three, Units, Point, Container, Mesh, Path, Contour) {
 
     // 1 = round to 0 decimal places. Since the internal coordinate system
     // is in millimetres, 0 should give us more than enough accuracy.
@@ -41,8 +41,8 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
                         z: json.v[2]}), json.name);
                     break;
 
-                case "network": {
-                    let visual = new Network(json.name);
+                case "mesh": case "network": {
+                    let visual = new Mesh(json.name);
                     for (c = 0; c < json.v.length; c += 3)
                         visual.addVertex(e2i({x: json.v[c],
                                               y: json.v[c + 1],
@@ -102,9 +102,9 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
                     };
                 }
                     
-                if (type === "Network") {
+                if (type === "Mesh") {
                     let el = {
-                        type: "network",
+                        type: "mesh",
                         name: visual.name,
                         v: [],
                         e: []

@@ -18,16 +18,16 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 (UTM.MIN_NORTHING + UTM.MAX_NORTHING) / 2,
                 0);
 
-            // Set up ruler geometry
+            // Set up ruler geometry. Note that z=0 is maintained.
             this.mRulerGeom = new Three.Geometry();
-            // Start of measure line
-            this.mRulerStart = this.mLookAt.clone();
-            this.mRulerGeom.vertices.push(this.mRulerStart);
-            // End of measure line under the cursor
-            this.mCursor = this.mLookAt.clone();
-            this.mRulerGeom.vertices.push(this.mCursor);
+            // Ruler doesn't get rendered unless there are at least
+            // 3 unique points on the line
+            this.mRulerGeom.vertices.push(new Three.Vector3(1, 1, 1),
+                                          new Three.Vector3(3, 3, 3));
             let rulerLine = new Three.Line(this.mRulerGeom, Materials.RULER);
             scene.add(rulerLine);
+
+            this.rulerStart = this.mLookAt;
 
             this.mCamera.position.set(this.mLookAt.x, this.mLookAt.y, 10);
             
@@ -106,6 +106,26 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             this.mConstructed = true;
         }
 
+        get rulerStart() {
+            return this.mRulerGeom.vertices[0];
+        }
+        
+        set rulerStart(v) {
+            this.mRulerGeom.vertices[0].copy(v);
+            this.mRulerGeom.verticesNeedUpdate = true;
+            $(document).trigger("cursorchanged");
+        }
+        
+        get cursor() {
+            return this.mRulerGeom.vertices[1];
+        }
+
+        set cursor(v) {
+            this.mRulerGeom.vertices[1].copy(v);
+            this.mRulerGeom.verticesNeedUpdate = true;
+            $(document).trigger("cursorchanged");
+        }
+
         /**
          * Convert an event on the canvas into
          * a 3D line projecting into the scene
@@ -118,13 +138,12 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 y: 1 - (e.clientY / this.$mCanvas.innerHeight()) * 2
             };
 	    let pos = new Three.Vector3(pt.x, pt.y, 0).unproject(this.mCamera);
-            pos.z = 1000;
-            this.mCursor.x = pos.x;
-            this.mCursor.y = pos.y;
-            this.mRulerGeom.verticesNeedUpdate = true;
+            this.cursor = pos;
             $(document).trigger("cursorchanged");
+            // Make the ray line
             let tgt = pos.clone();
-            tgt.z = -1000;
+            pos.z = 1000000;
+            tgt.z = -1000000;
             return new Three.Line3(pos, tgt);
         }
 
@@ -137,31 +156,15 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             this.mCamera.updateProjectionMatrix();
         }
 
-        get cursor() {
-            return this.mCursor;
-        }
-
-        /**
-         * Set the start of the ruler to be the cursor point
-         */
-        measureFrom() {
-            this.mRulerStart.copy(this.mCursor);
-            this.mRulerGeom.verticesNeedUpdate = true;
-            $(document).trigger("cursorchanged");
-            //console.log("measure", this.mRulerGeom.vertices);
-        }
-
         /**
          * Measure the planar distance between the start of the ruler
          * and the cursor
          */
         get rulerLength() {
-            // UTM units are metres, so convert via
-            let a = Units.convert(Units.IN, this.mRulerStart, Units.UTM);
-            let b = Units.convert(Units.IN, this.mCursor, Units.UTM);
-            let dx = a.east - b.east;
-            let dy = a.north - b.north;
-            return Math.round(100 * Math.sqrt(dx * dx + dy * dy)) / 100;
+            let dx = this.cursor.x - this.rulerStart.x;
+            let dy = this.cursor.y - this.rulerStart.y;
+            let dist = Math.sqrt(dx * dx + dy * dy) / Units.UPM[Units.IN];
+            return dist.toFixed(2);
         }
 
         /**
@@ -169,15 +172,21 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
          * the cursor
          */
         get rulerBearing() {
-            let dx = this.mCursor.x - this.mRulerStart.x;
-            let dy = this.mCursor.y - this.mRulerStart.y;
+            let dx = this.cursor.x - this.rulerStart.x;
+            let dy = this.cursor.y - this.rulerStart.y;
             if (dy === 0)
                 return dx < 0 ? 270 : 90;
             let quad = (dx > 0) ? ((dy > 0) ? 0 : 180) : ((dy > 0) ? 360 : 180);
             return Math.round(quad + 180 * Math.atan(dx / dy) / Math.PI);
         }
 
-        _splitSelectedEdges() {
+        /**
+         * Split all edges that are selected by virtue of their
+         * endpoints being selected. Edges are split at their midpoint.
+         */
+        splitSelectedEdges() {
+            if (this.mSelection.isEmpty)
+                return;
             let sel = this.mSelection.items;
             // Split edges where both end points are in the selection
             let split = [];
@@ -198,6 +207,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 if (v)
                     this.mSelection.add(v);
             }
+            this.mSelection.setHandleScale(this.mHandleSize / this.mCamera.zoom);
         }
         
         zoom(factor) {
@@ -221,16 +231,14 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 let ll = Units.convert(Units.LONLAT,
                                        { lon: -0.5, lat: 50 },
                                        Units.IN);
-
-                ll.z = -10;
-
+                ll = new Three.Vector3(ll.x, ll.y, -10);
+                
                 let ur = Units.convert(Units.LONLAT,
                                        { lon: -0.483, lat: 50.017 },
                                        Units.IN);
-                ur.z = 10;
+                ur = new Three.Vector3(ur.x, ur.y, 10);
                 
-                bounds = new Three.Box3(ll, ll);
-                bounds.expandByPoint(ur);
+                bounds = new Three.Box3(ll, ur);
             }
 
             // Look at the centre of the scene
@@ -258,11 +266,42 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             c.updateProjectionMatrix();
 
             // Ruler/cursor
-            this.mRulerStart.copy(this.mLookAt);
-            this.mCursor.copy(this.mLookAt);
+            this.rulerStart = this.mLookAt;
+            this.cursor.copy(this.rulerStart);
             this.mRulerGeom.verticesNeedUpdate = true;
         }
 
+        /**
+         * Add a new contour, three points centred on the start of the
+         * ruler, 1m radius
+         */
+        addContour() {
+            let visual = new Contour("New point");
+            visual.addVertex({ x: this.rulerStart.x,
+                          y: this.rulerStart.y + Units.UPM[Units.IN]});
+            visual.addVertex({ x: this.rulerStart.x + 0.866 * Units.UPM[Units.IN],
+                          y: this.rulerStart.y - 0.5 * Units.UPM[Units.IN]});
+            visual.addVertex({ x: this.rulerStart.x - 0.866 * Units.UPM[Units.IN],
+                          y: this.rulerStart.y - 0.5 * Units.UPM[Units.IN]});
+            visual.close();
+            visual.setZ(0);
+            this.mVisual.addChild(visual);
+            visual.addToScene(this.scene);
+            visual.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+            this.mSelection.add(visual);
+        }
+
+        /**
+         * Add a new point under the ruler start
+         */
+        addPoint() {
+            let pt = new Point(this.rulerStart, "New point");
+            this.mVisual.addChild(pt);
+            pt.addToScene(this.scene);
+            pt.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+            this.mSelection.add(pt);
+        }
+        
         // Canvas event handlers - private
         
         _handle_keydown(e) {
@@ -271,42 +310,28 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
 
             switch (e.key) {
             case "v":
-                this._splitSelectedEdges();
-                this.mSelection.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+                // Split selected edges and add a new vertex
+                this.splitSelectedEdges();
                 return false;
                 
-            case "p":
-                // Add a new point under the cursor
-                let pt = new Point(this.mCursor, "New point");
-                this.mVisual.addChild(pt);
-                pt.addToScene(this.scene);
-                this.mSelection.add(pt);
-                this.mSelection.setHandleScale(
-                    this.mHandleSize / this.mCamera.zoom);
+            case ".":
+                this.addPoint();
                 return false;
 
             case "c":
-                // Add a new contour, three points centred on the cursor, 1m radius
-                let c = new Contour("New point");
-                c.addVertex({ x: this.mCursor.x, y: this.mCursor.y + 1});
-                c.addVertex({ x: this.mCursor.x + 0.866,
-                              y: this.mCursor.y - 0.5 });
-                c.addVertex({ x: this.mCursor.x - 0.866,
-                              y: this.mCursor.y - 0.5 });
-                c.close();
-                this.mVisual.addChild(c);
-                c.addToScene(this.scene);
-                this.mSelection.add(c);
-                this.mSelection.setHandleScale(
-                    this.mHandleSize / this.mCamera.zoom);
+                this.addContour();
                 return false;
-
+                
             case "-":
                 this.zoom(0.8);
                 return false;
 
             case "=":
                 this.zoom(1.2);
+                return false;
+
+            case "m": // m, set measure point
+                this.rulerStart = this.cursor;
                 return false;
             }
             
@@ -352,18 +377,11 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 }
                 return false;
 
-            case 43: // +, split selected edges
-                return false;
-                
-            case 46: // delete selection
+            case 46: // delete selected items
                 for (sel of this.mSelection.items)
                     // Remove the item completely
                     sel.remove();
                 this.mSelection.clear();
-                return false;
-                    
-            case 77: // m, set measure point
-                this.measureFrom();
                 return false;
             }
             

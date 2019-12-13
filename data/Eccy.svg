@@ -86,7 +86,7 @@
      d="m 1504.0449,649.87895 -20.1558,0.47471 -0.1608,28.99865 41.1107,-0.94724 -0.2674,-50.58118 -19.8121,0.082 z"
      style="display:inline;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
     <desc
-       id="desc1057">type:feature,z:0</desc>
+       id="desc1057">type:feature,depth:0</desc>
     <title
        id="title893">Stride Entry 2</title>
   </path>
@@ -113,7 +113,7 @@
      d="m 119.10524,1064.6382 15.14232,34.6168 20.06091,-8.5589 -15.26242,-35.0219 z"
      style="display:inline;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
     <desc
-       id="desc1019">type:feature,z:0</desc>
+       id="desc1019">type:feature,depth:0</desc>
     <title
        id="title877">Stride Entry</title>
   </path>
@@ -127,7 +127,7 @@
     <title
        id="title915">Flower pot 1</title>
     <desc
-       id="desc909">type:feature,z:-2</desc>
+       id="desc909">type:feature,depth:2</desc>
   </ellipse>
   <ellipse
      style="opacity:0.84200003;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -137,7 +137,7 @@
      rx="5.0031762"
      ry="4.9990597">
     <desc
-       id="desc923">type:feature,z:-2</desc>
+       id="desc923">type:feature,depth:2</desc>
     <title
        id="title921">Flower pot 2</title>
   </ellipse>
@@ -149,7 +149,7 @@
      rx="5.0031762"
      ry="4.9990597">
     <desc
-       id="desc919">type:feature,z:-2</desc>
+       id="desc919">type:feature,depth:2</desc>
     <title
        id="title917">Flower pot 3</title>
   </ellipse>
@@ -166,7 +166,7 @@
      d="m 305.61046,910.81471 17.37032,41.9473 -50.86038,52.92789 -154.10284,65.2945 0.14955,18.3845 -27.690609,17.697 -14.957514,43.8956 8.196062,1.8382 9.251062,65.5925 -14.916307,1.0161 -9.641962,56.0299 8.733565,39.0394 23.885343,31.0457 27.32215,8.6215 12.40184,27.1063 35.50615,35.7323 30.0545,46.2246 49.53517,140.0617 52.99654,-32.5012 22.30405,-36.4332 17.26108,-32.929 105.68879,74.974 103.21851,29.4153 84.68786,55.3137 99.97748,-7.5581 83.45727,-25.6722 77.32029,-47.9234 32.95272,-50.438 53.00344,-94.621 43.61881,-118.5725 55.2281,18.8363 90.8265,-46.1179 64.4331,-78.4351 35.7476,-94.268 53.1524,-92.1942 23.7173,-80.09393 43.5443,-59.36663 53.7281,-46.09055 -8.0857,-86.59743 43.2316,-68.70891 5.4187,-36.37195 5.1244,-21.73939 2.6584,-20.28104 15.5239,-8.84973 3.401,-46.45492 30.2499,-75.64214 -11.5864,-16.18759 2.1236,-75.8639 5.9643,-11.0755 -8.6061,-60.05548 5.6577,-93.72157 -19.7834,-42.32457 -19.422,-56.26177 L 1454.191,55.567753 1371.3439,26.010877 1293.8545,2.0524058 1249.9533,1.3174571 1158.861,64.6719 l -15.2874,69.73518 37.093,-32.19334 3.5663,10.2758 -18.0832,21.50172 -18.5893,22.02046 -31.7545,38.22623 -23.1708,42.66899 -25.2633,69.61568 -21.8445,90.2579 -42.0536,92.47458 -88.19265,59.82585 -78.8079,32.1971 -106.44178,39.10491 -47.36065,16.43627 -19.38973,10.89513 2.89624,16.9386 -26.31289,17.56213 -4.16604,-4.80882 -17.19101,8.86245 3.02141,6.05324 5.5192,4.5909 -11.62648,18.89676 -15.32102,14.94711 -22.62516,22.54978 -30.0793,22.81055 -16.95897,17.83091 -5.11696,-0.89708 -7.61091,8.60004 -17.1392,4.73098 -8.80717,6.69846 13.71529,39.87013 -11.06002,-16.90187 -29.74577,11.00945 5.98659,28.84402 -12.10839,-23.65404 -13.7153,-8.38434 -26.91739,3.24083 -26.91747,3.24083 -51.08034,1.45535 -0.66192,43.95121 -32.83433,1.40961 z"
      style="display:inline;fill:none;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
     <desc
-       id="desc905">type:contour,z:0</desc>
+       id="desc905">type:contour,depth:0</desc>
     <title
        id="title947">SVG shoreline</title>
   </path>
@@ -870,7 +870,7 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc">
       <desc
-         id="desc2021">type:contour,z:-5</desc>
+         id="desc2021">type:contour,depth:5</desc>
     </path>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#00dd00;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
@@ -879,7 +879,7 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc">
       <desc
-         id="desc2107">type:contour,z:-6</desc>
+         id="desc2107">type:contour,depth:6</desc>
     </path>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#00dd00;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
@@ -888,7 +888,7 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccccccccccccccccccccccc">
       <desc
-         id="desc2019">type:contour,z:-7</desc>
+         id="desc2019">type:contour,depth:7</desc>
     </path>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#00de00;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
@@ -897,7 +897,7 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccccccccccccccccccccc">
       <desc
-         id="desc961">type:contour,z:-12</desc>
+         id="desc961">type:contour,depth:12</desc>
       <title
          id="title959">12M contour</title>
     </path>
@@ -908,7 +908,7 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccccccccccccccccccccccccc">
       <desc
-         id="desc967">type:contour,z:-10</desc>
+         id="desc967">type:contour,depth:10</desc>
       <title
          id="title965">10m contour</title>
     </path>
@@ -919,7 +919,7 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccccccccccccccccccccccccccc">
       <desc
-         id="desc1138">type:contour,z:-13</desc>
+         id="desc1138">type:contour,depth:13</desc>
       <title
          id="title1136">13M contour</title>
     </path>
@@ -930,7 +930,7 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccccccccccccccccccccccc">
       <desc
-         id="desc1144">type:contour,z:-14</desc>
+         id="desc1144">type:contour,depth:14</desc>
       <title
          id="title1142">14M contour</title>
     </path>
@@ -941,7 +941,7 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccccccccccccccccccc">
       <desc
-         id="desc1150">type:contour,z:-15</desc>
+         id="desc1150">type:contour,depth:15</desc>
       <title
          id="title1148">15M contour</title>
     </path>
@@ -951,7 +951,7 @@
        id="path1928"
        inkscape:connector-curvature="0">
       <desc
-         id="desc1932">type:contour,z:-17</desc>
+         id="desc1932">type:contour,depth:17</desc>
       <title
          id="title1930">17M contour</title>
     </path>
@@ -961,7 +961,7 @@
        id="path1934"
        inkscape:connector-curvature="0">
       <desc
-         id="desc1938">type:contour,z:-18</desc>
+         id="desc1938">type:contour,depth:18</desc>
       <title
          id="title1936">18M contour</title>
     </path>
@@ -972,7 +972,7 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccccccccc">
       <desc
-         id="desc1944">type:contour,z:-19</desc>
+         id="desc1944">type:contour,depth:19</desc>
       <title
          id="title1942">19M contour</title>
     </path>
@@ -982,7 +982,7 @@
        id="path1922"
        inkscape:connector-curvature="0">
       <desc
-         id="desc1926">type:contour,z:-16</desc>
+         id="desc1926">type:contour,depth:16</desc>
       <title
          id="title1924">16M contour</title>
     </path>
@@ -992,7 +992,7 @@
        id="path1128"
        inkscape:connector-curvature="0">
       <desc
-         id="desc1132">type:contour,z:-13</desc>
+         id="desc1132">type:contour,depth:13</desc>
       <title
          id="title1130">rock plane tail</title>
     </path>
@@ -1002,7 +1002,7 @@
        id="path2081"
        inkscape:connector-curvature="0">
       <desc
-         id="desc2083">type:contour,z:-5</desc>
+         id="desc2083">type:contour,depth:5</desc>
     </path>
     <text
        xml:space="preserve"
@@ -1182,7 +1182,7 @@
       <title
          id="title973-3-8-4">Cruiser buoy</title>
       <desc
-         id="desc943-9-1-9-0">type:point,z:-20</desc>
+         id="desc943-9-1-9-0">type:point,depth:20</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1194,7 +1194,7 @@
       <title
          id="title973-3-8-4-5">F</title>
       <desc
-         id="desc943-9-1-9-0-9">type:point,z:-14.1</desc>
+         id="desc943-9-1-9-0-9">type:point,depth:14.1</desc>
     </ellipse>
   </g>
   <g
@@ -1212,7 +1212,7 @@
       <title
          id="title973-3-8-4-6">Phone pole</title>
       <desc
-         id="desc943-9-1-9-0-2">type:point,z:-5.9</desc>
+         id="desc943-9-1-9-0-2">type:point,depth:5.9</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1224,7 +1224,7 @@
       <title
          id="title973-3-8-4-14">Playground buoy</title>
       <desc
-         id="desc943-9-1-9-0-6">type:point,z:-7.6</desc>
+         id="desc943-9-1-9-0-6">type:point,depth:7.6</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1236,7 +1236,7 @@
       <title
          id="title973-3-8-4-14-6">Stride entry left side</title>
       <desc
-         id="desc943-9-1-9-0-6-1">type:point,z:-6.4</desc>
+         id="desc943-9-1-9-0-6-1">type:point,depth:6.4</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1248,7 +1248,7 @@
       <title
          id="title973-3-8-4-1">Ferret buoy</title>
       <desc
-         id="desc943-9-1-9-0-0">type:point,z:-6.9</desc>
+         id="desc943-9-1-9-0-0">type:point,depth:6.9</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1260,7 +1260,7 @@
       <title
          id="title973-3-8-4-8">Short cockpit</title>
       <desc
-         id="desc943-9-1-9-0-3">type:point,z:-6.8</desc>
+         id="desc943-9-1-9-0-3">type:point,depth:6.8</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1272,7 +1272,7 @@
       <title
          id="title973-3-94">10M platform buoy</title>
       <desc
-         id="desc943-9-1-90">type:point,z:-10</desc>
+         id="desc943-9-1-90">type:point,depth:10</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1284,7 +1284,7 @@
       <title
          id="title973-3-94-7">8M platform buoy</title>
       <desc
-         id="desc943-9-1-90-6">type:point,z:-8</desc>
+         id="desc943-9-1-90-6">type:point,depth:8</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1296,7 +1296,7 @@
       <title
          id="title973-3-94-7-2">Corner of platform</title>
       <desc
-         id="desc943-9-1-90-6-2">type:point,z:-5.2</desc>
+         id="desc943-9-1-90-6-2">type:point,depth:5.2</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#f80002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1308,7 +1308,7 @@
       <title
          id="title934-5">Van buoy</title>
       <desc
-         id="desc943-0">type:point,z:-13</desc>
+         id="desc943-0">type:point,depth:13</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1320,7 +1320,7 @@
       <title
          id="title973-3-8-0">Plane nose</title>
       <desc
-         id="desc943-9-1-9-2">type:point,z:-16.2</desc>
+         id="desc943-9-1-9-2">type:point,depth:16.2</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1332,7 +1332,7 @@
       <title
          id="title973-3-8">Plane nose</title>
       <desc
-         id="desc943-9-1-9">type:point,z:-15</desc>
+         id="desc943-9-1-9">type:point,depth:15</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1344,7 +1344,7 @@
       <title
          id="title973-3-9">APC door buoy</title>
       <desc
-         id="desc943-9-1-2">type:point,z:-11</desc>
+         id="desc943-9-1-2">type:point,depth:11</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1356,7 +1356,7 @@
       <title
          id="title934-6">Van buoy</title>
       <desc
-         id="desc943-6">type:point,z:-13</desc>
+         id="desc943-6">type:point,depth:13</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1368,7 +1368,7 @@
       <title
          id="title973">Guns front</title>
       <desc
-         id="desc943-9">type:point,z:-15</desc>
+         id="desc943-9">type:point,depth:15</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1380,7 +1380,7 @@
       <title
          id="title973-7">Guns back spot</title>
       <desc
-         id="desc943-9-17">type:point,z:-14.4</desc>
+         id="desc943-9-17">type:point,depth:14.4</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#f80002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1392,7 +1392,7 @@
       <title
          id="title973-30">Spot</title>
       <desc
-         id="desc943-9-7">type:point,z:-5</desc>
+         id="desc943-9-7">type:point,depth:5</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#f80002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1404,7 +1404,7 @@
       <title
          id="title973-30-9">Spot</title>
       <desc
-         id="desc943-9-7-4">type:point,z:-10</desc>
+         id="desc943-9-7-4">type:point,depth:10</desc>
     </ellipse>
     <ellipse
        style="display:inline;opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1416,7 +1416,7 @@
       <title
          id="title973-3">Plane tail</title>
       <desc
-         id="desc943-9-1">type:point,z:-13</desc>
+         id="desc943-9-1">type:point,depth:13</desc>
     </ellipse>
     <ellipse
        style="display:inline;opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1428,7 +1428,7 @@
       <title
          id="title973-3-8-3">Plane buoy</title>
       <desc
-         id="desc943-9-1-9-8">type:point,z:-14</desc>
+         id="desc943-9-1-9-8">type:point,depth:14</desc>
     </ellipse>
     <ellipse
        style="display:inline;opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#f80002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1440,7 +1440,7 @@
       <title
          id="title934">Van buoy</title>
       <desc
-         id="desc943">type:point,z:-13</desc>
+         id="desc943">type:point,depth:13</desc>
     </ellipse>
     <ellipse
        style="display:inline;opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#f80002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1452,7 +1452,7 @@
       <title
          id="title934-6-7">Van buoy</title>
       <desc
-         id="desc943-6-5">type:point,z:-13</desc>
+         id="desc943-6-5">type:point,depth:13</desc>
     </ellipse>
   </g>
   <g
@@ -1466,7 +1466,7 @@
        id="path931"
        inkscape:connector-curvature="0">
       <desc
-         id="desc984">type:feature,z:-15</desc>
+         id="desc984">type:feature,depth:15</desc>
       <title
          id="title933">AA guns</title>
     </path>
@@ -1476,7 +1476,7 @@
        d="m 678.66204,1092.4495 9.92295,22.5987 52.25179,-18.4429 -10.15478,-21.7099 z"
        style="display:inline;fill:none;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
       <desc
-         id="desc931">type:contour,z:-10</desc>
+         id="desc931">type:contour,depth:10</desc>
       <title
          id="title867">10M platform</title>
     </path>
@@ -1487,7 +1487,7 @@
        d="m 675.50096,1390.2583 69.55765,32.4086 47.97085,37.4576 -59.55301,-12.6403 -69.55775,-32.4084 z"
        style="display:inline;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
       <desc
-         id="desc913">type:feature,z:-16.2</desc>
+         id="desc913">type:feature,depth:16.2</desc>
       <title
          id="title939">Cruiser</title>
     </path>
@@ -1509,7 +1509,7 @@
        x="709.70276"
        y="1266.6134">
       <desc
-         id="desc2432">type:feature, z:-14</desc>
+         id="desc2432">type:feature, depth:14</desc>
       <title
          id="title2430">Car</title>
     </rect>
@@ -1543,7 +1543,7 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccccccccccccccccccccccccccccccccccc">
       <desc
-         id="desc9627">type:feature,z:-11.8</desc>
+         id="desc9627">type:feature,depth:11.8</desc>
       <title
          id="title9625">Saracen</title>
     </path>
@@ -1616,9 +1616,9 @@
        d="m 704.66039,948.0704 19.37078,15.29488 37.47714,-40.81491 -19.15824,-14.40116 z"
        style="display:inline;fill:none;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
       <desc
-         id="desc1021">type:contour,z:-6</desc>
+         id="desc1021">type:contour,depth:6</desc>
       <title
-         id="title869">8M platform</title>
+         id="title869">6M platform</title>
     </path>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
@@ -1626,7 +1626,7 @@
        id="path1557"
        inkscape:connector-curvature="0">
       <desc
-         id="desc929">type:feature,z:-6</desc>
+         id="desc929">type:feature,depth:6</desc>
       <title
          id="title1559">Short Cockpit</title>
     </path>
@@ -1637,7 +1637,7 @@
        style="display:inline;fill:none;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        sodipodi:nodetypes="ccccccc">
       <desc
-         id="desc1023">type:feature,z:-4</desc>
+         id="desc1023">type:feature,depth:4</desc>
       <title
          id="title871-5">Tunnel</title>
     </path>
@@ -1647,7 +1647,7 @@
        d="m 626.82137,772.01998 18.26148,16.61704 40.21527,-38.08906 -18.11143,-15.71061 z"
        style="display:inline;fill:none;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
       <desc
-         id="desc1021-7">type:contour,z:-3</desc>
+         id="desc1021-7">type:contour,depth:3</desc>
       <title
          id="title869-4">Cave &amp; 3M platform</title>
     </path>
@@ -1657,7 +1657,7 @@
        d="m 1249.4459,597.95094 15.7676,18.98791 45.1441,-32.13126 -15.7453,-18.0695 z"
        style="display:inline;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
       <desc
-         id="desc925">type:feature,z:-2</desc>
+         id="desc925">type:feature,depth:2</desc>
       <title
          id="title949">Container 1</title>
     </path>
@@ -1667,7 +1667,7 @@
        d="m 1270.0785,662.31495 18.7606,16.17255 38.0264,-31.07245 -16.7879,-18.96803 z"
        style="display:inline;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
       <desc
-         id="desc927">type:feature,z:-6</desc>
+         id="desc927">type:feature,depth:6</desc>
       <title
          id="title951">Container 2</title>
     </path>
@@ -1678,7 +1678,7 @@
        d="m 1261.7707,915.90684 24.4161,-24.39609 24.0093,-13.72233 -13.7335,23.98981 -24.4159,24.39599 z"
        style="display:inline;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
       <desc
-         id="desc913-2">type:feature,z:-7</desc>
+         id="desc913-2">type:feature,depth:7</desc>
       <title
          id="title939-8">Speedboat 1</title>
     </path>
@@ -1689,7 +1689,7 @@
        d="m 1319.7964,822.22777 24.416,-24.39607 24.0093,-13.72232 -13.7335,23.9898 -24.4158,24.39599 z"
        style="display:inline;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
       <desc
-         id="desc913-2-1">type:feature,z:-7</desc>
+         id="desc913-2-1">type:feature,depth:7</desc>
       <title
          id="title939-8-3">SPeedboat 2</title>
     </path>
@@ -1702,7 +1702,7 @@
        y="276.45837"
        transform="matrix(0.90644095,0.42233258,-0.42290307,0.90617493,0,0)">
       <desc
-         id="desc1992">type:feature,z:-7</desc>
+         id="desc1992">type:feature,depth:7</desc>
       <title
          id="title1990">Office</title>
     </rect>
@@ -1772,7 +1772,7 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccccccccccccccccccccccccccccccccc">
       <desc
-         id="desc6032">type:feature,z:-7</desc>
+         id="desc6032">type:feature,depth:7</desc>
       <title
          id="title6030">Ferret</title>
     </path>
@@ -1805,7 +1805,7 @@
        style="display:inline;fill:none;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        sodipodi:nodetypes="ccccc">
       <desc
-         id="desc1051">type:feature,z:-2</desc>
+         id="desc1051">type:feature,depth:2</desc>
       <title
          id="title895">2M platform</title>
     </path>
@@ -1816,7 +1816,7 @@
        style="display:inline;fill:none;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        sodipodi:nodetypes="ccccc">
       <desc
-         id="desc1053">type:feature,z:-2</desc>
+         id="desc1053">type:feature,depth:2</desc>
       <title
          id="title895-3">2M platform</title>
     </path>
@@ -1827,7 +1827,7 @@
        style="display:inline;fill:none;fill-rule:evenodd;stroke:#000002;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        sodipodi:nodetypes="ccccc">
       <desc
-         id="desc1055">type:feature,z:-2</desc>
+         id="desc1055">type:feature,depth:2</desc>
       <title
          id="title895-0">2M platform</title>
     </path>
@@ -1840,7 +1840,7 @@
        y="-32.06683"
        transform="matrix(0.93978304,0.34177162,-0.34226794,0.93960239,0,0)">
       <desc
-         id="desc2480">type:feature,z:-7</desc>
+         id="desc2480">type:feature,depth:7</desc>
       <title
          id="title2478">Play tower</title>
     </rect>
@@ -1853,7 +1853,7 @@
        y="55.329769"
        transform="matrix(0.93978304,0.34177162,-0.34226794,0.93960239,0,0)">
       <desc
-         id="desc2480-3">type:feature,z:-7</desc>
+         id="desc2480-3">type:feature,depth:7</desc>
       <title
          id="title2478-8">small container</title>
     </rect>
@@ -1866,7 +1866,7 @@
        y="696.47693"
        transform="matrix(0.99998515,-0.00544954,-0.00553041,0.99998471,0,0)">
       <desc
-         id="desc2480-3-0">type:feature,z:-7</desc>
+         id="desc2480-3-0">type:feature,depth:7</desc>
       <title
          id="title2478-8-5">open top small container</title>
     </rect>

@@ -58,7 +58,7 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
                     for (let i = 0; i < s.length; i++) {
                         if (s[i].title === this.constructor.name) {
                             s[i].type = "label";
-                            s[i].title = this.parent.constructor.name + " vertex";
+                            s[i].title = this.parent.name + " vertex";
                         }
                     }
                     return s;
@@ -77,6 +77,13 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
         }
 
         removeVertex(v) {
+            if (this.mGeometry) {
+                for (let i = 0; i < this.children.length; i++)
+                    if (this.children[i] === v)
+                        this.mGeometry.vertices.splice(i, 1);
+                this.mGeometry.verticesNeedUpdate = true;
+           }
+            this.removeChild(v);
         }
         
         get isClosed() {
@@ -119,7 +126,7 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
             this.children.splice(i + 1, 0, v);
             if (this.mGeometry) {
                 this.mGeometry.vertices.splice(i + 1, v.position);
-                this.mGeometry,verticesNeedUpdate = true;
+                this.mGeometry.verticesNeedUpdate = true;
             }
         }
         

@@ -1,14 +1,14 @@
-define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "delaunator"], function(Container, Visual, Point, Materials, Delaunator) {
+define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "delaunator"], function(Container, Visual, Point, Materials, Delaunator) {
 
-    // Every NetworkVertex is uniquely numbered within this system
+    // Every MeshVertex is uniquely numbered within this system
     let counter = 1;
 
     /**
      * @private
-     * A vertex in a Network. A NetworkVertex is a Point with a set of incident
+     * A vertex in a Mesh. A MeshVertex is a Point with a set of incident
      * edges and slightly different highlighting behaviours.
      */
-    class NetworkVertex extends Point {
+    class MeshVertex extends Point {
         /**
          * @param name vertex name (may not be unique)
          * @param v Three.Vector3 position of vertex or x, y, z
@@ -16,8 +16,8 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         constructor(p) {
             super(p);
             this.mVid = counter++;
-            // NetworkEdges are not OWNED by NetworkVertex, just referred to. They
-            // are owned by the parent Network.
+            // MeshEdges are not OWNED by MeshVertex, just referred to. They
+            // are owned by the parent Mesh.
             this.mEdges = [];
         }
 
@@ -105,7 +105,7 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         // @Override Point
         scheme() {
             let s = super.scheme();
-            s.push("NetworkVertex #" + this.mVid);
+            s.push("MeshVertex #" + this.mVid);
             for (let e of this.mEdges)
                 s.push("\tedge to #" + e.otherEnd(this).vid);
             return s;
@@ -117,14 +117,14 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
 
     /**
      * @private
-     * An edge in a Network. Note that edges are Visuals but do
+     * An edge in a Mesh. Note that edges are Visuals but do
      * not participate in the general object hierarchy; instead they
-     * are stored local to Network, and referenced in NetworkVertex.
+     * are stored local to Mesh, and referenced in MeshVertex.
      */
-    class NetworkEdge extends Visual {
+    class MeshEdge extends Visual {
         /**
-         * @param p1 NetworkVertex
-         * @param p2 NetworkVertex
+         * @param p1 MeshVertex
+         * @param p2 MeshVertex
          */
         constructor(p1, p2) {
             super(); // edges have no name
@@ -169,11 +169,6 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         }
 
         // @Override Visual
-        removeFromScene() {
-            super.removeFromScene();           
-        }
-        
-        // @Override Visual
         remove() {
             this.mP1.removeEdge(this);
             this.mP2.removeEdge(this);
@@ -182,7 +177,7 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         }
 
         /**
-         * Called from NetworkVertex when a vertex on this edge moves
+         * Called from MeshVertex when a vertex on this edge moves
          */
         vertexMoved() {
             if (this.mGeometry)
@@ -205,10 +200,10 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
     }
 
     /**
-     * A network of interconnected vertices (NetworkVertex) joined by edges (NetworkEdge)
+     * A network of interconnected vertices (MeshVertex) joined by edges (MeshEdge)
      * A network can be a simple path, or could be a mesh.
      */
-    class Network extends Container {
+    class Mesh extends Container {
 
         /**
          * @param name network name
@@ -220,10 +215,10 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
 
         /**
          * Add a vertex at the given point
-         * @return {NetworkVertex} added
+         * @return {MeshVertex} added
          */
         addVertex(p) {
-            let v = new NetworkVertex(p);
+            let v = new MeshVertex(p);
             this.addChild(v);
             return v;
         }
@@ -231,11 +226,11 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         /**
          * Add an edge to the network. The edge must refer to vertices
          * in the network (not in subnets). Two signatures,
-         * @param {NetworkVertex} p1 first vertex
-         * @param {NetworkVertex} p2 sceond vertex
+         * @param {MeshVertex} p1 first vertex
+         * @param {MeshVertex} p2 sceond vertex
          */
         addEdge(p1, p2) {
-            let e = new NetworkEdge(p1, p2);
+            let e = new MeshEdge(p1, p2);
             e.setParent(this);
             this.mEdges.push(e);
             return e;
@@ -360,7 +355,7 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         }
 
         /**
-         * Construct a new Network object that contains a Delaunay
+         * Construct a new Mesh object that contains a Delaunay
          * triangulation of all the Point objects in the container
          * @param a Visual to recursively meshify
          * @return the resulting network
@@ -376,7 +371,7 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
             visual.condense(coords, mapBack);
 
             let del = Delaunator.from(coords);
-            let result = new Network("Triangulation");
+            let result = new Mesh("Triangulation");
 
             // Construct a mesh, adding condensed points back in as vertices
             for (let i in mapBack) {
@@ -399,5 +394,5 @@ define("js/Network", ["js/Container", "js/Visual", "js/Point", "js/Materials", "
         }
     }
     
-    return Network;
+    return Mesh;
 });

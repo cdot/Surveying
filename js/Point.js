@@ -85,6 +85,9 @@ define("js/Point", ["js/Visual", "three", "js/Units", "js/Materials"], function(
             let np = new Three.Vector3();
             ray.closestPointToPoint(this.mCurPos, false, np);
             let dist2 = np.clone().sub(this.mCurPos).lengthSq();
+            if (dist2 > Units.UPM[Units.IN] * Units.UPM[Units.IN])
+                return null;
+            // Hit within a metre
             return {
                 closest: this,
                 dist2: dist2,

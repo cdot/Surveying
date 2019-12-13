@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Container", "js/Network", "js/Contour", "js/Path", "js/Units", "jquery-ui"], function(XML, Three, Point, Container, Network, Contour, Path, Units) {
+define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Container", "js/Mesh", "js/Contour", "js/Path", "js/Units", "jquery-ui"], function(XML, Three, Point, Container, Mesh, Contour, Path, Units) {
 
     /**
      * Specialised loader/saver for an SVG used to carry survey information.
@@ -152,7 +152,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
             let h = getAttrN($rect, "height");
             let obj = props.type === "contour" ?
                 new Contour(name) : new Path(name);
-            let z = props.z ? parseFloat(props.z) : 0;
+            let z = props.depth ? parseFloat(props.depth) : 0;
             obj.addVertex({ x: x,     y: y,     z: z });
             obj.addVertex({ x: x + w, y: y,     z: z });
             obj.addVertex({ x: x + w, y: y + h, z: z });
@@ -166,7 +166,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
         _load_polyline($poly, name, props) {
             let obj = props.type === "contour" ?
                 new Contour(name) : new Path(name);
-            let z = props.z ? parseFloat(props.z) : 0;
+            let z = props.depth ? parseFloat(props.depth) : 0;
             let pts = $poly.getAttribute("points").split(/[,\s]+/);
             for (let i = 0; i < pts.length; i += 2)
                 obj.addVertex({ x: pts[i], y: pts[i + 1], z: z });
@@ -183,7 +183,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
 
         _load_line($poly, name, props) {
             let obj = new Path(name);
-            let z = props.z ? parseFloat(props.z) : 0;
+            let z = props.depth ? parseFloat(props.depth) : 0;
             obj.addVertex({ x: getAttrN($rect, "x1"),
                             y: getAttrN($rect, "y1"),
                             z: z });
@@ -287,7 +287,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
 
             let obj = (props.type === "contour") ?
                 new Contour(name) : new Path(name);
-            let z = props.z ? parseFloat(props.z) : 0;
+            let z = props.depth ? parseFloat(props.depth) : 0;
             for (let v of vertices)
                 obj.addVertex({ x: v.x, y: v.y, z: z });
             if (obj instanceof Contour)
@@ -303,7 +303,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
         _spot($xml, name, props, rx, ry) {
             let cx = getAttrN($xml, "cx");
             let cy = getAttrN($xml, "cy");
-            let z = props.z ? parseFloat(props.z) : 0;
+            let z = props.depth ? parseFloat(props.depth) : 0;
             if (props.type === "point")
                 return new Point({ x: cx, y: cy, z: z }, name);
 
@@ -422,7 +422,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
                     },
                     metadata.units_per_metre,
                     true);
-            
+
                 // Set up conversions
                 let tx = Units.convert(Units.LONLAT, metadata, Units.IN);
                 console.debug("origin offset ", tx);
@@ -446,11 +446,12 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
 
                 // Scale to internal units
                 let scale = Units.convert(
-                    Units.EX, { x:1, y:-1, z: 1 }, Units.IN);
+                    Units.EX, { x: 1, y: 1, z: Units.UPM[Units.EX] }, Units.IN);
+
                 mats.push(new Three.Matrix4().makeScale(
                     scale.x,
-                    scale.y,
-                    scale.z));
+                    -scale.y,
+                    -scale.z));
 
                 // Translate reference point to reference lat,lon
                 mats.push(new Three.Matrix4().makeTranslation(tx.x, tx.y, 0));
@@ -532,7 +533,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
                     
                 case "Contour":
                     props.type = "contour";
-                    props.z = visual.z;
+                    props.depth = -visual.z / Units.UPM[Units.IN];
                     // Fall-through deliberate
                     
                 case "Path":
@@ -549,7 +550,7 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/Point", "js/Con
                     container.appendChild(path);
                     break;
                     
-                case "Network": {
+                case "Mesh": {
                     // Serialise the network as individual edges in a
                     // path
                     let path = makeEl("path", visual, props);

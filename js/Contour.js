@@ -55,9 +55,9 @@ define("js/Contour", ["three", "js/Units", "js/Path"], function(Three, Units, Pa
             s.push({
                 title: "Z",
                 type: "number",
-                get: () => { return self.mZ / Units.UPM[Units.IN]; },
+                get: () => { return self.mZ; },
                 set: (v) => {
-                    self.setZ(v * Units.UPM[Units.IN]);
+                    self.setZ(v);
                 }
             });
             return s;

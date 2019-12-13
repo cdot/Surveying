@@ -88,6 +88,7 @@ define("js/Visual", ["three"], function(Three) {
          * Set the Object3D used to display this Visual
          */
         setObject3D(o3d) {
+            o3d.mVisual = o3d;
             this.mObject3D = o3d;
         }
         
@@ -99,7 +100,8 @@ define("js/Visual", ["three"], function(Three) {
 
         /**
          * Remove the Object3D associated with this visual from the scene.
-         * The object is NOT deleted, just removed from the parent.
+         * The object is NOT deleted, just removed from the parent, and the
+         * link between the Three.Object and the Visual is retained.
          */
         removeFromScene() {
             if (this.mObject3D && this.mObject3D.parent)

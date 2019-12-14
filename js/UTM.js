@@ -22,7 +22,6 @@ define("js/UTM", function() {
     /* Ellipsoid model constants (actual values here are for WGS84) */
     const sm_a = 6378137;
     const sm_b = 6356752.314;
-    const sm_EccSquared = 6.69437999013e-03;
 
     const UTMScaleFactor = 0.9996;
 
@@ -127,30 +126,30 @@ define("js/UTM", function() {
     function footpointLatitude(y) {
         // Precalculate n (Eq. 10.18)
         let n = (sm_a - sm_b) / (sm_a + sm_b);
-        	
+
         // Precalculate alpha_ (Eq. 10.22)
         // (Same as alpha in Eq. 10.17)
         let alpha_ = ((sm_a + sm_b) / 2)
             * (1 + (Math.pow(n, 2) / 4) + (Math.pow(n, 4) / 64));
-        
+
         // Precalculate y_ (Eq. 10.23)
         let y_ = y / alpha_;
-        
+
         // Precalculate beta_ (Eq. 10.22)
         let beta_ = (3 * n / 2) + (-27 * Math.pow(n, 3) / 32)
             + (269 * Math.pow(n, 5) / 512);
-        
+
         // Precalculate gamma_ (Eq. 10.22)
         let gamma_ = (21 * Math.pow(n, 2) / 16)
             + (-55 * Math.pow(n, 4) / 32);
-        	
+
         // Precalculate delta_ (Eq. 10.22)
         let delta_ = (151 * Math.pow(n, 3) / 96)
             + (-417 * Math.pow(n, 5) / 128);
-        	
+
         // Precalculate epsilon_ (Eq. 10.22)
         let epsilon_ = (1097 * Math.pow(n, 4) / 512);
-        	
+
         // Now calculate the sum of the series (Eq. 10.21)
         return y_ + (beta_ * Math.sin(2 * y_))
         + (gamma_ * Math.sin(4 * y_))
@@ -185,7 +184,6 @@ define("js/UTM", function() {
         // Precalculate t
         let t = Math.tan(phi);
         let t2 = t * t;
-        let tmp = (t2 * t2 * t2) - Math.pow(t, 6);
 
         // Precalculate l
         let l = lambda - lambda0;
@@ -243,24 +241,24 @@ define("js/UTM", function() {
         // computed with respect to the footpoint latitude phif.
         // x1frac, x2frac, x2poly, x3poly, etc. are to enhance readability and
         // to optimize computations.
-    	
+
         // Get the value of phif, the footpoint latitude.
         let phif = footpointLatitude(y);
-        	
+
         // Precalculate ep2
         let ep2 = (Math.pow(sm_a, 2) - Math.pow(sm_b, 2))
               / Math.pow(sm_b, 2);
-        	
+
         // Precalculate cos(phif)
         let cf = Math.cos(phif);
-        	
+
         // Precalculate nuf2
         let nuf2 = ep2 * Math.pow(cf, 2);
-        	
+
         // Precalculate Nf and initialize Nfpow
         let Nf = Math.pow(sm_a, 2) / (sm_b * Math.sqrt (1 + nuf2));
         let Nfpow = Nf;
-        	
+
         // Precalculate tf
         let tf = Math.tan(phif);
         let tf2 = tf * tf;
@@ -298,24 +296,24 @@ define("js/UTM", function() {
         let x3poly = -1 - 2 * tf2 - nuf2;
         
         let x4poly = 5 + 3 * tf2 + 6 * nuf2 - 6 * tf2 * nuf2
-        	- 3 * (nuf2 *nuf2) - 9 * tf2 * (nuf2 * nuf2);
+            - 3 * (nuf2 * nuf2) - 9 * tf2 * (nuf2 * nuf2);
         
         let x5poly = 5 + 28 * tf2 + 24 * tf4 + 6 * nuf2 + 8 * tf2 * nuf2;
         
         let x6poly = -61 - 90 * tf2 - 45 * tf4 - 107 * nuf2
-        	+ 162 * tf2 * nuf2;
+            + 162 * tf2 * nuf2;
         
         let x7poly = -61 - 662 * tf2 - 1320 * tf4 - 720 * (tf4 * tf2);
         
         let x8poly = 1385 + 3633 * tf2 + 4095 * tf4 + 1575 * (tf4 * tf2);
-        	
+
         // Calculate latitude
         return {
             lat: phif + x2frac * x2poly * (x * x)
             + x4frac * x4poly * Math.pow(x, 4)
             + x6frac * x6poly * Math.pow(x, 6)
             + x8frac * x8poly * Math.pow(x, 8),
-        	
+
             // Calculate longitude
             lon: lambda0 + x1frac * x
             + x3frac * x3poly * Math.pow(x, 3)
@@ -340,7 +338,7 @@ define("js/UTM", function() {
 
         // Adjust easting and northing for UTM system.
         xy.east = xy.east * UTMScaleFactor + 500000;
-        xy.north = xy.north * UTMScaleFactor;
+        xy.north *= UTMScaleFactor;
         if (xy.north < 0) {
             xy.north += 10000000;
             xy.southern = true;
@@ -383,30 +381,25 @@ define("js/UTM", function() {
             
             if (easting < UTM.MIN_EASTING || easting > UTM.MAX_EASTING) {
                 throw new RangeError(
-                    'UTM easting ' + easting
-                    + ' outside legal range '
-                    + UTM.MIN_EASTING + '..' + UTM.MAX_EASTING);
+                    `UTM easting ${easting} outside ${UTM.MIN_EASTING}..${UTM.MAX_EASTING}`);
             }
 
             let max = southern ? UTM.MAX_NORTHING_S : UTM.MAX_NORTHING_N;
             if (northing < UTM.MIN_NORTHING || northing > max) {
                 throw new RangeError(
-                    'UTM northing' + northing
-                    + ' outside legal range'
-                    + UTM.MIN_NORTHING + '..' + max);
+                    `UTM northing ${northing} outside ${UTM.MIN_NORTHING}..${max}`);
             }
             
             if (!zone || zone < 1 || zone > 60) {
-                throw new RangeError('zone ' + zone
-                                     + ' outside legal range 1..60');
+                throw new RangeError(`zone ${zone} outside 1..60`);
             }
 
             easting = (easting - 500000) / UTMScaleFactor;
-        	
+
             /* If in southern hemisphere, adjust accordingly. */
             if (southern)
                 northing -= 10000000;
-        		
+
             northing /= UTMScaleFactor;
         
             let ll = mapXYToLatLon(easting, northing, centralUTMMeridian(zone));
@@ -436,10 +429,10 @@ define("js/UTM", function() {
                 lat = lat.lat;
             }
             if (lat > 84 || lat < -80)
-                throw new RangeError('latitude -80<=' + lat + '<=84');
+                throw new RangeError(`latitude -80<=${lat}<=84`);
 
             if (lon > 180 || lon < -180)
-                throw new RangeError('longitude -180<=' + lon + '<=180');
+                throw new RangeError(`longitude -180<=${lon}<=180`);
 
             if (lon === 180)
                 lon = -180; // special case

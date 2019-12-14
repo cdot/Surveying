@@ -1,69 +1,82 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], function(Container, Three, Point, Materials) {
+define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], function(Container, Three, Spot, Materials) {
+
+    class PathVertex extends Spot {
+        
+        // @Override Visual
+        addToScene(scene) {
+            // A vertex only has a visual representation when
+            // it is highlighted
+            this.mScene = scene;
+        }
+
+        // @Override Spot
+        setPosition(p) {
+            super.setPosition(p);
+            if (this.parent.mGeometry)
+                this.parent.mGeometry.verticesNeedUpdate = true;
+        }
+        
+        // @Override Spot
+        highlight(on) {
+            if (!on) {
+                if (this.object3D && this.object3D.parent)
+                    this.object3D.parent.remove(this.object3D);
+                return;
+            }
+
+            if (!this.mScene)
+                return;
+
+            // Once created, we keep the handle object around as it
+            // will be useful again
+            if (!this.object3D) {
+                // Once created, we keep the handle object around as it
+                // will be useful again
+                this.setObject3D(new Three.Sprite(Materials.HANDLE));
+
+                let v = this.mPosition;
+                this.object3D.position.set(v.x, v.y, v.z);
+                this.object3D.scale.x = this.handleScale;
+                this.object3D.scale.y = this.handleScale;
+                this.object3D.scale.z = this.handleScale;
+            }
+            this.mScene.add(this.object3D);
+        }
+
+        // @Override Spot
+        remove() {
+            this.parent.removeVertex(this);
+        }
+
+        /**
+         * Set the Z-ordinate of this vertex
+         */
+        setZ(z) {
+            this.position.z = z;
+        }
+
+        // @Override Spot
+        scheme() {
+            let s = super.scheme();
+            for (let i = 0; i < s.length; i++) {
+                if (s[i].title === this.constructor.name) {
+                    s[i].type = "label";
+                    s[i].title = `${this.parent.name} vertex`;
+                }
+            }
+            return s;
+        }
+    }
 
     /**
      * An open or closed path
      */
     class Path extends Container {
 
-        // Embedded class Path.Vertex
-        static get Vertex() {
-            return class extends Point {
-
-                // @Override Point
-                addToScene(scene) {
-                    // A vertex only has a visual representation when
-                    // it is highlighted
-                    this.mScene = scene;
-                }
-
-                // @Override Point
-                setPosition(p) {
-                    super.setPosition(p);
-                    if (this.parent.mGeometry)
-                        this.parent.mGeometry.verticesNeedUpdate = true;
-                }
-                
-                // @Override Point
-                highlight(on) {
-                    if (!on) {
-                        if (this.object3D && this.object3D.parent)
-                            this.object3D.parent.remove(this.object3D);
-                        return;
-                    }
-
-                    if (!this.mScene)
-                        return;
-
-                    if (!this.object3D) {
-                        // Once created, we keep the handle object around as it
-                        // will be useful again
-                        super.addToScene(this.mScene);
-                        super.highlight(on);
-                    } else
-                        this.mScene.add(this.object3D);
-                }
-
-                // @Override Point
-                remove() {
-                    this.parent.removeVertex(this);
-                }
-                
-                setZ(z) {
-                    this.position.z = z;
-                }
-
-                scheme() {
-                    let s = super.scheme();
-                    for (let i = 0; i < s.length; i++) {
-                        if (s[i].title === this.constructor.name) {
-                            s[i].type = "label";
-                            s[i].title = this.parent.name + " vertex";
-                        }
-                    }
-                    return s;
-                }
-            }
+        constructor(name) {
+            super(name);
+            this.mIsClosed = false;
         }
 
         get Vertex() {
@@ -78,16 +91,19 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
 
         removeVertex(v) {
             if (this.mGeometry) {
-                for (let i = 0; i < this.children.length; i++)
-                    if (this.children[i] === v)
+                for (let i = 0; i < this.children.length; i++) {
+                    if (this.children[i] === v) {
                         this.mGeometry.vertices.splice(i, 1);
-                this.mGeometry.verticesNeedUpdate = true;
-           }
+                        this.mGeometry.verticesNeedUpdate = true;
+                        break;
+                    }
+                }
+            }
             this.removeChild(v);
         }
         
         get isClosed() {
-            return this.mIsClosed ? true : false;
+            return this.mIsClosed;
         }
         
         close() {
@@ -101,12 +117,12 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
          */
         _findEdge(v1, v2) {
             if (v1.parent !== this || v2.parent !== this)
-                throw "Internal error";
+                throw new Error("Internal error");
             if (v1 === v2)
                 return -1;
             for (let v = 0; v < this.children.length - 1; v++)
-                if (this.children[v] === v1 && this.children[v + 1] === v2 ||
-                    this.children[v] === v2 && this.children[v + 1] === v1)
+                if (this.children[v] === v1 && this.children[v + 1] === v2
+                    || this.children[v] === v2 && this.children[v + 1] === v1)
                     return v;
             return -1;
         }
@@ -135,16 +151,17 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
             super.addToScene(scene);
             if (!this.mGeometry) {
                 this.mGeometry = new Three.Geometry();
-                for (let v of this.children)
+                for (let v of this.children) {
                     this.mGeometry.vertices.push(v.position);
+                }
             }
             if (!this.mObject3D) {
-                if (this.isClosed) 
-                    this.setObject3D(new Three.LineLoop(this.mGeometry,
-                                                        Materials.EDGE));
+                if (this.isClosed)
+                    this.setObject3D(
+                        new Three.LineLoop(this.mGeometry, Materials.EDGE));
                 else
-                    this.setObject3D(new Three.Line(this.mGeometry,
-                                                    Materials.EDGE));
+                    this.setObject3D(
+                        new Three.Line(this.mGeometry, Materials.EDGE));
             }
             scene.add(this.mObject3D);
         }
@@ -157,16 +174,17 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
             let rayPt = new Three.Vector3();
             let edgePt = new Three.Vector3();
             let i, a;
-            if (this.isClosed)
-                a = this.children[this.children.length - 1], i = 0;
-            else
-                a = this.children[0], i = 1;
+            if (this.isClosed) {
+                a = this.children[this.children.length - 1];
+                i = 0;
+            } else {
+                a = this.children[0];
+                i = 1;
+            }
             for (; i < this.children.length; i++) {
                 let b = this.children[i];
-                let d2 = ray.distanceSqToSegment(a.position,
-                                                 b.position,
-                                                 rayPt,
-                                                 edgePt);
+                let d2 = ray.distanceSqToSegment(
+                    a.position, b.position, rayPt, edgePt);
                 if (d2 < bestd2) {
                     bestd2 = d2;
                     best = {
@@ -174,7 +192,8 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
                         closest2: b,
                         dist2: d2,
                         edgePt: edgePt.clone(),
-                        rayPt: rayPt.clone() };
+                        rayPt: rayPt.clone()
+                    };
                 }
                 a = b;
             }
@@ -183,5 +202,7 @@ define("js/Path", ["js/Container", "three", "js/Point", "js/Materials"], functio
         }
     }
 
+    Path.Vertex = PathVertex;
+    
     return Path;
 });

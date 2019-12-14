@@ -1,5 +1,6 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
 define("js/Selection", function() {
+    
     /**
      * A collection of Visuals
      */

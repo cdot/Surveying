@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/Visual", ["three"], function(Three) {
+define("js/Visual", function() {
 
     /**
      * Base class of objects in a scene.
@@ -16,9 +16,10 @@ define("js/Visual", ["three"], function(Three) {
             this.mProp = {};
         }
 
+        // @private
         _notImplemented(method) {
-            return new Error(this.constructor.name
-                             + " has no implementation of " + method);
+            return new Error(
+                `${this.constructor.name} has no implementation of ${method}`);
         }
         
         /**
@@ -37,23 +38,15 @@ define("js/Visual", ["three"], function(Three) {
         }
 
         /**
-         * Get the square of the handle scale for visuals that
-         * have handles in 3-space
-         */
-        get handleScale2() {
-            return this.mHandleScale2;
-        }
-
-        /**
          * Define the handle size for visuals that have handles in 3-space
          */
         setHandleScale(s) {
             this.mHandleScale = s;
-            this.mHandleScale2 = s * s;
         }
 
         /**
          * Get the volume the object occupies
+         * @abstract
          */
         get boundingBox() {
             throw this._notImplemented("get boundingBox");
@@ -61,8 +54,9 @@ define("js/Visual", ["three"], function(Three) {
         
         /**
          * Apply a transform to the visual
+         * @abstract
          */
-        applyTransform(mat) {
+        applyTransform(/* mat */) {
             throw this._notImplemented("applyTransform");
         }
 
@@ -76,7 +70,7 @@ define("js/Visual", ["three"], function(Three) {
          *     {Three.Vector3} edgePt closest point on the ray, if edge hit
          * } or null if it's outside range2
          */
-        projectRay(ray, range2) { return null; }
+        projectRay(/* ray, range2 */) { return null; }
 
         /**
          * Get the Object3D used to display this Visual
@@ -94,10 +88,10 @@ define("js/Visual", ["three"], function(Three) {
         }
         
         /**
-         * Add the Object3D used to display this Visual to the scene
+         * Add the Object3D used to display this Visual (if it has one)
+         * to the scene
          */
-        addToScene(scene) {
-        }
+        addToScene(/* scene */) { }
 
         /**
          * Remove the Object3D associated with this visual from the scene.
@@ -107,13 +101,14 @@ define("js/Visual", ["three"], function(Three) {
         removeFromScene() {
             if (this.mObject3D && this.mObject3D.parent)
                 this.mObject3D.parent.remove(this.mObject3D);
-        } 
+        }
 
         /**
          * Used by Visuals that have a parent to remove themselves
          * from that parent
+         * @abstract
          */
-        removeChild(child) {
+        removeChild(/* child */) {
             throw this._notImplemented("removeChild");
         }
         
@@ -161,18 +156,20 @@ define("js/Visual", ["three"], function(Three) {
         /**
          * Highlight the object as being selected (or part of a selection)
          */
-        highlight(on) { }
+        highlight(/* on */) { }
 
         /**
          * Generate a report on this object for use in the UI
          */
         scheme() {
-            return [{
-                title: this.constructor.name,
-                type: "string",
-                get: () => { return this.mName || ""; },
-                set: (v) => { this.mName = v; }
-            }];
+            return [
+                {
+                    title: this.constructor.name,
+                    type: "string",
+                    get: () => (this.mName || ""),
+                    set: (v) => { this.mName = v; }
+                }
+            ];
         }
 
         /**
@@ -192,7 +189,7 @@ define("js/Visual", ["three"], function(Three) {
          * @param mapBack array indexed by the index into coords/2, mapping
          * to the visual object.
          */
-        condense(coords, mapBack) {
+        condense(/* coords, mapBack */) {
         }
     }
     return Visual;

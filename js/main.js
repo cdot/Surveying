@@ -1,7 +1,10 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
+/* eslint-env jquery, browser */
+/* global requirejs */
+
 requirejs.config({
     baseUrl: ".",
-    urlArgs: "t=" + Date.now(),
+    urlArgs: `t=${Date.now()}`,
     paths: {
         "jquery": "//cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery",
         "jquery-ui": "//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui",
@@ -14,7 +17,7 @@ requirejs.config({
 });
 
 requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveController", "js/Container", "jquery", "jquery-ui", "jquery-mousewheel"], function(Three, Units, OrthographicController, PerspectiveController, Container) {
-    $(function(){
+    $(function() {
         $(".dialog").dialog({
             autoOpen: false,
             modal: true,
@@ -53,7 +56,7 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
         }
 
         function wgsBox(b) {
-            return wgsCoords(b.min) + " -> " + wgsCoords(b.max);
+            return `${wgsCoords(b.min)} -> ${wgsCoords(b.max)}`;
         }
 
         function enableSave() {
@@ -63,26 +66,26 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
         $("#load").on("change", function(evt) {
             let f = evt.target.files[0];
             let fn = f.name;
-            let type = fn.replace(/^.*\./, "").toLowerCase();
+            let type = fn.replace(/^.*\./u, "").toLowerCase();
 
-            requirejs(["js/FileFormats/" + type], Loader => {
+            requirejs([`js/FileFormats/${type}`], (Loader) => {
                 let reader = new FileReader();
 
-                reader.onload = e => {
+                reader.onload = (e) => {
                     let data = e.target.result;
                     new Loader().load(fn, data)
-                    .then(result => {
-                        rootContainer.addChild(result);
-                        result.addToScene(scene);
-                        console.log("Loaded", fn);
-                        $("#scene").html(wgsBox(rootContainer.boundingBox));
-                        orthographic.fit();
-                        perspective.fit();
-                        enableSave();
-                    })
-                    .catch((e) => {
-                        console.debug(e);
-                    });
+                        .then((result) => {
+                            rootContainer.addChild(result);
+                            result.addToScene(scene);
+                            console.log("Loaded", fn);
+                            $("#scene").html(wgsBox(rootContainer.boundingBox));
+                            orthographic.fit();
+                            perspective.fit();
+                            enableSave();
+                        })
+                        .catch((err) => {
+                            console.debug(err);
+                        });
                 };
 
                 // Read in the image file as a data URL.
@@ -147,7 +150,7 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
         
         $("#save_format").on("change", function() {
             let type = $(this).val();
-            requirejs(["js/FileFormats/" + type], Format => {
+            requirejs([`"js/FileFormats/${type}`], (Format) => {
                 saver = new Format();
                 enableSave();
             });
@@ -162,7 +165,8 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
 
             // The format wants to use the Save button to trigger the save
             this.href = URL.createObjectURL(new Blob([str]));
-            this.download = "survey." + $("#save_format").val();
+            let fmt = $("#save_format").val();
+            this.download = `survey.${fmt}`;
 
             // Pass on for native event handling
             return true;

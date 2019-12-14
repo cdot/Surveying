@@ -1,5 +1,6 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/CanvasController", ["js/Container", "three", "js/Selection", "js/Materials", "jquery"], function(Container, Three, Selection, Materials) {
+/* global requestAnimationFrame */
+define("js/CanvasController", ["js/Container", "three", "jquery"], function(Container, Three) {
 
     /**
      * Base class of canvas controllers. A canvas controller encapsulates
@@ -44,7 +45,11 @@ define("js/CanvasController", ["js/Container", "three", "js/Selection", "js/Mate
             this.mVisual = visual;
             this.fit();
         }
-        
+
+        /**
+         * Fit the scene
+         * @abstract
+         */
         fit() {
         }
         

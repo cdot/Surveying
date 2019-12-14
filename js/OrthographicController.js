@@ -1,3 +1,5 @@
+/* @copyright 2019 Crawford Currie - All rights reserved */
+/* eslint-env jquery, browser */
 define("js/OrthographicController", ["js/CanvasController", "three", "js/Selection", "js/Point", "js/Contour", "js/Units", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Selection, Point, Contour, Units, UTM, Materials) {
 
     /**
@@ -7,8 +9,9 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
 
         constructor($canvas, visual, scene) {
             // Default 1km/1km scene
-            super($canvas, visual, scene,
-                 new Three.OrthographicCamera(-500, 500, 500, -500));
+            super(
+                $canvas, visual, scene,
+                new Three.OrthographicCamera(-500, 500, 500, -500));
             
             // Set up the camera
             // Centre of the viewing frustum - will be set when
@@ -22,8 +25,9 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             this.mRulerGeom = new Three.Geometry();
             // Ruler doesn't get rendered unless there are at least
             // 3 unique points on the line
-            this.mRulerGeom.vertices.push(new Three.Vector3(1, 1, 1),
-                                          new Three.Vector3(3, 3, 3));
+            this.mRulerGeom.vertices.push(
+                new Three.Vector3(1, 1, 1),
+                new Three.Vector3(3, 3, 3));
             let rulerLine = new Three.Line(this.mRulerGeom, Materials.RULER);
             scene.add(rulerLine);
 
@@ -31,8 +35,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
 
             this.mCamera.position.set(this.mLookAt.x, this.mLookAt.y, 10);
             
-            // Size of a handle in world coordinates = 10cm
-            this.mHandleSize = Units.UPM[Units.IN] / 10;
+            // Size of a handle in world coordinates = 50cm
+            this.mHandleSize = Units.UPM[Units.IN] / 2;
             
             $("#noform").on("submit", () => false);
 
@@ -41,16 +45,16 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                     return makeControls(scheme);
 
                 if (scheme.type === "ignore")
-                    return undefined;
+                    return null;
                 
                 let $li = $("<li></li>");
                 if (typeof scheme === "string") {
                     $li.text(scheme);
                     return $li;
                 }
-                $li.append(scheme.title + " ");
+                $li.append(`${scheme.title} `);
                 if (scheme.type !== "label") {
-                    let $in = $('<input class="property"/>');
+                    let $in = $("<input class='property'/>");
                     $in.attr("type", scheme.type);
                     $in.attr("value", scheme.get());
                     $in.on("change", function() {
@@ -77,7 +81,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             }
             
             // Set up the selection manager
-            this.mSelection = new Selection(sln => {
+            this.mSelection = new Selection((sln) => {
                 let $report = $("<ul></ul>");
                 for (let sel of sln.items) {
                     if (sln.setHandleScale)
@@ -86,7 +90,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                     if ($s)
                         $report.append($s);
                 }
-                $("#report").empty().append($report);
+                $("#report").empty()
+                    .append($report);
             });
 
             // Connect event handlers
@@ -95,11 +100,13 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             this.mLastCanvasPt = null;
             this.mLastRayPt = null;
             let self = this;
-            for (let event of [ "keydown", "mousenter", "mouseleave",
-                                "mousedown", "mouseup", "mousewheel",
-                                "mousemove" ]) {
+            for (let event of [
+                "keydown", "mousenter", "mouseleave",
+                "mousedown", "mouseup", "mousewheel",
+                "mousemove"
+            ]) {
                 this.$mCanvas.on(event, function() {
-                    return self["_handle_" + event].apply(self, arguments);
+                    return self[`_handle_${event}`].apply(self, arguments);
                 });
             }
 
@@ -137,7 +144,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 x: (e.clientX / this.$mCanvas.innerWidth() * 2 - 1),
                 y: 1 - (e.clientY / this.$mCanvas.innerHeight()) * 2
             };
-	    let pos = new Three.Vector3(pt.x, pt.y, 0).unproject(this.mCamera);
+            let pos = new Three.Vector3(pt.x, pt.y, 0).unproject(this.mCamera);
             this.cursor = pos;
             $(document).trigger("cursorchanged");
             pos.z = this.mCamera.position.z;
@@ -211,7 +218,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             this.mCamera.zoom *= factor;
             this.mVisual.setHandleScale(this.mHandleSize / this.mCamera.zoom);
             this.mCamera.updateProjectionMatrix();
-       }
+        }
 
         // @Override CanvasController
         fit() {
@@ -225,14 +232,16 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             if (bounds.isEmpty() && !this.parent) {
                 // Deal with an empty visual
                 // A roughly 1nm square block of sea in the English Channel
-                let ll = Units.convert(Units.LONLAT,
-                                       { lon: -0.5, lat: 50 },
-                                       Units.IN);
+                let ll = Units.convert(
+                    Units.LONLAT,
+                    { lon: -0.5, lat: 50 },
+                    Units.IN);
                 ll = new Three.Vector3(ll.x, ll.y, -10);
                 
-                let ur = Units.convert(Units.LONLAT,
-                                       { lon: -0.483, lat: 50.017 },
-                                       Units.IN);
+                let ur = Units.convert(
+                    Units.LONLAT,
+                    { lon: -0.483, lat: 50.017 },
+                    Units.IN);
                 ur = new Three.Vector3(ur.x, ur.y, 10);
                 
                 bounds = new Three.Box3(ll, ur);
@@ -246,7 +255,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
 
             // Scale handles appropriately so they appear as
             // a fraction of the canvas width
-            this.mHandleSize = viewSize / 100;
+            this.mHandleSize = viewSize / 50;
             this.mVisual.setHandleScale(this.mHandleSize);
 
             let c = this.mCamera;
@@ -274,12 +283,21 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
          */
         addContour() {
             let visual = new Contour("New point");
-            visual.addVertex({ x: this.rulerStart.x,
-                          y: this.rulerStart.y + Units.UPM[Units.IN]});
-            visual.addVertex({ x: this.rulerStart.x + 0.866 * Units.UPM[Units.IN],
-                          y: this.rulerStart.y - 0.5 * Units.UPM[Units.IN]});
-            visual.addVertex({ x: this.rulerStart.x - 0.866 * Units.UPM[Units.IN],
-                          y: this.rulerStart.y - 0.5 * Units.UPM[Units.IN]});
+            visual.addVertex(
+                {
+                    x: this.rulerStart.x,
+                    y: this.rulerStart.y + Units.UPM[Units.IN]
+                });
+            visual.addVertex(
+                {
+                    x: this.rulerStart.x + 0.866 * Units.UPM[Units.IN],
+                    y: this.rulerStart.y - 0.5 * Units.UPM[Units.IN]
+                });
+            visual.addVertex(
+                {
+                    x: this.rulerStart.x - 0.866 * Units.UPM[Units.IN],
+                    y: this.rulerStart.y - 0.5 * Units.UPM[Units.IN]
+                });
             visual.close();
             visual.setZ(0);
             this.mVisual.addChild(visual);
@@ -300,11 +318,61 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
         }
         
         // Canvas event handlers - private
+
+        _handleLeftKey() {
+            let sel = this.mSelection.items.slice();
+            for (let s of sel) {
+                if (s.prev) {
+                    this.mSelection.remove(s);
+                    this.mSelection.add(s.prev);
+                }
+            }
+            return false;
+        }
+
+        _handleUpKey() {
+            let sel = this.mSelection.items.slice();
+            for (let s of sel) {
+                if (s.parent !== this.mVisual) {
+                    this.mSelection.remove(s);
+                    this.mSelection.add(s.parent);
+                }
+            }
+            return false;
+        }
+
+        _handleRightKey() {
+            let sel = this.mSelection.items.slice();
+            for (let s of sel) {
+                if (s.next) {
+                    this.mSelection.remove(s);
+                    this.mSelection.add(s.next);
+                }
+            }
+            return false;
+        }
+
+        _handleDownKey() {
+            let sel = this.mSelection.items.slice();
+            for (let s of sel) {
+                if (s.children && s.children.length > 0) {
+                    this.mSelection.remove(s);
+                    this.mSelection.add(s.children[0]);
+                }
+            }
+            return false;
+        }
+
+        _handleDeleteKey() {
+            for (let sel of this.mSelection.items)
+                // Remove the item completely
+                sel.remove();
+            this.mSelection.clear();
+            return false;
+        }
         
         _handle_keydown(e) {
             // Keys on mobile are going to need buttons or menu items
-            let sel;
-
             switch (e.key) {
             case "v":
                 // Split selected edges and add a new vertex
@@ -330,59 +398,31 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             case "m": // m, set measure point
                 this.rulerStart = this.cursor;
                 return false;
+
+            default:
+                // Drop through OK
             }
             
             switch (e.keyCode) {
                 
             case 37: // left, prev sibling
-                sel = this.mSelection.items.slice();
-                for (let s of sel) {
-                    if (s.prev) {
-                        this.mSelection.remove(s);
-                        this.mSelection.add(s.prev);
-                    }
-                }
-                return false;
+                return this.handleLeft();
                 
             case 38: // up, move up in selection
-                sel = this.mSelection.items.slice();
-                for (let s of sel) {
-                    if (s.parent !== this.mVisual) {
-                        this.mSelection.remove(s);
-                        this.mSelection.add(s.parent);
-                    }
-                }
-                return false;
+                return this._handleUpKey();
 
             case 39: // right
-                sel = this.mSelection.items.slice();
-                for (let s of sel) {
-                    if (s.next) {
-                        this.mSelection.remove(s);
-                        this.mSelection.add(s.next);
-                    }
-                }
-                return false;
+                return this._handleRightKey();
 
             case 40: // down, select first child
-                sel = this.mSelection.items.slice();
-                for (let s of sel) {
-                    if (s.children && s.children.length > 0) {
-                        this.mSelection.remove(s);
-                        this.mSelection.add(s.children[0]);
-                    }
-                }
-                return false;
+                return this._handleDownKey();
 
             case 46: // delete selected items
-                for (sel of this.mSelection.items)
-                    // Remove the item completely
-                    sel.remove();
-                this.mSelection.clear();
-                return false;
+                return this._handleDeleteKey();
+                
+            default:
+                return true;
             }
-            
-            return true;
         }
     
         _handle_mouseenter() {
@@ -399,10 +439,10 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
         }
 
         _handle_mousedown(e) {
-            this.mMouseDownPt = {x: e.offsetX, y: e.offsetY};
+            this.mMouseDownPt = { x: e.offsetX, y: e.offsetY };
             let ray = this.event2ray(e);
             this.mLastRayPt = ray.origin.clone();
-            this.mLastCanvasPt = {x: e.offsetX, y: e.offsetY};
+            this.mLastCanvasPt = { x: e.offsetX, y: e.offsetY };
             if (this.mSelection.size > 0) {
                 let hit = this.mVisual.projectRay(
                     ray, Units.UPM[Units.IN] * Units.UPM[Units.IN]);
@@ -440,9 +480,6 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             if (this.mMouseDownPt && ray) {
                 let p = ray.origin;
                 let delta = p.clone().sub(this.mLastRayPt);
-                /*(console.log("can", this.mLastCanvasPt.x,",",this.mLastCanvasPt.y);
-                console.log("ray", p.x,",",p.y);
-                console.log("del", delta.x,",",delta.y);*/
                 if (this.mIsDragging) {
                     let mat = new Three.Matrix4().makeTranslation(
                         delta.x, delta.y, 0);
@@ -450,7 +487,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 } else
                     this.panBy(delta.negate());
                 this.mLastRayPt = p;
-                this.mLastCanvasPt = {x: e.offsetX, y: e.offsetY};
+                this.mLastCanvasPt = { x: e.offsetX, y: e.offsetY };
             }
             return true;
         }

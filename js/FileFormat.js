@@ -24,8 +24,9 @@ define("js/FileFormat", function() {
          * @param {String} data file content
          * @return Promise that resolves to a {Visual} content
          */
-        load(source, data) {
-            return Promise.reject(this.constructor.name + " cannot load()");
+        load(/* source, data */) {
+            return Promise.reject(
+                new Error(`No ${this.constructor.name}.load()`));
         }
 
         /**
@@ -42,8 +43,9 @@ define("js/FileFormat", function() {
          * @param {Visual} visual to save
          * @return {String} stringified version of the visual, or null if the
          * method has handled saving internally
+         * @abstract
          */
-        save(visual) {
+        save(/* visual */) {
             throw new Error("no save() defined");
         }
     }

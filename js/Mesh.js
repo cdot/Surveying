@@ -1,4 +1,5 @@
-define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "delaunator"], function(Container, Visual, Point, Materials, Delaunator) {
+/* @copyright 2019 Crawford Currie - All rights reserved */
+define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Point", "js/Materials", "delaunator"], function(Container, Three, Visual, Point, Materials, Delaunator) {
 
     // Every MeshVertex is uniquely numbered within this system
     let counter = 1;
@@ -9,6 +10,7 @@ define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "del
      * edges and slightly different highlighting behaviours.
      */
     class MeshVertex extends Point {
+
         /**
          * @param name vertex name (may not be unique)
          * @param v Three.Vector3 position of vertex or x, y, z
@@ -93,25 +95,26 @@ define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "del
             if (!this.mScene)
                 return;
 
-            if (!this.object3D) {
+            if (this.object3D)
+                this.mScene.add(this.object3D);
+            else {
                 // Once created, we keep the handle object around as it
                 // will be useful again
                 super.addToScene(this.mScene);
                 super.highlight(on);
-            } else
-                this.mScene.add(this.object3D);
+            }
         }
 
         // @Override Point
         scheme() {
             let s = super.scheme();
-            s.push("MeshVertex #" + this.mVid);
+            s.push(`MeshVertex #${this.mVid}`);
             for (let e of this.mEdges)
-                s.push("\tedge to #" + e.otherEnd(this).vid);
+                s.push(`\tedge to #${e.otherEnd(this).vid}`);
             return s;
         }
 
-        condense(coords, mapBack) {
+        condense(/* coords, mapBack */) {
         }
     }
 
@@ -122,6 +125,7 @@ define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "del
      * are stored local to Mesh, and referenced in MeshVertex.
      */
     class MeshEdge extends Visual {
+        
         /**
          * @param p1 MeshVertex
          * @param p2 MeshVertex
@@ -187,8 +191,8 @@ define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "del
         // @Override Visual
         highlight(on) {
             if (this.object3D) {
-                this.object3D.material =
-                (on ? Materials.EDGE_SELECTED : Materials.EDGE);
+                this.object3D.material
+                = (on ? Materials.EDGE_SELECTED : Materials.EDGE);
             }
         }
 
@@ -196,16 +200,19 @@ define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "del
         projectRay(ray, range2) {
             let rayPt = new Three.Vector3();
             let edgePt = new Three.Vector3();
-            let d2 = ray.distanceSqToSegment(this.mP0.position,
-                                             this.mP1.position,
-                                             rayPt,
-                                             edgePt);
-            if (d2 <= range2)
+            let d2 = ray.distanceSqToSegment(
+                this.mP0.position,
+                this.mP1.position,
+                rayPt,
+                edgePt);
+            if (d2 <= range2) {
                 return {
                     closest: this.mP0,
                     closest2: this.mP1,
                     dist2: d2,
-                    edgePt: edgePt };
+                    edgePt: edgePt
+                };
+            }
 
             return null;
         }
@@ -267,14 +274,7 @@ define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "del
         removeFromScene() {
             super.removeFromScene();
             for (let e of this.mEdges)
-                e.removeFromScene(scene);
-        }
-
-        // @Override Container
-        setHandleScale(s) {
-            super.setHandleScale(s);
-            for (let e of this.mEdges)
-                e.setHandleScale(s);
+                e.removeFromScene();
         }
 
         // @Override Container
@@ -291,7 +291,7 @@ define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "del
         
         _findEdge(v1, v2) {
             if (v1.parent !== this || v2.parent !== this)
-                throw "Internal error";
+                throw new Error("Internal error");
             if (v1 === v2)
                 return null;
             for (let e of v1.edges)
@@ -361,8 +361,7 @@ define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "del
         scheme() {
             let s = super.scheme();
             if (this.mEdges.length > 0)
-                s.push(this.mEdges.length + " edge"
-                       + (this.mEdges.length == 1 ? "" : "s"));
+                s.push(`${this.mEdges.length} edge${(this.mEdges.length === 1 ? "" : "s")}`);
             return s;
         }
 
@@ -386,11 +385,8 @@ define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "del
             let result = new Mesh("Triangulation");
 
             // Construct a mesh, adding condensed points back in as vertices
-            for (let i in mapBack) {
-                let c = mapBack[i];
-                let p = c.position;
-                mapBack[i] = c = result.addVertex(c);
-            }
+            for (let i in mapBack)
+                mapBack[i] = result.addVertex(mapBack[i]);
             
             // Iterate over the forward edges
             for (let e = 0; e < del.triangles.length; e++) {
@@ -398,7 +394,8 @@ define("js/Mesh", ["js/Container", "js/Visual", "js/Point", "js/Materials", "del
                     // Not a back-edge
                     let p = mapBack[del.triangles[e]];
                     let q = mapBack[del.triangles[nextHalfedge(e)]];
-                    if (!p || !q) debugger;
+                    if (!p || !q)
+                        debugger;
                     result.addEdge(p, q);
                 }
             }

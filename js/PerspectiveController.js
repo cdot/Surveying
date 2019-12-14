@@ -7,9 +7,10 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
     class PerspectiveController extends CanvasController {
 
         constructor($canvas, visual, scene) {
-            super($canvas, visual, scene,
-                  new Three.PerspectiveCamera(45, 1, 1, -1));  
-            this.mCamera.position.set(0, 0, 10);           
+            super(
+                $canvas, visual, scene,
+                new Three.PerspectiveCamera(45, 1, 1, -1));
+            this.mCamera.position.set(0, 0, 10);
             this.mCamera.up.set(0, 0, 1);
             this.mCamera.aspect = this.mAspectRatio;
 

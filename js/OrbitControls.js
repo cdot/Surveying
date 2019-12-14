@@ -10,14 +10,14 @@ define("js/OrbitControls", ["three"], function(Three) {
     // const endEvent = { type: 'end' };
 
     const STATE = {
-        NONE: -1,
-        ROTATE: 0,
-        DOLLY: 1,
-        PAN: 2,
-        TOUCH_ROTATE: 3,
-        TOUCH_PAN: 4,
-        TOUCH_DOLLY_PAN: 5,
-        TOUCH_DOLLY_ROTATE: 6
+        NONE: "none",
+        ROTATE: "rotate",
+        DOLLY: "dolly",
+        PAN: "pan",
+        TOUCH_ROTATE: "touch rotate",
+        TOUCH_PAN: "touch pan",
+        TOUCH_DOLLY_PAN: "touch dolly pan",
+        TOUCH_DOLLY_ROTATE: "touch dolly rotate"
     };
 
     const EPS = 0.000001;
@@ -47,7 +47,7 @@ define("js/OrbitControls", ["three"], function(Three) {
             this.mDollyEnd = new Three.Vector2();
             this.mDollyDelta = new Three.Vector2();
 
-            this.mState = STATE.NONE;
+            this.state = STATE.NONE;
 
             // Public
 
@@ -185,7 +185,10 @@ define("js/OrbitControls", ["three"], function(Three) {
 
             /**
              * @public
-             * Mouse buttons
+             * Mouse buttons. Default is:
+             * Left mouse: rotate
+             * Middle mouse: dolly (zoom)
+             * Right mouse: pan
              */
             this.mouseButtons = {
                 LEFT: Three.MOUSE.ROTATE,
@@ -195,7 +198,9 @@ define("js/OrbitControls", ["three"], function(Three) {
 
             /**
              * @public
-             * Touch fingers
+             * Touch fingers. Default is:
+             * One finger touching: rotate
+             * Two fingers touching: pan
              */
             this.touches = {
                 ONE: Three.TOUCH.ROTATE,
@@ -246,15 +251,21 @@ define("js/OrbitControls", ["three"], function(Three) {
             this.target.copy(this.target0);
             this.object.position.copy(this.position0);
             this.object.zoom = this.zoom0;
-
             this.object.updateProjectionMatrix();
-            // this.dispatchEvent(changeEvent);
-
             this.update();
 
-            this.mState = STATE.NONE;
+            this.state = STATE.NONE;
         }
 
+        set state(s) {
+            //console.log(`State ${s}`);
+            this.mState = s;
+        }
+
+        get state() {
+            return this.mState;
+        }
+        
         /**
          * @public
          * Update the controls. Must be called after any manual
@@ -278,7 +289,7 @@ define("js/OrbitControls", ["three"], function(Three) {
             offset.applyQuaternion(quat);
             // angle from z-axis around y-axis
             this.mSpherical.setFromVector3(offset);
-            if (this.autoRotate && this.mState === STATE.NONE) {
+            if (this.autoRotate && this.state === STATE.NONE) {
                 this.rotateLeft(this._getAutoRotationAngle());
             }
 
@@ -345,8 +356,6 @@ define("js/OrbitControls", ["three"], function(Three) {
                 || lastPosition.distanceToSquared(this.object.position) > EPS
                 || 8 * (1 - lastQuaternion.dot(this.object.quaternion)) > EPS) {
 
-                // this.dispatchEvent(changeEvent);
-
                 lastPosition.copy(this.object.position);
                 lastQuaternion.copy(this.object.quaternion);
                 this.mZoomChanged = false;
@@ -373,8 +382,6 @@ define("js/OrbitControls", ["three"], function(Three) {
             $(document).off("mouseup");
 
             $el.off("keydown");
-
-            // this.dispatchEvent({ type: "dispose" }); // should this be added here?
         }
 
         _getAutoRotationAngle() {
@@ -528,20 +535,20 @@ define("js/OrbitControls", ["three"], function(Three) {
 
         _handleMouseUp(/* event */) {
             // no-op
-            this.mState = STATE.NONE;
+            this.state = STATE.NONE;
         }
 
         _handleMouseWheel(event) {
             if (this.enabled && this.enableDollying
-                && (this.mState === STATE.NONE
-                    || this.mState === STATE.ROTATE)) {
+                && (this.state === STATE.NONE
+                    || this.state === STATE.PAN
+                    || this.state === STATE.ROTATE)) {
                 event.preventDefault();
                 event.stopPropagation();
-                if (event.deltaY < 0) {
+                if (event.deltaY < 0)
                     this._dollyOut(this._getZoomScale());
-                } else if (event.deltaY > 0) {
+                else if (event.deltaY > 0)
                     this._dollyIn(this._getZoomScale());
-                }
                 this.update();
             }
         }
@@ -607,11 +614,10 @@ define("js/OrbitControls", ["three"], function(Three) {
         }
 
         _touchStartDollyPan(event) {
-            if (this.enableDollying) {
+            if (this.enableDollying)
                 this._touchStartDolly(event);
-            }
             if (this.enablePan)
-                this._handleTouchStartPan(event);
+                this._touchStartPan(event);
             return STATE.TOUCH_DOLLY_PAN;
         }
 
@@ -694,45 +700,43 @@ define("js/OrbitControls", ["three"], function(Three) {
 
         _handleMouseLeftDown(event) {
             if (this.mouseButtons.LEFT === Three.MOUSE.ROTATE) {
-                if (event.ctrlKey || event.metaKey || event.shiftKey) {
-                    if (this.enablePan) {
-                        this.mState = this._mouseStartPan(event);
-                        return;
-                    }
-                } else if (this.enableRotate) {
-                    this.mState = this._mouseStartRotate(event);
-                    return;
-                }
+                if ((event.ctrlKey || event.metaKey || event.shiftKey)
+                    && this.enablePan)
+                    this.state = this._mouseStartPan(event);
+                else if (this.enableRotate)
+                    this.state = this._mouseStartRotate(event);
+                else
+                    this.state = STATE.NONE;
             } else if (this.mouseButtons.LEFT === Three.MOUSE.PAN) {
-                if (event.ctrlKey || event.metaKey || event.shiftKey) {
-                    if (this.enableRotate) {
-                        this.mState = this._mouseStartRotate(event);
-                        return;
-                    }
-                } else if (this.enablePan) {
-                    this.mState = this._mouseStartPan(event);
-                    return;
-                }
+                if ((event.ctrlKey || event.metaKey || event.shiftKey)
+                    && this.enableRotate) {
+                    this.state = this._mouseStartRotate(event);
+                } else if (this.enablePan)
+                    this.state = this._mouseStartPan(event);
+                else
+                    this.state = STATE.NONE;
             }
-            this.mState = STATE.NONE;
         }
 
         _handleMouseMiddleDown(event) {
             if (this.mouseButtons.MIDDLE === Three.MOUSE.DOLLY
                 && this.enableDollying)
-                return this._mouseStartDolly(event);
-            return STATE.NONE;
+                this.state = this._mouseStartDolly(event);
+            else
+                this.state = STATE.NONE;
         }
 
         _handleMouseRightDown(event) {
             if (this.mouseButtons.RIGHT === Three.MOUSE.ROTATE
                 && this.enableRotate)
-                return this._mouseStartRotate(event);
+                this.state = this._mouseStartRotate(event);
 
-            if (this.mouseButtons.RIGHT === Three.MOUSE.PAN && this.enablePan)
-                return this._mouseStartPan(event);
+            else if (this.mouseButtons.RIGHT === Three.MOUSE.PAN
+                     && this.enablePan)
+                this.state = this._mouseStartPan(event);
             
-            return STATE.NONE;
+            else
+                this.state = STATE.NONE;
         }
 
         _handle1Touch(event) {
@@ -741,6 +745,7 @@ define("js/OrbitControls", ["three"], function(Three) {
 
             if (this.touches.ONE === Three.TOUCH.PAN && this.enablePan)
                 return this._touchStartPan(event);
+            
             return STATE.NONE;
         }
 
@@ -858,7 +863,6 @@ define("js/OrbitControls", ["three"], function(Three) {
             $el.on("touchend", (event) => {
                 if (self.enabled) {
                     self._handleTouchEnd(event);
-                    // self.dispatchEvent(endEvent);
                     self.mState = STATE.NONE;
                 }
             });

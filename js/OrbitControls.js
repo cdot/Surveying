@@ -1,5 +1,5 @@
 /* eslint-env jquery, browser */
-define("js/OrbitControls", ["three"], function(THREE) {
+define("js/OrbitControls", ["three"], function(Three) {
 
     /**
      * OrbitControls rewritten as a class
@@ -29,23 +29,23 @@ define("js/OrbitControls", ["three"], function(THREE) {
             // Internals
             
             // current position in spherical coordinates
-            this.mSpherical = new THREE.Spherical();
-            this.mSphericalDelta = new THREE.Spherical();
+            this.mSpherical = new Three.Spherical();
+            this.mSphericalDelta = new Three.Spherical();
             this.mScale = 1;
-            this.mPanOffset = new THREE.Vector3();
+            this.mPanOffset = new Three.Vector3();
             this.mZoomChanged = false;
 
-            this.mRotateStart = new THREE.Vector2();
-            this.mRotateEnd = new THREE.Vector2();
-            this.mRotateDelta = new THREE.Vector2();
+            this.mRotateStart = new Three.Vector2();
+            this.mRotateEnd = new Three.Vector2();
+            this.mRotateDelta = new Three.Vector2();
 
-            this.mPanStart = new THREE.Vector2();
-            this.mPanEnd = new THREE.Vector2();
-            this.mPanDelta = new THREE.Vector2();
+            this.mPanStart = new Three.Vector2();
+            this.mPanEnd = new Three.Vector2();
+            this.mPanDelta = new Three.Vector2();
 
-            this.mDollyStart = new THREE.Vector2();
-            this.mDollyEnd = new THREE.Vector2();
-            this.mDollyDelta = new THREE.Vector2();
+            this.mDollyStart = new Three.Vector2();
+            this.mDollyEnd = new Three.Vector2();
+            this.mDollyDelta = new Three.Vector2();
 
             this.mState = STATE.NONE;
 
@@ -74,7 +74,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
              * @public "target" sets the location of focus, where the object
              * orbits around
              */
-            this.target = new THREE.Vector3();
+            this.target = new Three.Vector3();
 
             /**
              * @public How far you can dolly in and out (PerspectiveCamera only)
@@ -113,10 +113,9 @@ define("js/OrbitControls", ["three"], function(THREE) {
 
             /**
              * @public This option actually enables dollying in and
-             * out; left as "zoom" for backwards compatibility.  Set
-             * to false to disable zooming
+             * out.  Set to false to disable dollying
              */
-            this.enableZoom = true;
+            this.enableDollying = true;
             
             /**
              * @public
@@ -189,9 +188,9 @@ define("js/OrbitControls", ["three"], function(THREE) {
              * Mouse buttons
              */
             this.mouseButtons = {
-                LEFT: THREE.MOUSE.ROTATE,
-                MIDDLE: THREE.MOUSE.DOLLY,
-                RIGHT: THREE.MOUSE.PAN
+                LEFT: Three.MOUSE.ROTATE,
+                MIDDLE: Three.MOUSE.DOLLY,
+                RIGHT: Three.MOUSE.PAN
             };
 
             /**
@@ -199,8 +198,8 @@ define("js/OrbitControls", ["three"], function(THREE) {
              * Touch fingers
              */
             this.touches = {
-                ONE: THREE.TOUCH.ROTATE,
-                TWO: THREE.TOUCH.DOLLY_PAN
+                ONE: Three.TOUCH.ROTATE,
+                TWO: Three.TOUCH.DOLLY_PAN
             };
 
             // for reset
@@ -263,15 +262,15 @@ define("js/OrbitControls", ["three"], function(THREE) {
          * .autoRotate or .enableDamping are set.Public
          */
         update() {
-            let offset = new THREE.Vector3();
+            let offset = new Three.Vector3();
 
             // so camera.up is the orbit axis
-            let quat = new THREE.Quaternion().setFromUnitVectors(
-                this.object.up, new THREE.Vector3(0, 1, 0));
+            let quat = new Three.Quaternion().setFromUnitVectors(
+                this.object.up, new Three.Vector3(0, 1, 0));
             let quatInverse = quat.clone().inverse();
 
-            let lastPosition = new THREE.Vector3();
-            let lastQuaternion = new THREE.Quaternion();
+            let lastPosition = new Three.Vector3();
+            let lastQuaternion = new Three.Quaternion();
 
             let position = this.object.position;
             offset.copy(position).sub(this.target);
@@ -364,7 +363,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
             let $el = $(this.domElement);
             $el.off("contextmenu");
             $el.off("mousedown");
-            $el.off("wheel");
+            $el.off("mousewheel");
 
             $el.off("touchstart");
             $el.off("touchend");
@@ -395,14 +394,14 @@ define("js/OrbitControls", ["three"], function(THREE) {
         }
 
         _panLeft(distance, objectMatrix) {
-            let v = new THREE.Vector3();
+            let v = new Three.Vector3();
             v.setFromMatrixColumn(objectMatrix, 0); // get X column of objectMatrix
             v.multiplyScalar(-distance);
             this.mPanOffset.add(v);
         }
 
         _panUp(distance, objectMatrix) {
-            let v = new THREE.Vector3();
+            let v = new Three.Vector3();
             if (this.screenSpacePanning === true) {
                 v.setFromMatrixColumn(objectMatrix, 1);
             } else {
@@ -415,7 +414,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
 
         // deltaX and deltaY are in pixels; right and down are positive
         _pan(deltaX, deltaY) {
-            let offset = new THREE.Vector3();
+            let offset = new Three.Vector3();
             let element = this.domElement;
             if (this.object.isPerspectiveCamera) {
                 // perspective
@@ -446,10 +445,6 @@ define("js/OrbitControls", ["three"], function(THREE) {
                     deltaY * (this.object.top - this.object.bottom)
                     / this.object.zoom / element.clientHeight,
                     this.object.matrix);
-            } else {
-                // camera neither orthographic nor perspective
-                console.warn("WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.");
-                this.enablePan = false;
             }
         }
 
@@ -460,9 +455,6 @@ define("js/OrbitControls", ["three"], function(THREE) {
                 this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom * dollyScale));
                 this.object.updateProjectionMatrix();
                 this.mZoomChanged = true;
-            } else {
-                console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
-                this.enableZoom = false;
             }
         }
 
@@ -473,9 +465,6 @@ define("js/OrbitControls", ["three"], function(THREE) {
                 this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / dollyScale));
                 this.object.updateProjectionMatrix();
                 this.mZoomChanged = true;
-            } else {
-                console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
-                this.enableZoom = false;
             }
         }
 
@@ -483,19 +472,22 @@ define("js/OrbitControls", ["three"], function(THREE) {
         // event callbacks - update the object state
         //
 
-        _handleMouseDownRotate(event) {
+        _mouseStartRotate(event) {
             this.mRotateStart.set(event.clientX, event.clientY);
+            return STATE.ROTATE;
         }
 
-        _handleMouseDownDolly(event) {
+        _mouseStartDolly(event) {
             this.mDollyStart.set(event.clientX, event.clientY);
+            return STATE.DOLLY;
         }
 
-        _handleMouseDownPan(event) {
+        _mouseStartPan(event) {
             this.mPanStart.set(event.clientX, event.clientY);
+            return STATE.PAN;
         }
 
-        _handleMouseMoveRotate(event) {
+        _mouseMoveRotate(event) {
             this.mRotateEnd.set(event.clientX, event.clientY);
             this.mRotateDelta
                 .subVectors(this.mRotateEnd, this.mRotateStart)
@@ -512,7 +504,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
             this.update();
         }
 
-        _handleMouseMoveDolly(event) {
+        _mouseMoveDolly(event) {
             this.mDollyEnd.set(event.clientX, event.clientY);
             this.mDollyDelta.subVectors(this.mDollyEnd, this.mDollyStart);
             if (this.mDollyDelta.y > 0) {
@@ -524,7 +516,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
             this.update();
         }
 
-        _handleMouseMovePan(event) {
+        _mouseMovePan(event) {
             this.mPanEnd.set(event.clientX, event.clientY);
             this.mPanDelta
                 .subVectors(this.mPanEnd, this.mPanStart)
@@ -536,15 +528,22 @@ define("js/OrbitControls", ["three"], function(THREE) {
 
         _handleMouseUp(/* event */) {
             // no-op
+            this.mState = STATE.NONE;
         }
 
         _handleMouseWheel(event) {
-            if (event.deltaY < 0) {
-                this._dollyOut(this._getZoomScale());
-            } else if (event.deltaY > 0) {
-                this._dollyIn(this._getZoomScale());
+            if (this.enabled && this.enableDollying
+                && (this.mState === STATE.NONE
+                    || this.mState === STATE.ROTATE)) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (event.deltaY < 0) {
+                    this._dollyOut(this._getZoomScale());
+                } else if (event.deltaY > 0) {
+                    this._dollyIn(this._getZoomScale());
+                }
+                this.update();
             }
-            this.update();
         }
 
         _handleKeyDown(event) {
@@ -570,52 +569,61 @@ define("js/OrbitControls", ["three"], function(THREE) {
             this.update();
         }
 
-        _handleTouchStartRotate(event) {
-            if (event.touches.length == 1) {
+        _touchStartRotate(event) {
+            if (event.touches.length == 1)
                 this.mRotateStart.set(
                     event.touches[0].pageX,
                     event.touches[0].pageY);
-            } else {
+            else {
                 let x = 0.5 * (event.touches[0].pageX
                                + event.touches[1].pageX);
                 let y = 0.5 * (event.touches[0].pageY
                                + event.touches[1].pageY);
                 this.mRotateStart.set(x, y);
             }
+            return STATE.TOUCH_ROTATE;
         }
 
-        _handleTouchStartPan(event) {
-            if (event.touches.length == 1) {
+        _touchStartPan(event) {
+            if (event.touches.length == 1)
                 this.mPanStart.set(
                     event.touches[0].pageX,
                     event.touches[0].pageY);
-            } else {
+            else {
                 let x = 0.5 * (event.touches[0].pageX
                                + event.touches[1].pageX);
                 let y = 0.5 * (event.touches[0].pageY
                                + event.touches[1].pageY);
                 this.mPanStart.set(x, y);
             }
+            return STATE.TOUCH_PAN;
         }
 
-        _handleTouchStartDolly(event) {
+        _touchStartDolly(event) {
             let dx = event.touches[0].pageX - event.touches[1].pageX;
             let dy = event.touches[0].pageY - event.touches[1].pageY;
             let distance = Math.sqrt(dx * dx + dy * dy);
             this.mDollyStart.set(0, distance);
         }
 
-        _handleTouchStartDollyPan(event) {
-            if (this.enableZoom) this._handleTouchStartDolly(event);
-            if (this.enablePan) this._handleTouchStartPan(event);
+        _touchStartDollyPan(event) {
+            if (this.enableDollying) {
+                this._touchStartDolly(event);
+            }
+            if (this.enablePan)
+                this._handleTouchStartPan(event);
+            return STATE.TOUCH_DOLLY_PAN;
         }
 
-        _handleTouchStartDollyRotate(event) {
-            if (this.enableZoom) this._handleTouchStartDolly(event);
-            if (this.enableRotate) this._handleTouchStartRotate(event);
+        _touchStartDollyRotate(event) {
+            if (this.enableDollying)
+                this._touchStartDolly(event);
+            if (this.enableRotate)
+                this._touchStartRotate(event);
+            return STATE.TOUCH_DOLLY_ROTATE;
         }
 
-        _handleTouchMoveRotate(event) {
+        _touchMoveRotate(event) {
             if (event.touches.length == 1) {
                 this.mRotateEnd.set(
                     event.touches[0].pageX,
@@ -640,7 +648,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
             this.mRotateStart.copy(this.mRotateEnd);
         }
 
-        _handleTouchMovePan(event) {
+        _touchMovePan(event) {
             if (event.touches.length == 1) {
                 this.mPanEnd.set(
                     event.touches[0].pageX, event.touches[0].pageY);
@@ -658,7 +666,7 @@ define("js/OrbitControls", ["three"], function(THREE) {
             this.mPanStart.copy(this.mPanEnd);
         }
 
-        _handleTouchMoveDolly(event) {
+        _touchMoveDolly(event) {
             let dx = event.touches[0].pageX - event.touches[1].pageX;
             let dy = event.touches[0].pageY - event.touches[1].pageY;
             let distance = Math.sqrt(dx * dx + dy * dy);
@@ -670,67 +678,83 @@ define("js/OrbitControls", ["three"], function(THREE) {
             this.mDollyStart.copy(this.mDollyEnd);
         }
 
-        _handleTouchMoveDollyPan(event) {
-            if (this.enableZoom) this._handleTouchMoveDolly(event);
-            if (this.enablePan) this._handleTouchMovePan(event);
+        _touchMoveDollyPan(event) {
+            if (this.enableDollying) this._touchMoveDolly(event);
+            if (this.enablePan) this._touchMovePan(event);
         }
 
-        _handleTouchMoveDollyRotate(event) {
-            if (this.enableZoom) this._handleTouchMoveDolly(event);
-            if (this.enableRotate) this._handleTouchMoveRotate(event);
+        _touchMoveDollyRotate(event) {
+            if (this.enableDollying) this._touchMoveDolly(event);
+            if (this.enableRotate) this._touchMoveRotate(event);
         }
 
         _handleTouchEnd(/* event */) {
             // no-op
         }
 
-        _handleMouseButton0Down(event) {
-            if (this.mouseButtons.LEFT === THREE.MOUSE.ROTATE) {
+        _handleMouseLeftDown(event) {
+            if (this.mouseButtons.LEFT === Three.MOUSE.ROTATE) {
                 if (event.ctrlKey || event.metaKey || event.shiftKey) {
-                    if (this.enablePan === false) return;
-                    this._handleMouseDownPan(event);
-                    this.state = STATE.PAN;
-                } else {
-                    if (this.enableRotate === false) return;
-                    this._handleMouseDownRotate(event);
-                    this.state = STATE.ROTATE;
+                    if (this.enablePan) {
+                        this.mState = this._mouseStartPan(event);
+                        return;
+                    }
+                } else if (this.enableRotate) {
+                    this.mState = this._mouseStartRotate(event);
+                    return;
                 }
-
-            } else if (this.mouseButtons.LEFT === THREE.MOUSE.PAN) {
+            } else if (this.mouseButtons.LEFT === Three.MOUSE.PAN) {
                 if (event.ctrlKey || event.metaKey || event.shiftKey) {
-                    if (this.enableRotate === false) return;
-                    this._handleMouseDownRotate(event);
-                    this.state = STATE.ROTATE;
-                } else {
-                    if (this.enablePan === false) return;
-                    this._handleMouseDownPan(event);
-                    this.state = STATE.PAN;
+                    if (this.enableRotate) {
+                        this.mState = this._mouseStartRotate(event);
+                        return;
+                    }
+                } else if (this.enablePan) {
+                    this.mState = this._mouseStartPan(event);
+                    return;
                 }
-            } else
-                this.state = STATE.NONE;
+            }
+            this.mState = STATE.NONE;
         }
 
-        _handleMouseButton1Down(event) {
-            if (this.mouseButtons.MIDDLE === THREE.MOUSE.DOLLY) {
-                if (this.enableZoom === false) return;
-                this._handleMouseDownDolly(event);
-                this.state = STATE.DOLLY;
-            } else
-                this.state = STATE.NONE;
+        _handleMouseMiddleDown(event) {
+            if (this.mouseButtons.MIDDLE === Three.MOUSE.DOLLY
+                && this.enableDollying)
+                return this._mouseStartDolly(event);
+            return STATE.NONE;
         }
 
-        _handleMouseButton2Down(event) {
-            if (this.mouseButtons.RIGHT === THREE.MOUSE.ROTATE) {
-                if (this.enableRotate === false) return;
-                this._handleMouseDownRotate(event);
-                this.state = STATE.ROTATE;
+        _handleMouseRightDown(event) {
+            if (this.mouseButtons.RIGHT === Three.MOUSE.ROTATE
+                && this.enableRotate)
+                return this._mouseStartRotate(event);
 
-            } else if (this.mouseButtons.RIGHT === THREE.MOUSE.PAN) {
-                if (this.enablePan === false) return;
-                this._handleMouseDownPan(event);
-                this.state = STATE.PAN;
-            } else
-                this.state = STATE.NONE;
+            if (this.mouseButtons.RIGHT === Three.MOUSE.PAN && this.enablePan)
+                return this._mouseStartPan(event);
+            
+            return STATE.NONE;
+        }
+
+        _handle1Touch(event) {
+            if (this.touches.ONE === Three.TOUCH.ROTATE && this.enableRotate)
+                return this._touchStartRotate(event);
+
+            if (this.touches.ONE === Three.TOUCH.PAN && this.enablePan)
+                return this._touchStartPan(event);
+            return STATE.NONE;
+        }
+
+        _handle2Touch(event) {
+            if (this.touches.TWO === Three.TOUCH.DOLLY_PAN
+                && (this.enableDollying || this.enablePan))
+                return this._touchStartDollyPan(event);
+            
+            if (this.touches.TWO === Three.TOUCH.DOLLY_ROTATE
+                && (this.enableDollying || this.enableRotate))
+                return this._touchStartDollyRotate(event);
+            
+            
+            return STATE.NONE;
         }
         
         _bindEventHandlers() {
@@ -739,8 +763,10 @@ define("js/OrbitControls", ["three"], function(THREE) {
             
             $el.on("mousedown", (event) => {
                 if (self.enabled === false) return;
+                
                 // Prevent the browser from scrolling.
                 event.preventDefault();
+                
                 // Manually set the focus since calling preventDefault above
                 // prevents the browser from setting it automatically.
                 if (self.domElement.focus)
@@ -749,167 +775,97 @@ define("js/OrbitControls", ["three"], function(THREE) {
                     window.focus();
                 
                 if (event.button === 0)
-                    self._handleMouseButton0Down(event);
+                    self._handleMouseLeftDown(event);
                 else if (event.button === 1)
-                    self._handleMouseButton1Down(event);
+                    self._handleMouseMiddleDown(event);
                 else if (event.button === 2)
-                    self._handleMouseButton2Down(event);
-
-                if (self.state !== STATE.NONE) {
-                    $(document).on(
-                        "mousemove",
-                        (evie) => { self.onMouseMove(evie); }, false);
-                    $(document).on(
-                        "mouseup",
-                        (evie) => { self.onMouseUp(evie); }, false);
-                    // self.dispatchEvent(startEvent);
-                }
+                    self._handleMouseRightDown(event);
             });
 
             $el.on("mousemove", (event) => {
                 if (self.enabled === false) return;
+                
                 event.preventDefault();
-                switch (self.state) {
-                default:
-                case STATE.ROTATE:
-                    if (self.enableRotate === false) return;
-                    self._handleMouseMoveRotate(event);
-                    break;
-
-                case STATE.DOLLY:
-                    if (self.enableZoom === false) return;
-                    self._handleMouseMoveDolly(event);
-                    break;
-
-                case STATE.PAN:
-                    if (self.enablePan === false) return;
-                    self._handleMouseMovePan(event);
-                    break;
-                }
+                
+                if (self.mState === STATE.ROTATE && self.enableRotate)
+                    self._mouseMoveRotate(event);
+                else if (self.mState === STATE.DOLLY && self.enableDollying)
+                    self._mouseMoveDolly(event);
+                else if (self.mState === STATE.PAN && self.enablePan)
+                    self._mouseMovePan(event);
             });
 
             $el.on("mouseup", (event) => {
-                if (self.enabled === false) return;
-                self._handleMouseUp(event);
-                // self.dispatchEvent(endEvent);
-                self.state = STATE.NONE;
+                if (self.enabled)
+                    self._handleMouseUp(event);
             });
 
-            $el.on("wheel", (event) => {
-                if (self.enabled === false || self.enableZoom === false
-                    || (self.state !== STATE.NONE
-                        && self.state !== STATE.ROTATE))
-                    return;
-                event.preventDefault();
-                event.stopPropagation();
-                // self.dispatchEvent(startEvent);
+            $el.on("mousewheel", (event) => {
                 self._handleMouseWheel(event);
-                // self.dispatchEvent(endEvent);
             });
 
             $el.on("keydown", (event) => {
-                if (self.enabled === false || self.enableKeys === false
-                    || self.enablePan === false)
-                    return;
-                self._handleKeyDown(event);
+                if (self.enabled && self.enableKeys && self.enablePan)
+                    self._handleKeyDown(event);
             });
 
             $el.on("touchstart", (event) => {
-                if (self.enabled === false) return;
+                if (!self.enabled) return;
+                
                 event.preventDefault();
-                switch (event.touches.length) {
-                case 1:
-                    switch (self.touches.ONE) {
-                    case THREE.TOUCH.ROTATE:
-                        if (self.enableRotate === false) return;
-                        self._handleTouchStartRotate(event);
-                        self.state = STATE.TOUCH_ROTATE;
-                        break;
-
-                    case THREE.TOUCH.PAN:
-                        if (self.enablePan === false) return;
-                        self._handleTouchStartPan(event);
-                        self.state = STATE.TOUCH_PAN;
-                        break;
-
-                    default:
-                        self.state = STATE.NONE;
-                    }
-                    break;
-                case 2:
-                    switch (self.touches.TWO) {
-                    case THREE.TOUCH.DOLLY_PAN:
-                        if (self.enableZoom === false
-                            && self.enablePan === false)
-                            return;
-                        self._handleTouchStartDollyPan(event);
-                        self.state = STATE.TOUCH_DOLLY_PAN;
-                        break;
-
-                    case THREE.TOUCH.DOLLY_ROTATE:
-                        if (self.enableZoom === false
-                            && self.enableRotate === false)
-                            return;
-                        self._handleTouchStartDollyRotate(event);
-                        self.state = STATE.TOUCH_DOLLY_ROTATE;
-                        break;
-
-                    default:
-                        self.state = STATE.NONE;
-                    }
-                    break;
-
-                default:
-                    self.state = STATE.NONE;
-                }
-
-                if (self.state !== STATE.NONE) {
-                    // self.dispatchEvent(startEvent);
-                }
+                if (event.touches.length === 1)
+                    self.mState = this._handle1Touch(event);
+                else if (event.touches.length === 1)
+                    self.mState = this._handle2Touch(event);
+                else
+                    self.mState = STATE.NONE;
             });
 
             $el.on("touchmove", (event) => {
-                if (self.enabled === false) return;
+                if (!self.enabled) return;
                 event.preventDefault();
                 event.stopPropagation();
-                switch (self.state) {
+                switch (self.mState) {
                 case STATE.TOUCH_ROTATE:
-                    if (self.enableRotate === false) return;
-                    self._handleTouchMoveRotate(event);
-                    self.update();
+                    if (self.enableRotate) {
+                        self._touchMoveRotate(event);
+                        self.update();
+                    }
                     break;
                 case STATE.TOUCH_PAN:
-                    if (self.enablePan === false) return;
-                    self._handleTouchMovePan(event);
-                    self.update();
+                    if (self.enablePan) {
+                        self._touchMovePan(event);
+                        self.update();
+                    }
                     break;
                 case STATE.TOUCH_DOLLY_PAN:
-                    if (self.enableZoom === false && self.enablePan === false)
-                        return;
-                    self._handleTouchMoveDollyPan(event);
-                    self.update();
+                    if (self.enableDollying || self.enablePan) {
+                        self._touchMoveDollyPan(event);
+                        self.update();
+                    }
                     break;
                 case STATE.TOUCH_DOLLY_ROTATE:
-                    if (self.enableZoom === false && self.enableRotate === false)
-                        return;
-                    self._handleTouchMoveDollyRotate(event);
-                    self.update();
+                    if (self.enableDollying || self.enableRotate) {
+                        self._touchMoveDollyRotate(event);
+                        self.update();
+                    }
                     break;
                 default:
-                    self.state = STATE.NONE;
+                    self.mState = STATE.NONE;
                 }
             });
 
             $el.on("touchend", (event) => {
-                if (self.enabled === false) return;
-                self._handleTouchEnd(event);
-                // self.dispatchEvent(endEvent);
-                self.state = STATE.NONE;
+                if (self.enabled) {
+                    self._handleTouchEnd(event);
+                    // self.dispatchEvent(endEvent);
+                    self.mState = STATE.NONE;
+                }
             });
 
             $el.on("contextmenu", (event) => {
-                if (self.enabled === false) return;
-                event.preventDefault();
+                if (self.enabled)
+                    event.preventDefault();
             })
 
             // make sure element can receive keys.

@@ -406,7 +406,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             switch (e.keyCode) {
                 
             case 37: // left, prev sibling
-                return this.handleLeft();
+                return this._handleLeftKey();
                 
             case 38: // up, move up in selection
                 return this._handleUpKey();

@@ -24,7 +24,7 @@ define("js/FileFormat", function() {
          * @param {String} data file content
          * @return Promise that resolves to a {Visual} content
          */
-        load(/* source, data */) {
+        load(source, data) {
             return Promise.reject(
                 new Error(`No ${this.constructor.name}.load()`));
         }
@@ -45,7 +45,7 @@ define("js/FileFormat", function() {
          * method has handled saving internally
          * @abstract
          */
-        save(/* visual */) {
+        save(visual) {
             throw new Error("no save() defined");
         }
     }

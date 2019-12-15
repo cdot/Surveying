@@ -1,12 +1,12 @@
-/*@preserve Copyright (C) 2015-2019 Crawford Currie http://c-dot.co.uk license MIT*/
+/* @preserve Copyright (C) 2015-2019 Crawford Currie http://c-dot.co.uk license MIT */
+/* eslint-env node */
+/* globals Mocha:writable */
 
 if (typeof requirejs === "undefined") {
-    throw new Error(__filename + " is not runnable stand-alone");
+    throw new Error(`${__filename} is not runnable stand-alone`);
 }
 
-/**
-* Common code for running mocha tests
-*/
+// Common code for running mocha tests
 define(["mocha", "chai"], function(maybeMocha, chai) {
     if (typeof Mocha === "undefined")
         Mocha = maybeMocha; // node.js
@@ -14,10 +14,11 @@ define(["mocha", "chai"], function(maybeMocha, chai) {
     class TestRunner {
         constructor(title, debug) {
             this.assert = chai.assert;
-            if (typeof global !== "undefined")
-                this.mocha = new Mocha({ reporter: 'spec' });
+            if (typeof global === "undefined")
+                this.mocha = new Mocha({ reporter: "html" });
             else
-                this.mocha = new Mocha({ reporter: 'html' });
+                this.mocha = new Mocha({ reporter: "spec" });
+
             if (typeof title === "string")
                 this.mocha.suite.title = title;
             this.debug = debug;
@@ -44,7 +45,7 @@ define(["mocha", "chai"], function(maybeMocha, chai) {
 
         addTest(title, fn) {
             let self = this;
-            let test = new Mocha.Test(title, function() {
+            let test = new Mocha.Test(title, function () {
                 if (typeof self.before === "function")
                     self.before();
                 let res = fn.call(this);
@@ -56,6 +57,7 @@ define(["mocha", "chai"], function(maybeMocha, chai) {
                 }
                 else if (typeof self.after === "function")
                     self.after()
+                return undefined;
             });
             this.mocha.suite.addTest(test);
         }

@@ -1,15 +1,15 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Point", "js/Materials", "delaunator"], function(Container, Three, Visual, Point, Materials, Delaunator) {
+define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Spot", "js/Materials", "delaunator"], function(Container, Three, Visual, Spot, Materials, Delaunator) {
 
     // Every MeshVertex is uniquely numbered within this system
     let counter = 1;
 
     /**
      * @private
-     * A vertex in a Mesh. A MeshVertex is a Point with a set of incident
+     * A vertex in a Mesh. A MeshVertex is a Spot with a set of incident
      * edges and slightly different highlighting behaviours.
      */
-    class MeshVertex extends Point {
+    class MeshVertex extends Spot {
 
         /**
          * @param name vertex name (may not be unique)
@@ -52,14 +52,14 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Point", "js/Materia
                 this.mEdges.splice(i, 1);
         }
         
-        // @Override Point
+        // @Override Visual
         addToScene(scene) {
             // A vertex only has a visual representation when
             // it is highlighted
             this.mScene = scene;
         }
 
-        // @Override Point
+        // @Override Spot
         remove() {
             let es = this.mEdges.slice();
             if (es.length === 2) {
@@ -77,14 +77,14 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Point", "js/Materia
             super.remove();
         }
 
-        // @Override Point
+        // @Override Spot
         setPosition(p) {
             super.setPosition(p);
             for (let e of this.mEdges)
                 e.vertexMoved();
         }
 
-        // @Override Point
+        // @Override Visual
         highlight(on) {
             if (!on) {
                 if (this.object3D && this.object3D.parent)
@@ -101,20 +101,20 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Point", "js/Materia
                 // Once created, we keep the handle object around as it
                 // will be useful again
                 super.addToScene(this.mScene);
-                super.highlight(on);
             }
         }
 
-        // @Override Point
+        // @Override Spot
         scheme() {
             let s = super.scheme();
-            s.push(`MeshVertex #${this.mVid}`);
+            s.push(`${this.constructor.name} #${this.mVid}`);
             for (let e of this.mEdges)
                 s.push(`\tedge to #${e.otherEnd(this).vid}`);
             return s;
         }
 
-        condense(/* coords, mapBack */) {
+        // @Override Visual
+        condense(coords, mapBack) {
         }
     }
 
@@ -167,7 +167,8 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Point", "js/Materia
                 this.mGeometry = new Three.Geometry();
                 this.mGeometry.vertices.push(this.mP1.position);
                 this.mGeometry.vertices.push(this.mP2.position);
-                this.setObject3D(new Three.Line(this.mGeometry, Materials.EDGE));
+                this.setObject3D(
+                    new Three.Line(this.mGeometry, Materials.MESH));
             }
             scene.add(this.object3D);
         }
@@ -192,7 +193,7 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Point", "js/Materia
         highlight(on) {
             if (this.object3D) {
                 this.object3D.material
-                = (on ? Materials.EDGE_SELECTED : Materials.EDGE);
+                = (on ? Materials.MESH_SELECTED : Materials.MESH);
             }
         }
 
@@ -285,10 +286,7 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Point", "js/Materia
             super.remove();
         }
 
-        noPointScheme() {
-            return "name";
-        }
-        
+        // @private
         _findEdge(v1, v2) {
             if (v1.parent !== this || v2.parent !== this)
                 throw new Error("Internal error");
@@ -361,13 +359,15 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Point", "js/Materia
         scheme() {
             let s = super.scheme();
             if (this.mEdges.length > 0)
-                s.push(`${this.mEdges.length} edge${(this.mEdges.length === 1 ? "" : "s")}`);
+                s.push(
+                    `${this.mEdges.length} edge${(this.mEdges.length === 1 ? "" : "s")}`);
             return s;
         }
 
         /**
+         * TODO: do something sensible with this
          * Construct a new Mesh object that contains a Delaunay
-         * triangulation of all the Point objects in the container
+         * triangulation of all the vertices in the mesh
          * @param a Visual to recursively meshify
          * @return the resulting network
          */
@@ -376,7 +376,7 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Point", "js/Materia
                 return (e % 3 === 2) ? e - 2 : e + 1;
             }
 
-            // Condense Contours and Points into a cloud of points
+            // Condense Contours and Soundings into a cloud of points
             let coords = [];
             let mapBack = [];
             visual.condense(coords, mapBack);
@@ -395,7 +395,7 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Point", "js/Materia
                     let p = mapBack[del.triangles[e]];
                     let q = mapBack[del.triangles[nextHalfedge(e)]];
                     if (!p || !q)
-                        debugger;
+                        throw new Error("Internal error");
                     result.addEdge(p, q);
                 }
             }

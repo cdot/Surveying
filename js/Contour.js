@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/Contour", ["three", "js/Units", "js/Path"], function(Three, Units, Path) {
+define("js/Contour", ["three", "js/Units", "js/Materials", "js/Path"], function(Three, Units, Materials, Path) {
 
     class ContourVertex extends Path.Vertex {
 
@@ -11,15 +11,7 @@ define("js/Contour", ["three", "js/Units", "js/Path"], function(Three, Units, Pa
                     i.type = "ignore";
             return s;
         }
-
-        // @Override Visual
-        condense(coords, mapBack) {
-            // console.log("Condensed vertex");
-            coords.push([this.position.x, this.position.y]);
-            mapBack.push(this);
-        }
     }
-    
 
     /**
      * A contour is a specialisation of Path where the vertices
@@ -36,6 +28,10 @@ define("js/Contour", ["three", "js/Units", "js/Path"], function(Three, Units, Pa
             super.close();
         }
         
+        edgeMaterial() {
+            return Materials.CONTOUR;
+        }
+
         get z() {
             return this.mZ;
         }
@@ -53,7 +49,17 @@ define("js/Contour", ["three", "js/Units", "js/Path"], function(Three, Units, Pa
             p.applyMatrix4(mat);
             this.mZ = p.z;
         }
-        
+
+        // @Override Visual
+        condense(coords, mapBack) {
+            for (let c of this.children) {
+                // console.log("Condensed vertex");
+                // TODO: condense from the Contour object
+                coords.push([c.position.x, c.position.y]);
+                mapBack.push(c);
+            }
+        }
+
         scheme() {
             let s = super.scheme();
             let self = this;

@@ -8,6 +8,9 @@ module.exports = {
         "ecmaVersion": 2015,
         "sourceType": "module"
     },
+    "globals": {
+        "requirejs": "writable"
+    },
     "rules": {
         "accessor-pairs": "error",
         "array-bracket-newline": "error",
@@ -57,9 +60,9 @@ module.exports = {
         ],
         "function-paren-newline": "off",
         "generator-star-spacing": "error",
-        "global-require": "error",
+        "global-require": "off",
         "guard-for-in": "off",
-        "handle-callback-err": "error",
+        "handle-callback-err": "off",
         "id-blacklist": "error",
         "id-length": "off",
         "id-match": "error",
@@ -67,7 +70,7 @@ module.exports = {
             "error",
             "beside"
         ],
-        "indent": "warn",
+        "indent": ["warn", 4, { "MemberExpression": 0 }],
         "indent-legacy": "error",
         "init-declarations": "off",
         "jsx-quotes": "error",
@@ -95,7 +98,7 @@ module.exports = {
         "max-nested-callbacks": "error",
         "max-params": "off",
         "max-statements": "off",
-        "max-statements-per-line": "error",
+        "max-statements-per-line": "off",
         "multiline-comment-style": [
             "error",
             "separate-lines"
@@ -116,7 +119,7 @@ module.exports = {
         "no-catch-shadow": "error",
         "no-confusing-arrow": "error",
         "no-console": "off",
-        "no-continue": "error",
+        "no-continue": "off",
         "no-debugger": "warn",
         "no-div-regex": "error",
         "no-duplicate-imports": "error",
@@ -130,6 +133,7 @@ module.exports = {
         "no-extra-label": "error",
         "no-extra-parens": "off",
         "no-floating-decimal": "error",
+        "no-global-assign": ["error", {"exceptions": ["Mocha","requirejs"]}],
         "no-implicit-coercion": "error",
         "no-implicit-globals": "error",
         "no-implied-eval": "error",
@@ -149,7 +153,7 @@ module.exports = {
         "no-multi-spaces": "off",
         "no-multi-str": "error",
         "no-multiple-empty-lines": "error",
-        "no-native-reassign": "error",
+        "no-native-reassign": "off",
         "no-negated-condition": "error",
         "no-negated-in-lhs": "error",
         "no-nested-ternary": "off",
@@ -202,6 +206,7 @@ module.exports = {
         "no-unmodified-loop-condition": "error",
         "no-unneeded-ternary": "error",
         "no-unused-expressions": "error",
+        "no-unused-vars": [ "warn", { "args": "none" }],
         "no-use-before-define": "warn",
         "no-useless-call": "error",
         "no-useless-computed-key": "error",
@@ -301,7 +306,7 @@ module.exports = {
         "valid-jsdoc": "off",
         "vars-on-top": "error",
         "wrap-iife": "error",
-        "wrap-regex": "error",
+        "wrap-regex": "off",
         "yield-star-spacing": "error",
         "yoda": "off"
     }

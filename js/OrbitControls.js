@@ -258,7 +258,7 @@ define("js/OrbitControls", ["three"], function(Three) {
         }
 
         set state(s) {
-            //console.log(`State ${s}`);
+            // console.log(`State ${s}`);
             this.mState = s;
         }
 
@@ -497,8 +497,8 @@ define("js/OrbitControls", ["three"], function(Three) {
         _mouseMoveRotate(event) {
             this.mRotateEnd.set(event.clientX, event.clientY);
             this.mRotateDelta
-                .subVectors(this.mRotateEnd, this.mRotateStart)
-                .multiplyScalar(this.rotateSpeed);
+            .subVectors(this.mRotateEnd, this.mRotateStart)
+            .multiplyScalar(this.rotateSpeed);
 
             let element = this.domElement;
             this._rotateLeft(
@@ -526,14 +526,14 @@ define("js/OrbitControls", ["three"], function(Three) {
         _mouseMovePan(event) {
             this.mPanEnd.set(event.clientX, event.clientY);
             this.mPanDelta
-                .subVectors(this.mPanEnd, this.mPanStart)
-                .multiplyScalar(this.panSpeed);
+            .subVectors(this.mPanEnd, this.mPanStart)
+            .multiplyScalar(this.panSpeed);
             this._pan(this.mPanDelta.x, this.mPanDelta.y);
             this.mPanStart.copy(this.mPanEnd);
             this.update();
         }
 
-        _handleMouseUp(/* event */) {
+        _handleMouseUp(event) {
             // no-op
             this.state = STATE.NONE;
         }
@@ -643,8 +643,8 @@ define("js/OrbitControls", ["three"], function(Three) {
             }
 
             this.mRotateDelta
-                .subVectors(this.mRotateEnd, this.mRotateStart)
-                .multiplyScalar(this.rotateSpeed);
+            .subVectors(this.mRotateEnd, this.mRotateStart)
+            .multiplyScalar(this.rotateSpeed);
             let element = this.domElement;
 
             this._rotateLeft(2 * Math.PI * this.mRotateDelta.x
@@ -694,7 +694,7 @@ define("js/OrbitControls", ["three"], function(Three) {
             if (this.enableRotate) this._touchMoveRotate(event);
         }
 
-        _handleTouchEnd(/* event */) {
+        _handleTouchEnd(event) {
             // no-op
         }
 

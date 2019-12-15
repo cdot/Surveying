@@ -17,26 +17,36 @@ define("js/Units", ["js/UTM"], function(UTM) {
      */
     let Units = {
 
-        // Systems and their coordinate interpretations
+        /**
+         * @public
+         * Systems and their coordinate interpretations
+         */
         IN:0,      // (x, y, z) in inner coordinates
         UTM: 1,    // { easting, northing, zone }
-        LONLAT: 2, // { lon, lat }
+        LATLON: 2, // { lon, lat }
         EX: 3,     // { x, y } in external coordinates, z unused
 
-        // Units per metre in different systems
+        /**
+         * @public
+         * Units per metre in different systems
+         */
         UPM: [
             1000,       // IN internal units per metre
             1,          // UTM
-            undefined,  // LONLAT, not useful
+            undefined,  // LATLON, not useful
             10          // EX, pixels per metre
         ],
 
-        // Origin of the inner coordinate system in the UTM system.
-        // When we start up, no zone is defined, the first conversion
-        // to/from a Lat/Long will initialise it.
+        /**
+         *  Origin of the inner coordinate system in the UTM system.
+         * When we start up, no zone is defined, the first conversion
+         * to/from a Lat/Long will initialise it.
+         */
         inOrigin: undefined,
         
-        // Bounding boxes in different systems
+        /**
+         * Bounding boxes in different systems
+         */
         BB: [
             undefined, // used
             undefined, // not used
@@ -107,7 +117,8 @@ define("js/Units", ["js/UTM"], function(UTM) {
             let o = Units.convert(insys, data, outsys);
             switch (outsys) {
             default:
-            case Units.LONLAT:
+                throw new Error(`Unrecognised outsys ${outsys}`);
+            case Units.LATLON:
                 return `${round(o.lat, "N", "S")} ${round(o.lon, "E", "W")}`;
             case Units.IN:
                 return `<${round(o.x)},${round(o.y)},${round(o.z)}>`;
@@ -119,7 +130,15 @@ define("js/Units", ["js/UTM"], function(UTM) {
         }
     }
 
-    function convertFromIN(data, outsys) {
+    /**
+     * Convert internal position to the chosen system
+     * @param data position
+     * @param outsys target system e.g. Units.EX
+     * @return object with coords in the chosen system
+     */
+    Units.convertFromIN = (data, outsys) => {
+        if (outsys === Units.IN)
+            return data;
         if (outsys === Units.UTM) {
             if (!Units.inOrigin)
                 throw new Error("Cannot convert to UTM without an origin");
@@ -134,7 +153,7 @@ define("js/Units", ["js/UTM"], function(UTM) {
             };
         }
             
-        if (outsys === Units.LONLAT)
+        if (outsys === Units.LATLON)
             return UTM.toLatLong(
                 Units.convert(Units.IN, data, Units.UTM));
             
@@ -154,7 +173,13 @@ define("js/Units", ["js/UTM"], function(UTM) {
         return res;
     }
 
-    function convertFromUTM(data, outsys) {
+    /**
+     * Convert UTM position to the chosen system
+     * @param data position
+     * @param outsys target system e.g. Units.EX
+     * @return object with coords in the chosen system
+     */
+    Units.convertFromUTM = (data, outsys) => {
         if (!data.zone)
             throw new Error("Cannot convert from UTM; no zone");
             
@@ -163,7 +188,12 @@ define("js/Units", ["js/UTM"], function(UTM) {
         if (!Units.inOrigin)
             Units.inOrigin = data;
 
-        if (outsys === Units.IN)
+        if (outsys === Units.UTM)
+            return data;
+
+        switch (outsys) {
+
+        case Units.IN:
             return {
                 x: (data.east - Units.inOrigin.east)
                 * Units.UPM[Units.IN],
@@ -171,17 +201,32 @@ define("js/Units", ["js/UTM"], function(UTM) {
                 * Units.UPM[Units.IN],
                 z: 0
             }
-        if (outsys === Units.LONLAT)
+
+        case Units.LATLON:
             return UTM.toLatLong(data);
             
-        return Units.convert( // outsys === Units.EX
-            Units.IN,
-            Units.convert(Units.UTM, data, Units.IN),
-            Units.EX);
+        case Units.EX:
+            return Units.convert( // outsys === Units.EX
+                Units.IN,
+                Units.convert(Units.UTM, data, Units.IN),
+                Units.EX);
+
+        default:
+            throw new Error(`Unrecognised outsys ${outsys}`);
+        }
     }
 
-    function convertFromLONLAT(data, outsys) {
-        // First convert to UTM
+    /**
+     * Convert LATLON position to the chosen system
+     * @param data {x, y, z}
+     * @param outsys target system e.g. Units.EX
+     * @return object with coords in the chosen system
+     */
+    Units.convertFromLATLON = (data, outsys) => {
+        if (outsys === Units.LATLON)
+            return data;
+        
+        // Convert via UTM
         let u = UTM.fromLatLong(
             data.lat, data.lon,
             Units.inOrigin ? Units.inOrigin.z : undefined);
@@ -190,30 +235,23 @@ define("js/Units", ["js/UTM"], function(UTM) {
         // IN origin
         if (outsys === Units.IN && !Units.inOrigin)
             Units.inOrigin = u;
+
         if (outsys === Units.UTM)
             return u;
 
-        return Units.convert(Units.UTM, u, outsys);
+        return Units.convertFromUTM(u, outsys);
     }
-    
-    Units.convert = function(insys, data, outsys) {
-        if (outsys === insys)
+
+    /**
+     * Convert external position to the chosen system
+     * @param data {x, y, z}
+     * @param outsys target system e.g. Units.IN
+     * @return object with coords in the chosen system
+     */
+    Units.convertFromEX = (data, outsys) => {
+        if (outsys === Units.EX)
             return data;
-        if (insys < Units.IN || insys > Units.EX)
-            throw new Error(`Unrecognised insys ${insys}`);
-        if (outsys < Units.IN || outsys > Units.EX)
-            throw new Error(`Unrecognised outsys ${outsys}`);
-
-        if (insys === Units.IN)
-            return convertFromIN(data, outsys);
-        
-        if (insys === Units.UTM)
-            return convertFromUTM(data, outsys);
-        
-        if (insys === Units.LONLAT)
-            return convertFromLONLAT(data, outsys);
-
-        // insys === Units.EX
+            
         if (outsys === Units.IN) {
             let res = {
                 x: (data.x - Units.BB[Units.EX].min.x)
@@ -228,8 +266,33 @@ define("js/Units", ["js/UTM"], function(UTM) {
         }
 
         // else convert via IN
-        let i = Units.convert(Units.EX, data, Units.IN);
-        return Units.convert(Units.IN, i, outsys);
+        let i = Units.convertFromEX(data, Units.IN);
+        return Units.convertFromIN(i, outsys);
+    }
+    
+    /**
+     * Main interface
+     */
+    Units.convert = function(insys, data, outsys) {
+        if (outsys === insys)
+            return data;
+
+        switch (insys) {
+        case Units.IN:
+            return Units.convertFromIN(data, outsys);
+        
+        case Units.UTM:
+            return Units.convertFromUTM(data, outsys);
+        
+        case Units.LATLON:
+            return Units.convertFromLATLON(data, outsys);
+
+        case Units.EX:
+            return Units.convertFromEX(data, outsys);
+
+        default:
+            throw new Error(`Unrecognised insys ${insys}`);
+        }
     }
     
     return Units;

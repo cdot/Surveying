@@ -1,8 +1,9 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-/*eslint-env node, mocha */
+/* eslint-env node, mocha */
+/* global requirejs:writable */
 
 if (typeof module !== "undefined") {
-    requirejs = require('requirejs');
+    requirejs = require("requirejs");
 }
 
 requirejs.config({
@@ -37,7 +38,7 @@ requirejs(["test/TestRunner", "js/UTM"], function(TestRunner, UTM) {
         let ll = UTM.toLatLong(285015.76, 5542944.02, 31);
         assert.closeTo(ll.lat, 50, LL_EPS);
         assert.closeTo(ll.lon, 0, LL_EPS);
-        ll = UTM.toLatLong({ east: 285015.76, north: 5542944.02, zone: 31});
+        ll = UTM.toLatLong({ east: 285015.76, north: 5542944.02, zone: 31 });
         assert.closeTo(ll.lat, 50, LL_EPS);
         assert.closeTo(ll.lon, 0, LL_EPS);
     });
@@ -47,7 +48,7 @@ requirejs(["test/TestRunner", "js/UTM"], function(TestRunner, UTM) {
         assert.equal(46, utm.zone);
         assert.closeTo(utm.east,   285015.76, EPS);
         assert.closeTo(utm.north, 5542944.02, EPS);
-        utm = UTM.fromLatLong({lat: 50, lon: 90});
+        utm = UTM.fromLatLong({ lat: 50, lon: 90 });
         assert.equal(46, utm.zone);
         assert.closeTo(utm.east,   285015.76, EPS);
         assert.closeTo(utm.north, 5542944.02, EPS);
@@ -98,18 +99,18 @@ requirejs(["test/TestRunner", "js/UTM"], function(TestRunner, UTM) {
         let utm = UTM.fromLatLong(-50, 0);
         assert.equal(31, utm.zone);
         assert.closeTo(utm.east,   285015.76, EPS);
-        assert.closeTo(utm.north, 4457055.98, EPS); 
+        assert.closeTo(utm.north, 4457055.98, EPS);
     });
 
     tr.addTest("fromLatLong 10", () => {
         let utm = UTM.fromLatLong(50, 0);
         assert.equal(31, utm.zone);
         assert.closeTo(utm.east,  285015.76, EPS);
-        assert.closeTo(utm.north, 5542944.02, EPS); 
+        assert.closeTo(utm.north, 5542944.02, EPS);
         let sutm = UTM.fromLatLong(-50, 0);
         assert.equal(utm.zone, sutm.zone);
         assert.closeTo(sutm.east,  285015.76, EPS);
-        assert.closeTo(sutm.north, 4457055.98, EPS); 
+        assert.closeTo(sutm.north, 4457055.98, EPS);
     });
 
     tr.addTest("boundary conditions 1", () => {
@@ -117,7 +118,7 @@ requirejs(["test/TestRunner", "js/UTM"], function(TestRunner, UTM) {
         let ll = UTM.toLatLong(u);
         u = UTM.fromLatLong(ll.lat, ll.lon, 30);
         assert.closeTo(u.east,  UTM.MIN_EASTING, EPS);
-        assert.closeTo(u.north, UTM.MIN_NORTHING, EPS); 
+        assert.closeTo(u.north, UTM.MIN_NORTHING, EPS);
     });
     
     tr.addTest("boundary conditions 2", () => {
@@ -127,28 +128,32 @@ requirejs(["test/TestRunner", "js/UTM"], function(TestRunner, UTM) {
         console.log(ll);
         u = UTM.fromLatLong(ll.lat, ll.lon, 30);
         assert.closeTo(u.east,  UTM.MAX_EASTING, EPS);
-        assert.closeTo(u.north, UTM.MAX_NORTHING_N, EPS); 
-     });
+        assert.closeTo(u.north, UTM.MAX_NORTHING_N, EPS);
+    });
     
     tr.addTest("boundary conditions 3", () => {
-        let u = { east: UTM.MIN_EASTING, north: UTM.MIN_NORTHING, zone: 30,
-                  southern: true};
+        let u = {
+            east: UTM.MIN_EASTING, north: UTM.MIN_NORTHING, zone: 30,
+            southern: true
+        };
         let ll = UTM.toLatLong(u);
         u = UTM.fromLatLong(ll.lat, ll.lon, 30);
         assert.closeTo(u.east,  UTM.MIN_EASTING, EPS);
-        assert.closeTo(u.north, UTM.MIN_NORTHING, EPS); 
+        assert.closeTo(u.north, UTM.MIN_NORTHING, EPS);
     });
     
     tr.addTest("boundary conditions 4", () => {
-        let u = { east: UTM.MAX_EASTING, north: UTM.MAX_NORTHING_S, zone: 30,
-                  southern: true };
+        let u = {
+            east: UTM.MAX_EASTING, north: UTM.MAX_NORTHING_S, zone: 30,
+            southern: true
+        };
         console.log(u);
         let ll = UTM.toLatLong(u);
         console.log(ll);
         u = UTM.fromLatLong(ll.lat, ll.lon, 30);
         assert.closeTo(u.east,  UTM.MAX_EASTING, EPS);
-        assert.closeTo(u.north, UTM.MAX_NORTHING_S, EPS); 
-     });
+        assert.closeTo(u.north, UTM.MAX_NORTHING_S, EPS);
+    });
     
     tr.addTest("adjacent zones 1", () => {
        

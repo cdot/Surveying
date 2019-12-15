@@ -56,7 +56,7 @@ define("js/Visual", function() {
          * Apply a transform to the visual
          * @abstract
          */
-        applyTransform(/* mat */) {
+        applyTransform(mat) {
             throw this._notImplemented("applyTransform");
         }
 
@@ -65,12 +65,14 @@ define("js/Visual", function() {
          * @param {Line3} ray
          * @param range2 square of maximum range
          * @return {
-         *     Point closest: this
+         *     {Spot} closest: this
+         *     {Spot} closest2: (optional) other end of edge, if edge was hit
          *     {double} dist2: square of dist from ray
-         *     {Three.Vector3} edgePt closest point on the ray, if edge hit
+         *     {Three.Vector3} edgePt closest point on the edge, if edge hit
+         *     {Three.Vector3} rayPt closest point on the ray, if edge hit
          * } or null if it's outside range2
          */
-        projectRay(/* ray, range2 */) { return null; }
+        projectRay(ray, range2) { return null; }
 
         /**
          * Get the Object3D used to display this Visual
@@ -91,7 +93,7 @@ define("js/Visual", function() {
          * Add the Object3D used to display this Visual (if it has one)
          * to the scene
          */
-        addToScene(/* scene */) { }
+        addToScene(scene) { }
 
         /**
          * Remove the Object3D associated with this visual from the scene.
@@ -108,7 +110,7 @@ define("js/Visual", function() {
          * from that parent
          * @abstract
          */
-        removeChild(/* child */) {
+        removeChild(child) {
             throw this._notImplemented("removeChild");
         }
         
@@ -156,7 +158,7 @@ define("js/Visual", function() {
         /**
          * Highlight the object as being selected (or part of a selection)
          */
-        highlight(/* on */) { }
+        highlight(on) { }
 
         /**
          * Generate a report on this object for use in the UI
@@ -183,13 +185,13 @@ define("js/Visual", function() {
         /**
          * Add the points in visuals that have the properties
          * type:contour or type:point to a flat array suitable for
-         * passing to delaunator, with a map back to the actual Point
+         * passing to delaunator, with a map back to the actual Spot
          * object.
          * @param coords array of [x0, y0, x1, y1, ...] 
          * @param mapBack array indexed by the index into coords/2, mapping
          * to the visual object.
          */
-        condense(/* coords, mapBack */) {
+        condense(coords, mapBack) {
         }
     }
     return Visual;

@@ -1,12 +1,10 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/Point", ["js/Spot", "three", "js/Units", "js/Materials"], function(Spot, Three, Units, Materials) {
+define("js/POI", ["js/Spot", "three", "js/Units", "js/Materials"], function(Spot, Three, Units, Materials) {
 
     /**
-     * Virtual base class of points. The base class has no visual representation.
-     * A point of interest, such as a buoy or depth sounding.
-     * Hmm. A depth sounding is really a contour with only one point.
+     * A marker for a point of interest, such as a buoy.
      */
-    class Point extends Spot {
+    class POI extends Spot {
 
         // @Override Visual
         addToScene(scene) {
@@ -14,7 +12,7 @@ define("js/Point", ["js/Spot", "three", "js/Units", "js/Materials"], function(Sp
                 // Once created, we keep the handle object around as it
                 // will be useful again
                 this.mGeometry = new Three.SphereGeometry(0.5);
-                this.setObject3D(new Three.Mesh(this.mGeometry, Materials.POINT));
+                this.setObject3D(new Three.Mesh(this.mGeometry, Materials.POI));
 
                 let v = this.mPosition;
                 this.object3D.position.set(v.x, v.y, v.z);
@@ -29,7 +27,7 @@ define("js/Point", ["js/Spot", "three", "js/Units", "js/Materials"], function(Sp
         highlight(on) {
             if (this.object3D) {
                 this.object3D.material
-                = (on ? Materials.POINT_SELECTED : Materials.POINT);
+                = (on ? Materials.POI_SELECTED : Materials.POI);
             }
         }
 
@@ -42,14 +40,14 @@ define("js/Point", ["js/Spot", "three", "js/Units", "js/Materials"], function(Sp
                 type: "number",
                 get: () => {
                     let ll = Units.convert(
-                        Units.IN, self.mPosition, Units.LONLAT);
+                        Units.IN, self.mPosition, Units.LATLON);
                     return ll.lat;
                 },
                 set: (v) => {
                     let ll = Units.convert(
-                        Units.IN, self.mPosition, Units.LONLAT);
+                        Units.IN, self.mPosition, Units.LATLON);
                     ll.lat = v;
-                    let i = Units.convert(Units.LONLAT, ll, Units.IN);
+                    let i = Units.convert(Units.LATLON, ll, Units.IN);
                     i.z = self.mPosition.z;
                     self.setPosition(i);
                 }
@@ -59,28 +57,21 @@ define("js/Point", ["js/Spot", "three", "js/Units", "js/Materials"], function(Sp
                 type: "number",
                 get: () => {
                     let ll = Units.convert(
-                        Units.IN, self.mPosition, Units.LONLAT);
+                        Units.IN, self.mPosition, Units.LATLON);
                     return ll.lon;
                 },
                 set: (v) => {
                     let ll = Units.convert(
-                        Units.IN, self.mPosition, Units.LONLAT);
+                        Units.IN, self.mPosition, Units.LATLON);
                     ll.lon = v;
-                    let i = Units.convert(Units.LONLAT, ll, Units.IN);
+                    let i = Units.convert(Units.LATLON, ll, Units.IN);
                     i.z = self.mPosition.z;
                     self.setPosition(i);
                 }
             });
             return s;
         }
-
-        // @Override Visual
-        condense(coords, mapBack) {
-            // console.log("Condensed ", this.name);
-            coords.push([this.position.x, this.position.y]);
-            mapBack.push(this);
-        }
     }
-    return Point;
+    return POI;
 });
 

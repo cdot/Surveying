@@ -46,12 +46,12 @@ define("js/Container", ["js/Visual", "three"], function(Visual, Three) {
         /**
          * Detect if this container expresses an edge between two
          * vertices.
-         * @param {Point} v1 first vertex
-         * @param {Point} v2 second vertex
+         * @param {Vertex} v1 first vertex
+         * @param {Vertex} v2 second vertex
          * @return true if the derived object has an edge between these
          * two vertices
          */
-        hasEdge(/* v1, v2 */) {
+        hasEdge(v1, v2) {
             return false;
         }
         

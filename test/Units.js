@@ -1,8 +1,8 @@
-/* @copyright 2019 Crawford Currie - All rights reserved */
-/*eslint-env node, mocha */
+/* @preserve Copyright 2019 Crawford Currie - All rights reserved */
+/* eslint-env node, mocha */
 
 if (typeof module !== "undefined") {
-    requirejs = require('requirejs');
+    requirejs = require("requirejs");
 }
 
 requirejs.config({
@@ -14,34 +14,33 @@ requirejs(["test/TestRunner", "js/UTM", "js/Units"], function(TestRunner, UTM, U
     let tr = new TestRunner("Units");
     let assert = tr.assert;
 
-    const EPS = 0.01; // 1cm
     const LL_EPS = 0.000012;
 
     tr.addTest("IN -> UTM", () => {
-        Units.inOrigin = { east: 5050, north: 7070, zone: 30, hemis: 'N' };
+        Units.inOrigin = { east: 5050, north: 7070, zone: 30, hemis: "N" };
         let u = Units.convert(Units.IN, { x: 0, y: 0, z: 0 }, Units.UTM);
         console.log(u);
         assert.equal(u.east, 5050);
         assert.equal(u.north, 7070);
-        assert.equal(u.zone, 30);     
-        assert.equal(u.hemis, 'N');     
+        assert.equal(u.zone, 30);
+        assert.equal(u.hemis, "N");
         u = Units.convert(Units.IN, { x: 1, y: 1, z: 0 }, Units.UTM);
         assert.equal(u.east, 5050.001);
         assert.equal(u.north, 7070.001);
-        assert.equal(u.zone, 30);     
-        assert.equal(u.hemis, 'N');     
+        assert.equal(u.zone, 30);
+        assert.equal(u.hemis, "N");
 
-        Units.inOrigin = { east: 5050, north: 7070, zone: 30, hemis: 'S' };
+        Units.inOrigin = { east: 5050, north: 7070, zone: 30, hemis: "S" };
         u = Units.convert(Units.IN, { x: 0, y: 0, z: 0 }, Units.UTM);
         assert.equal(u.east, 5050);
         assert.equal(u.north, 7070);
-        assert.equal(u.zone, 30);     
-        assert.equal(u.hemis, 'S');     
+        assert.equal(u.zone, 30);
+        assert.equal(u.hemis, "S");
         u = Units.convert(Units.IN, { x: 1, y: 1, z: 0 }, Units.UTM);
         assert.equal(u.east, 5050.001);
         assert.equal(u.north, 7070.001);
-        assert.equal(u.zone, 30);     
-        assert.equal(u.hemis, 'S');     
+        assert.equal(u.zone, 30);
+        assert.equal(u.hemis, "S");
     });
   
     tr.addTest("UTM -> IN", () => {
@@ -53,19 +52,19 @@ requirejs(["test/TestRunner", "js/UTM", "js/Units"], function(TestRunner, UTM, U
         assert.equal(u.z, 0);
     });
 
-    tr.addTest("LONLAT -> UTM", () => {
+    tr.addTest("LATLON -> UTM", () => {
         delete Units.inOrigin;
-        let u = Units.convert(Units.LONLAT, { lon: -177, lat: 53 }, Units.UTM);
+        let u = Units.convert(Units.LATLON, { lon: -177, lat: 53 }, Units.UTM);
         let utm = UTM.fromLatLong(53, -177);
         assert.equal(u.zone, utm.zone);
         assert.equal(u.east, utm.east);
         assert.equal(u.north, utm.north);
     });
                
-    tr.addTest("UTM -> LONLAT", () => {
+    tr.addTest("UTM -> LATLON", () => {
         delete Units.inOrigin;
-        let utm = { east: 285015.76, north: 5542944.02, zone: 31};
-        let u = Units.convert(Units.UTM, utm, Units.LONLAT);
+        let utm = { east: 285015.76, north: 5542944.02, zone: 31 };
+        let u = Units.convert(Units.UTM, utm, Units.LATLON);
         assert.closeTo(u.lat, 50, LL_EPS);
         assert.closeTo(u.lon, 0, LL_EPS);
     });

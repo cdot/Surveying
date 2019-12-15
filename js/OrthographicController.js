@@ -1,6 +1,6 @@
-/* @copyright 2019 Crawford Currie - All rights reserved */
+/* @preserve Copyright 2019 Crawford Currie - All rights reserved */
 /* eslint-env jquery, browser */
-define("js/OrthographicController", ["js/CanvasController", "three", "js/Selection", "js/Point", "js/Contour", "js/Units", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Selection, Point, Contour, Units, UTM, Materials) {
+define("js/OrthographicController", ["js/CanvasController", "three", "js/Selection", "js/POI", "js/Contour", "js/Spot", "js/Units", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Selection, POI, Contour, Spot, Units, UTM, Materials) {
 
     /**
      * Interactive orthographic projection
@@ -91,7 +91,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                         $report.append($s);
                 }
                 $("#report").empty()
-                    .append($report);
+                .append($report);
             });
 
             // Connect event handlers
@@ -196,11 +196,12 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             let split = [];
             for (let i = 0; i < sel.length; i++) {
                 let s = sel.items[i];
-                if (s instanceof Point) {
+                if (s instanceof Spot) {
                     for (let j = i + 1; j < sel.length; j++) {
                         let ss = sel.items[j];
                         if (ss !== s
                             && ss.parent === s.parent
+                            && s.parent.hasEdge
                             && s.parent.hasEdge(s, ss))
                             split.push({ p: ss.parent, a: s, b: ss });
                     }
@@ -233,13 +234,13 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 // Deal with an empty visual
                 // A roughly 1nm square block of sea in the English Channel
                 let ll = Units.convert(
-                    Units.LONLAT,
+                    Units.LATLON,
                     { lon: -0.5, lat: 50 },
                     Units.IN);
                 ll = new Three.Vector3(ll.x, ll.y, -10);
                 
                 let ur = Units.convert(
-                    Units.LONLAT,
+                    Units.LATLON,
                     { lon: -0.483, lat: 50.017 },
                     Units.IN);
                 ur = new Three.Vector3(ur.x, ur.y, 10);
@@ -309,8 +310,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
         /**
          * Add a new point under the ruler start
          */
-        addPoint() {
-            let pt = new Point(this.rulerStart, "New point");
+        addPOI() {
+            let pt = new POI(this.rulerStart, "New POI");
             this.mVisual.addChild(pt);
             pt.addToScene(this.scene);
             pt.setHandleScale(this.mHandleSize / this.mCamera.zoom);
@@ -380,7 +381,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 return false;
                 
             case ".":
-                this.addPoint();
+                this.addPOI();
                 return false;
 
             case "c":

@@ -52,7 +52,7 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
          * Format a point for display as a lat,long
          */
         function wgsCoords(p) {
-            return Units.stringify(Units.IN, p, Units.LONLAT);
+            return Units.stringify(Units.IN, p, Units.LATLON);
         }
 
         function wgsBox(b) {
@@ -68,12 +68,14 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
             let fn = f.name;
             let type = fn.replace(/^.*\./u, "").toLowerCase();
 
-            requirejs([`js/FileFormats/${type}`], (Loader) => {
-                let reader = new FileReader();
+            requirejs(
+                [`js/FileFormats/${type}`],
+                (Loader) => {
+                    let reader = new FileReader();
 
-                reader.onload = (e) => {
-                    let data = e.target.result;
-                    new Loader().load(fn, data)
+                    reader.onload = (e) => {
+                        let data = e.target.result;
+                        new Loader().load(fn, data)
                         .then((result) => {
                             rootContainer.addChild(result);
                             result.addToScene(scene);
@@ -86,11 +88,16 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
                         .catch((err) => {
                             console.debug(err);
                         });
-                };
+                    };
 
-                // Read in the image file as a data URL.
-                reader.readAsText(f);
-            });
+                    // Read in the image file as a data URL.
+                    reader.readAsText(f);
+                },
+                (err) => {
+                    $("#alert_message")
+                    .html(`Error loading js/FileFormats/${type} - is the file format supported?`);
+                    $("#alert").dialog("open");
+                });
         });
 
         // Information tab
@@ -150,10 +157,12 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
         
         $("#save_format").on("change", function() {
             let type = $(this).val();
-            requirejs([`"js/FileFormats/${type}`], (Format) => {
-                saver = new Format();
-                enableSave();
-            });
+            requirejs(
+                [`js/FileFormats/${type}`],
+                (Format) => {
+                    saver = new Format();
+                    enableSave();
+                });
         });
         
         $("#save").on("click", function() {

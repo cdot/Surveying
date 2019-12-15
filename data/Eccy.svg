@@ -117,37 +117,35 @@
     <title
        id="title877">Stride Entry</title>
   </path>
-  <ellipse
+  <circle
      style="opacity:0.84200003;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
      id="path958"
      cx="356.72116"
      cy="953.76276"
-     rx="5.0031762"
-     ry="4.9990597">
+     r="5">
     <title
        id="title915">Flower pot 1</title>
     <desc
        id="desc909">type:feature,depth:2</desc>
-  </ellipse>
-  <ellipse
+  </circle>
+  <circle
      style="opacity:0.84200003;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
      id="path958-9"
      cx="378.3985"
      cy="939.56616"
-     rx="5.0031762"
-     ry="4.9990597">
+     r="5">
     <desc
        id="desc923">type:feature,depth:2</desc>
     <title
        id="title921">Flower pot 2</title>
-  </ellipse>
+  </circle>
   <ellipse
      style="opacity:0.84200003;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
      id="path958-4"
      cx="393.17838"
      cy="928.4754"
-     rx="5.0031762"
-     ry="4.9990597">
+     rx="5"
+     ry="5">
     <desc
        id="desc919">type:feature,depth:2</desc>
     <title
@@ -1182,7 +1180,7 @@
       <title
          id="title973-3-8-4">Cruiser buoy</title>
       <desc
-         id="desc943-9-1-9-0">type:point,depth:20</desc>
+         id="desc943-9-1-9-0">type:POI</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1194,7 +1192,7 @@
       <title
          id="title973-3-8-4-5">F</title>
       <desc
-         id="desc943-9-1-9-0-9">type:point,depth:14.1</desc>
+         id="desc943-9-1-9-0-9">type:sounding,depth:14.1</desc>
     </ellipse>
   </g>
   <g
@@ -1212,7 +1210,7 @@
       <title
          id="title973-3-8-4-6">Phone pole</title>
       <desc
-         id="desc943-9-1-9-0-2">type:point,depth:5.9</desc>
+         id="desc943-9-1-9-0-2">type:POI,depth:5.9</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1224,7 +1222,7 @@
       <title
          id="title973-3-8-4-14">Playground buoy</title>
       <desc
-         id="desc943-9-1-9-0-6">type:point,depth:7.6</desc>
+         id="desc943-9-1-9-0-6">type:POI,depth:7.6</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1236,7 +1234,7 @@
       <title
          id="title973-3-8-4-14-6">Stride entry left side</title>
       <desc
-         id="desc943-9-1-9-0-6-1">type:point,depth:6.4</desc>
+         id="desc943-9-1-9-0-6-1">type:sounding,depth:6.4</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1248,7 +1246,7 @@
       <title
          id="title973-3-8-4-1">Ferret buoy</title>
       <desc
-         id="desc943-9-1-9-0-0">type:point,depth:6.9</desc>
+         id="desc943-9-1-9-0-0">type:POI,depth:0</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1258,9 +1256,9 @@
        rx="2.0012703"
        ry="1.9996238">
       <title
-         id="title973-3-8-4-8">Short cockpit</title>
+         id="title973-3-8-4-8">Short cockpit buoy</title>
       <desc
-         id="desc943-9-1-9-0-3">type:point,depth:6.8</desc>
+         id="desc943-9-1-9-0-3">type:POI</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1272,7 +1270,7 @@
       <title
          id="title973-3-94">10M platform buoy</title>
       <desc
-         id="desc943-9-1-90">type:point,depth:10</desc>
+         id="desc943-9-1-90">type:POI</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1284,7 +1282,7 @@
       <title
          id="title973-3-94-7">8M platform buoy</title>
       <desc
-         id="desc943-9-1-90-6">type:point,depth:8</desc>
+         id="desc943-9-1-90-6">type:POI</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1296,7 +1294,7 @@
       <title
          id="title973-3-94-7-2">Corner of platform</title>
       <desc
-         id="desc943-9-1-90-6-2">type:point,depth:5.2</desc>
+         id="desc943-9-1-90-6-2">type:sounding,depth:5.2</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#f80002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1308,7 +1306,7 @@
       <title
          id="title934-5">Van buoy</title>
       <desc
-         id="desc943-0">type:point,depth:13</desc>
+         id="desc943-0">type:POI</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1320,7 +1318,7 @@
       <title
          id="title973-3-8-0">Plane nose</title>
       <desc
-         id="desc943-9-1-9-2">type:point,depth:16.2</desc>
+         id="desc943-9-1-9-2">type:sounding,depth:16.2</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1332,7 +1330,7 @@
       <title
          id="title973-3-8">Plane nose</title>
       <desc
-         id="desc943-9-1-9">type:point,depth:15</desc>
+         id="desc943-9-1-9">type:sounding,depth:15</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1344,7 +1342,7 @@
       <title
          id="title973-3-9">APC door buoy</title>
       <desc
-         id="desc943-9-1-2">type:point,depth:11</desc>
+         id="desc943-9-1-2">type:POI</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1356,7 +1354,7 @@
       <title
          id="title934-6">Van buoy</title>
       <desc
-         id="desc943-6">type:point,depth:13</desc>
+         id="desc943-6">type:POI</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1368,7 +1366,7 @@
       <title
          id="title973">Guns front</title>
       <desc
-         id="desc943-9">type:point,depth:15</desc>
+         id="desc943-9">type:sounding,depth:15</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1380,7 +1378,7 @@
       <title
          id="title973-7">Guns back spot</title>
       <desc
-         id="desc943-9-17">type:point,depth:14.4</desc>
+         id="desc943-9-17">type:sounding,depth:14.4</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#f80002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1392,7 +1390,7 @@
       <title
          id="title973-30">Spot</title>
       <desc
-         id="desc943-9-7">type:point,depth:5</desc>
+         id="desc943-9-7">type:sounding,depth:5</desc>
     </ellipse>
     <ellipse
        style="opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#f80002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1404,7 +1402,7 @@
       <title
          id="title973-30-9">Spot</title>
       <desc
-         id="desc943-9-7-4">type:point,depth:10</desc>
+         id="desc943-9-7-4">type:sounding,depth:10</desc>
     </ellipse>
     <ellipse
        style="display:inline;opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1416,7 +1414,7 @@
       <title
          id="title973-3">Plane tail</title>
       <desc
-         id="desc943-9-1">type:point,depth:13</desc>
+         id="desc943-9-1">type:sounding,depth:13</desc>
     </ellipse>
     <ellipse
        style="display:inline;opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1428,7 +1426,7 @@
       <title
          id="title973-3-8-3">Plane buoy</title>
       <desc
-         id="desc943-9-1-9-8">type:point,depth:14</desc>
+         id="desc943-9-1-9-8">type:POI</desc>
     </ellipse>
     <ellipse
        style="display:inline;opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#f80002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1440,7 +1438,7 @@
       <title
          id="title934">Van buoy</title>
       <desc
-         id="desc943">type:point,depth:13</desc>
+         id="desc943">type:POI</desc>
     </ellipse>
     <ellipse
        style="display:inline;opacity:0.84200003;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#f80002;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1452,7 +1450,7 @@
       <title
          id="title934-6-7">Van buoy</title>
       <desc
-         id="desc943-6-5">type:point,depth:13</desc>
+         id="desc943-6-5">type:POI</desc>
     </ellipse>
   </g>
   <g

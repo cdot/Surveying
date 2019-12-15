@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], function(Container, Three, Spot, Materials) {
+define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], (Container, Three, Spot, Materials) => {
 
     class PathVertex extends Spot {
         
@@ -110,6 +110,10 @@ define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], function
             this.mIsClosed = true;
         }
 
+        edgeMaterial() {
+            return Materials.PATH;
+        }
+        
         /**
          * @private
          * Find the index of the vertex on this edge that is first
@@ -120,10 +124,18 @@ define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], function
                 throw new Error("Internal error");
             if (v1 === v2)
                 return -1;
-            for (let v = 0; v < this.children.length - 1; v++)
-                if (this.children[v] === v1 && this.children[v + 1] === v2
-                    || this.children[v] === v2 && this.children[v + 1] === v1)
-                    return v;
+            let c = this.children;
+            let i1 = 0;
+            let l = c.length;
+            while (i1 < l) {
+                let i2 = (i1 + 1) % l;
+                if (i2 < i1 && !this.isClosed) break;
+                if ((c[i1] === v1 && c[i2] === v2)
+                    || (c[i1] === v2 && c[i2] === v1))
+                    return i1;
+                if (i2 === 0) break; // wrapped
+                i1 = i2;
+            }
             return -1;
         }
         
@@ -134,14 +146,18 @@ define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], function
         
         // @Override Container
         splitEdge(v1, v2) {
-            let i = this._findEdge(v1, v2);
-            let a = this.children[i];
-            let b = this.children[i + 1];
+            let i1 = this._findEdge(v1, v2);
+            if (i1 < 0)
+                throw new Error("Can't split nonexistant edge");
+            let i2 = (i1 + 1) % this.children.length;
+            let a = this.children[i1];
+            let b = this.children[i2];
 
-            let v = new PathVertex(a.position.clone().lerp(b.position, 0.5));
-            this.children.splice(i + 1, 0, v);
+            let vclass = this.Vertex;
+            let v = new vclass(a.position.clone().lerp(b.position, 0.5));
+            this.children.splice(i2, 0, v);
             if (this.mGeometry) {
-                this.mGeometry.vertices.splice(i + 1, v.position);
+                this.mGeometry.vertices.splice(i2, v.position);
                 this.mGeometry.verticesNeedUpdate = true;
             }
         }
@@ -158,18 +174,20 @@ define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], function
             if (!this.mObject3D) {
                 if (this.isClosed)
                     this.setObject3D(
-                        new Three.LineLoop(this.mGeometry, Materials.EDGE));
+                        new Three.LineLoop(
+                            this.mGeometry, this.edgeMaterial()));
                 else
                     this.setObject3D(
-                        new Three.Line(this.mGeometry, Materials.EDGE));
+                        new Three.Line(this.mGeometry, this.edgeMaterial()));
             }
             scene.add(this.mObject3D);
         }
 
         projectRay(ray, range2) {
             let best = super.projectRay(ray, range2);
-            if (best)
+            if (best || this.children.length < 2)
                 return best;
+
             let bestd2 = range2;
             let rayPt = new Three.Vector3();
             let edgePt = new Three.Vector3();

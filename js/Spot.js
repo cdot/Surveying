@@ -2,9 +2,9 @@
 define("js/Spot", ["js/Visual", "three"], function(Visual, Three) {
 
     /**
-     * Virtual base class of points. The base class has no visual representation.
-     * A point of interest, such as a buoy or depth sounding.
-     * Hmm. A depth sounding is really a contour with only one point.
+     * Virtual base class of points. The base class has no visual
+     * representation. Spots are used for POIs and vertices in paths
+     * and meshes.
      */
     class Spot extends Visual {
         
@@ -69,7 +69,8 @@ define("js/Spot", ["js/Visual", "three"], function(Visual, Three) {
         projectRay(ray, range2) {
             let np = new Three.Vector3();
             ray.closestPointToPoint(this.mPosition, np);
-            let dist2 = np
+            let dist2
+                = np
                 .clone()
                 .sub(this.mPosition)
                 .lengthSq();

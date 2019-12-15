@@ -1,15 +1,15 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point", "js/Container", "js/Mesh", "js/Path", "js/Contour"], function(FileFormat, Three, Units, Point, Container, Mesh, Path, Contour) {
+define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Container", "js/Mesh", "js/Path", "js/Contour", "js/POI", "js/Sounding"], function(FileFormat, Three, Units, Container, Mesh, Path, Contour, POI, Sounding) {
 
     // 1 = round to 0 decimal places. Since the internal coordinate system
     // is in millimetres, 0 should give us more than enough accuracy.
     // This can be increased if more accuracy is required
     const ROUNDER = 1;
-    
+
     function round(n) {
         return Math.round(n * ROUNDER) / ROUNDER;
     }
-    
+
     class Json extends FileFormat {
 
         constructor() {
@@ -21,64 +21,79 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
             let json = JSON.parse(data);
 
             Units.mapFromEX(json.bb, json.upm, false);
-            
+
             if (!Units.inOrigin)
                 Units.inOrigin = json.origin;
-            
+
             function e2i(el) {
                 return Units.convert(Units.EX, el, Units.IN);
             }
-            
-            function json2db(json) {
-                let visual, c;
-                
-                switch (json.type) {
 
-                case "point":
-                    visual = new Point(e2i({
-                        x: json.v[0],
-                        y: json.v[1],
-                        z: json.v[2]}), json.name);
+            function json2db(js) {
+                let visual, c;
+
+                switch (js.type) {
+
+                case "poi":
+                    visual = new POI(e2i({
+                        x: js.v[0],
+                        y: js.v[1],
+                        z: js.v[2]
+                    }), js.name);
                     break;
 
-                case "mesh": case "network": {
-                    let visual = new Mesh(json.name);
-                    for (c = 0; c < json.v.length; c += 3)
-                        visual.addVertex(e2i({x: json.v[c],
-                                              y: json.v[c + 1],
-                                              z: json.v[c + 2]}));
-                    for (c = 0; c < json.e.length; c += 2)
+                case "sounding":
+                    visual = new Sounding(e2i({
+                        x: js.v[0],
+                        y: js.v[1],
+                        z: js.v[2]
+                    }), js.name);
+                    break;
+
+                case "mesh":
+                    visual = new Mesh(js.name);
+                    for (c = 0; c < js.v.length; c += 3)
+                        visual.addVertex(e2i({
+                            x: js.v[c],
+                            y: js.v[c + 1],
+                            z: js.v[c + 2]
+                        }));
+                    for (c = 0; c < js.e.length; c += 2)
                         visual.addEdge(
                             visual.children[c], visual.children[c + 1]);
                     break;
-                }
+
                 case "path":
-                    visual = new Path(json.name);
-                    for (c = 0; c < json.v.length; c += 3)
-                        visual.addVertex(e2i({x: json.v[c],
-                                              y: json.v[c + 1],
-                                              z: json.v[c + 2]}));
-                    if (json.closed)
+                    visual = new Path(js.name);
+                    for (c = 0; c < js.v.length; c += 3)
+                        visual.addVertex(e2i({
+                            x: js.v[c],
+                            y: js.v[c + 1],
+                            z: js.v[c + 2]
+                        }));
+                    if (js.closed)
                         visual.close();
                     break;
 
                 case "contour":
-                    visual = new Contour(json.name);
-                    for (c = 0; c < json.v.length; c += 2)
-                        visual.addVertex(e2i({x: json.v[c],
-                                              y: json.v[c + 1]}));
-                    visual.setZ(json.z);
+                    visual = new Contour(js.name);
+                    for (c = 0; c < js.v.length; c += 2)
+                        visual.addVertex(e2i({
+                            x: js.v[c],
+                            y: js.v[c + 1]
+                        }));
+                    visual.setZ(js.z);
                     visual.close();
                     break;
 
                 case "container":
-                    visual = new Container(json.name);
-                    for (let c of json.children)
-                        visual.addChild(json2db(c));
+                    visual = new Container(js.name);
+                    for (let brat of js.children)
+                        visual.addChild(json2db(brat));
                     break;
-                    
+
                 default:
-                    throw new Error("Unrecognised entity " + json.type);
+                    throw new Error(`Unrecognised entity ${js.type}`);
                 }
 
                 return visual;
@@ -87,22 +102,30 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
         }
 
         // Save
-        
-        save(visual) {
-            
+
+        save(root) {
+
             function db2json(visual) {
-                let type = visual.constructor.name;
-                    
-                if (type === "Point") {
+
+                if (visual instanceof POI) {
                     let p = visual.position;
                     return {
-                        type: "point",
+                        type: "poi",
                         name: visual.name,
-                        v: [ round(p.x), round(p.y), round(p.z) ]
+                        v: [round(p.x), round(p.y), round(p.z)]
                     };
                 }
-                    
-                if (type === "Mesh") {
+
+                if (visual instanceof Sounding) {
+                    let p = visual.position;
+                    return {
+                        type: "sounding",
+                        name: visual.name,
+                        v: [round(p.x), round(p.y), round(p.z)]
+                    };
+                }
+
+                if (visual instanceof Mesh) {
                     let el = {
                         type: "mesh",
                         name: visual.name,
@@ -110,7 +133,6 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
                         e: []
                     };
                     let vid2i = {};
-                    let i = 0;
                     for (let g of visual.children) {
                         vid2i[g.vid] = el.children.length;
                         el.v.push(
@@ -122,8 +144,24 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
                         el.e.push(vid2i[e.p1.vid], vid2i[e.p2.vid]);
                     return el;
                 }
-                    
-                if (type === "Path") {
+
+                if (visual instanceof Contour) {
+                    // A contour is a closed loop, don't need to save
+                    // edges. Also handles Sounding (which is just a
+                    // Contour with a single vertex)
+                    let el = {
+                        type: "contour",
+                        name: visual.name,
+                        z: round(visual.z),
+                        v: []
+                    };
+                    for (let g of visual.children) {
+                        el.v.push(round(g.position.x), round(g.position.y));
+                    }
+                    return el;
+                }
+
+                if (visual instanceof Path) {
                     // A path is a chain of vertices that may be closed
                     // Don't need to save edges
                     let el = {
@@ -140,35 +178,21 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
                     }
                     return el;
                 }
-                    
-                if (type === "Contour") {
-                    // A contour is a closed loop, don't need to save
-                    // edges
-                    let el = {
-                        type: "contour",
-                        name: visual.name,
-                        z: round(visual.z),
-                        v: []
-                    };
-                    for (let g of visual.children) {
-                        el.v.push(round(g.position.x), round(g.position.y));
-                    }
-                    return el;
-                }
-                    
-                if (type === "Container") {
+
+                if (visual instanceof Container) {
                     let el = {
                         type: "container",
                         name: visual.name,
-                        children: [] };
+                        children: []
+                    };
                     for (let g of visual.children)
                         el.children.push(db2json(g));
                     return el;
                 }
-                    
+
                 throw new Error(
-                    "Unsupported Visual " + type);
-                    
+                    `Unsupported Visual ${visual.constructor.name}`);
+
             }
 
             // A survey is a collection of containers, each of which was
@@ -178,17 +202,17 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Point",
             // survey. This special case handles that by saving a single
             // container as the survey itself.
             let json;
-            if (visual.children.length === 1
-                && visual.children[0].constructor.name === "Container")
+            if (root.children.length === 1
+                && root.children[0].constructor.name === "Container")
                 // root has a single child, promote it to root
-                json = db2json(visual.children[0]);
+                json = db2json(root.children[0]);
             else // root has multiple children
-                json = db2jsonl(visual);
+                json = db2json(root);
 
-            json.bb = visual.boundingBox;
+            json.bb = root.boundingBox;
             json.upm = Units.UPM[Units.IN];
             json.origin = Units.inOrigin;
-            
+
             return JSON.stringify(json);
         }
 

@@ -6,17 +6,45 @@
     <link rel="icon" href="favicon.ico">
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <link href="css/styles.css" rel="stylesheet" />
+    <link href="css/icons.css" rel="stylesheet" />
     <script data-main="js/main" src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.js"></script>
   </head>
 
   <body>
-    <div id="canvases">
-      <div id="perspective" class="canvas"></div>
-      <div id="orthographic" class="canvas" tabindex="1"></div>
+    <div id="perspective" class="view">
+      <div class="infobar">
+      </div>
+      <div class="toolbar">
+      </div>
+      <div class="canvas"></div>
     </div>
+    
+    <div id="orthographic" class="view">
+      <div class="infobar">
+        Lat/Long: <span id="cursor_wgs"></span>
+        Ruler: <span id="cursor_length"></span>m
+        <span id="cursor_bearing"></span>&deg;
+      </div>
+      <div class="toolbar">
+        <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-add-poi" name="addpoi" title="Add POI">
+        </button>
+        <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-add-sounding" name="addsounding" title="Add Sounding">
+        </button>
+        <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-add-contour" name="addcontour" title="Add Contour">
+        </button>
+        <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-add-path" name="addpath" title="Add Path">
+        </button>
+        <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-split-edges" name="splitedges" title="Split edges">
+          <span class="ui-icon ui-icon-gear"></span>
+        </button>
+      </div>
+      <div class="canvas" tabindex="1"></div>
+    </div>
+    
     <div class="controls">
-      <!-- form not submitted, just there to get correct behaviours from jquery -->
-      <form id="noform">
+      <!-- form not submitted, just there to get correct behaviours from
+           jquery for the load and save buttons -->
+      <form class="disable_submit">
         <div>
           <label for="load">Load</label>
           <input id="load" type="file"/>
@@ -30,23 +58,13 @@
         </div>
         <div>
           <a class="ui-button ui-corner-all ui-widget" id="refocus">Fit</a>
-          <a class="ui-button ui-corner-all ui-widget" id="zoomin">+</a>
-          <a class="ui-button ui-corner-all ui-widget" id="zoomout">-</a>
           <a class="ui-button ui-corner-all ui-widget" id="toggle">Switch View</a>
         </div>
       </form>
       <div>
         Scene: <span id="scene"></span>
       </div>
-      <div>
-        Cursor Lat/Long: <span id="cursor_wgs"></span> Ruler: <span id="cursor_length"></span>m <span id="cursor_bearing"></span>&deg;
-      </div>
       <div id="report">
-      </div>
-      <div>
-        <a class="ui-button ui-corner-all ui-widget" id="addpoint">Add point</a>
-        <a class="ui-button ui-corner-all ui-widget" id="addcontour">Add contour</a>
-        <a class="ui-button ui-corner-all ui-widget" id="splitedges">Split edges</a>
       </div>
     </div>
 

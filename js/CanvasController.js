@@ -8,10 +8,14 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
      */
     class CanvasController {
         
-        constructor($canvas, visual, scene, camera) {
-           
-            $canvas.data("controller", this);
-            this.$mCanvas = $canvas;
+        constructor(selector, visual, scene, camera) {
+            this.$mView = $(`#${selector}`);
+            this.$mCanvas = $(`#${selector} > .canvas`);
+            this.$mToolbar = $(`#${selector} > .toolbar`);
+
+            this.$mCanvas.data("controller", this);
+            this.$mToolbar.data("controller", this);
+
             this.mVisual = visual;
             this.mCamera = camera;
             this.mScene = scene;
@@ -20,12 +24,20 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
             
             this.mRenderer = new Three.WebGLRenderer();
             this.resize(
-                $canvas.innerWidth(),
-                $canvas.innerHeight());
+                this.$mCanvas.innerWidth(),
+                this.$mCanvas.innerHeight());
             
             this.$mCanvas.append(this.mRenderer.domElement);
         }
 
+        toggle() {
+            this.$mView.toggle();
+        }
+        
+        /**
+         * Resize the canvas; called during construction and in
+         * response to a window resize event
+         */
         resize(w, h) {
             this.mAspectRatio = w / h;
             this.$mCanvas.find("canvas").height(h);
@@ -34,12 +46,25 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
             this.fit();
         }
 
+        /**
+         * Get the Three.Scene generated from the visual in this canvas
+         * @return {Three.Scene} the scene
+         */
         get scene() {
             return this.mScene;
         }
-        
+
+        /**
+         * Get the Visual being displayed in this canvas
+         * @return {VBisual} the root visual
+         */
+        get visual() {
+            return this.mVisual;
+        }
+
         /**
          * Set the Visual being displayed in this canvas
+         * @param {Visual} the new visual
          */
         setVisual(visual) {
             this.mVisual = visual;
@@ -52,7 +77,10 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
          */
         fit() {
         }
-        
+
+        /**
+         * Animation loop
+         */
         animate() {
             requestAnimationFrame(() => {
                 this.animate();

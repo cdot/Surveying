@@ -7,10 +7,10 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
      */
     class OrthographicController extends CanvasController {
 
-        constructor($canvas, visual, scene) {
+        constructor(selector, visual, scene) {
             // Default 1km/1km scene
             super(
-                $canvas, visual, scene,
+                selector, visual, scene,
                 new Three.OrthographicCamera(-500, 500, 500, -500));
             
             // Set up the camera
@@ -37,9 +37,23 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             
             // Size of a handle in world coordinates = 50cm
             this.mHandleSize = Units.UPM[Units.IN] / 2;
-            
-            $("#noform").on("submit", () => false);
 
+            let self = this;
+            this.$mToolbar.find("[name='addpoint']")
+            .on("click", () => {
+                self.addPOI();
+            });
+            
+            this.$mToolbar.find("[name='addcontour']")
+            .on("click", () => {
+                self.addContour();
+            });
+
+            this.$mToolbar.find("[name='splitedges']")
+            .on("click", () => {
+                self.splitSelectedEdges();
+            });
+            
             function makeControl(scheme) {
                 if (scheme instanceof Array)
                     return makeControls(scheme);
@@ -99,7 +113,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             this.mIsDragging = false;
             this.mLastCanvasPt = null;
             this.mLastRayPt = null;
-            let self = this;
+
             for (let event of [
                 "keydown", "mousenter", "mouseleave",
                 "mousedown", "mouseup", "mousewheel",
@@ -120,7 +134,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
         set rulerStart(v) {
             this.mRulerGeom.vertices[0].copy(v);
             this.mRulerGeom.verticesNeedUpdate = true;
-            $(document).trigger("cursorchanged");
+            this.cursorChanged();
         }
         
         get cursor() {
@@ -130,7 +144,17 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
         set cursor(v) {
             this.mRulerGeom.vertices[1].copy(v);
             this.mRulerGeom.verticesNeedUpdate = true;
-            $(document).trigger("cursorchanged");
+            this.cursorChanged();
+        }
+
+        // Information tab
+        cursorChanged() {
+            try {
+                $("#cursor_wgs").html(wgsCoords(this.cursor));
+            } catch (e) {
+            }
+            $("#cursor_length").text(this.rulerLength);
+            $("#cursor_bearing").text(this.rulerBearing);
         }
 
         /**
@@ -140,13 +164,15 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
          * @return {Three.Line} ray
          */
         event2ray(e) {
+            let x = e.pageX - $(e.target).offset().left; // e.clientX
+            let y = e.pageY - $(e.target).offset().top; // e.clientY
             let pt = {
-                x: (e.clientX / this.$mCanvas.innerWidth() * 2 - 1),
-                y: 1 - (e.clientY / this.$mCanvas.innerHeight()) * 2
+                x: (x / this.$mCanvas.innerWidth() * 2 - 1),
+                y: 1 - (y / this.$mCanvas.innerHeight()) * 2
             };
             let pos = new Three.Vector3(pt.x, pt.y, 0).unproject(this.mCamera);
             this.cursor = pos;
-            $(document).trigger("cursorchanged");
+            this.cursorChanged();
             pos.z = this.mCamera.position.z;
             return new Three.Ray(pos, new Three.Vector3(0, 0, -1));
         }

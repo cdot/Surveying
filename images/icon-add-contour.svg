@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- The icon can be used freely in both personal and commercial projects with no attribution required, but always appreciated. 
+You may NOT sub-license, resell, rent, redistribute or otherwise transfer the icon without express written permission from iconmonstr.com -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   x="0px"
+   y="0px"
+   width="512px"
+   height="512px"
+   viewBox="0 0 512 512"
+   enable-background="new 0 0 512 512"
+   xml:space="preserve"
+   id="svg4365"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="icon-add-contour.svg"><metadata
+   id="metadata4372"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /></cc:Work></rdf:RDF></metadata><defs
+   id="defs4370" /><sodipodi:namedview
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1"
+   objecttolerance="10"
+   gridtolerance="10"
+   guidetolerance="10"
+   inkscape:pageopacity="0"
+   inkscape:pageshadow="2"
+   inkscape:window-width="1704"
+   inkscape:window-height="919"
+   id="namedview4368"
+   showgrid="false"
+   inkscape:zoom="1.4438666"
+   inkscape:cx="119.26304"
+   inkscape:cy="256"
+   inkscape:window-x="59"
+   inkscape:window-y="24"
+   inkscape:window-maximized="0"
+   inkscape:current-layer="svg4365" /><path
+   style="fill:#b1d800;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1"
+   d="m 220.11513,68.12545 -82.36096,32.06975 -43.002624,37.17176 -26.967748,71.42809 -20.408025,62.6818 16.034877,82.36095 40.08719,79.44553 65.59723,55.39321 70.69923,-2.91543 123.90586,-15.30602 67.05494,-86.73411 26.96775,-130.46559 -26.96775,-71.42808 -74.34352,-77.25896 -50.2912,-37.900616 -39.35834,-1.457716 z"
+   id="path3043"
+   inkscape:connector-curvature="0" /><path
+   style="fill:#62aeb6;fill-rule:evenodd;stroke:#00b0ba;stroke-width:0.85470992px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1"
+   d="m 224.72797,113.04731 -74.34508,25.95387 -38.81734,30.08291 -24.343082,57.80636 -18.421788,50.72805 14.474263,66.65427 36.185657,64.29483 59.2129,44.82943 63.81834,-2.35944 111.84657,-12.38708 60.52874,-70.19345 24.34308,-105.58509 -24.34308,-57.80636 -67.10795,-62.52526 -45.39654,-30.67276 -35.52775,-1.17972 z"
+   id="path3043-7"
+   inkscape:connector-curvature="0" /><text
+   xml:space="preserve"
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.18335724px;line-height:0%;font-family:Pothana2000;-inkscape-font-specification:Pothana2000;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:0.76527977"
+   x="124.52546"
+   y="378.18573"
+   id="text7102"
+   transform="scale(1.0352448,0.96595511)"><tspan
+     sodipodi:role="line"
+     id="tspan7104"
+     x="124.52546"
+     y="378.18573"
+     style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:396.8737793px;line-height:1.25;font-family:FreeSans;-inkscape-font-specification:'FreeSans Semi-Bold';fill:#ff0000;fill-opacity:1;stroke-width:0.76527977">+</tspan></text>
+
+
+
+</svg>

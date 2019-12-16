@@ -1,0 +1,26 @@
+.icon-add-poi {
+    background-image: url('../images/icon-add-poi.svg')!important; }
+.icon-add-sounding {
+    background-image: url('../images/icon-add-sounding.svg')!important; }
+.icon-add-contour {
+    background-image: url('../images/icon-add-contour.svg')!important; }
+.icon-add-path {
+    background-image: url('../images/icon-add-path.svg')!important; }
+.icon-split-edges {
+    background-image: url('../images/icon-split-edges.svg')!important; }
+
+.survey-icon {
+    margin: 2px;
+    background-size: 100% 100%;
+    background-position: center;
+}
+
+button.ui-button-icon-only {
+    height: 1.5em;
+    width: 1.5em;
+    padding: 0;
+}
+
+.ui-button-text-only > .ui-button-text {
+    padding: 0.3em;
+}

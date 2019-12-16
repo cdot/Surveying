@@ -112,10 +112,6 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Spot", "js/Material
                 s.push(`\tedge to #${e.otherEnd(this).vid}`);
             return s;
         }
-
-        // @Override Visual
-        condense(coords, mapBack) {
-        }
     }
 
     /**
@@ -364,42 +360,14 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Spot", "js/Material
             return s;
         }
 
-        /**
-         * TODO: do something sensible with this
-         * Construct a new Mesh object that contains a Delaunay
-         * triangulation of all the vertices in the mesh
-         * @param a Visual to recursively meshify
-         * @return the resulting network
-         */
-        static meshify(visual) {
-            function nextHalfedge(e) {
-                return (e % 3 === 2) ? e - 2 : e + 1;
+        // @Override Visual
+        condense(coords, mapBack) {
+            for (let c of this.children) {
+                // console.log("Condensed vertex");
+                // TODO: condense from the Contour object
+                coords.push([c.position.x, c.position.y]);
+                mapBack.push(c);
             }
-
-            // Condense Contours and Soundings into a cloud of points
-            let coords = [];
-            let mapBack = [];
-            visual.condense(coords, mapBack);
-
-            let del = Delaunator.from(coords);
-            let result = new Mesh("Triangulation");
-
-            // Construct a mesh, adding condensed points back in as vertices
-            for (let i in mapBack)
-                mapBack[i] = result.addVertex(mapBack[i]);
-            
-            // Iterate over the forward edges
-            for (let e = 0; e < del.triangles.length; e++) {
-                if (e > del.halfedges[e]) {
-                    // Not a back-edge
-                    let p = mapBack[del.triangles[e]];
-                    let q = mapBack[del.triangles[nextHalfedge(e)]];
-                    if (!p || !q)
-                        throw new Error("Internal error");
-                    result.addEdge(p, q);
-                }
-            }
-            return result;
         }
     }
     

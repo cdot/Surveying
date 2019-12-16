@@ -46,16 +46,30 @@ input.property {
     border-image: initial;
 }
 
-#canvases {
-    display: block;
-    border: 1px solid black;
-    float: left;
+.view {
     width: 70%;
     height: 100%;
+    overflow: hidden;
 }
 
-.canvas {
+.view > .toolbar {
+    float: left;
+}
+
+.view > .toolbar > button {
+    /* Force break between toolbar button elements to layout vertically */
+    display: block;
+}
+
+.view > .infobar {
+    width: 100%;
+    font-size: small;
+}
+
+.view > .canvas {
+    border: 1px solid black;
     height: 100%;
+    overflow: hidden;
 }
 
 .controls {
@@ -66,7 +80,7 @@ input.property {
     right: 0;
     top: 0;
     font-size: large;
-    width: 30%;
+    /*width: 30%;*/
     height: 100%;
 }
 

@@ -17,52 +17,40 @@ requirejs.config({
 });
 
 requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveController", "js/Container", "jquery", "jquery-ui", "jquery-mousewheel"], function(Three, Units, OrthographicController, PerspectiveController, Container) {
-    $(function() {
-        $(".dialog").dialog({
-            autoOpen: false,
-            modal: true,
-            show: "blind",
-            hide: "blind"
-        });
 
-        let saver;
+    const ORTHOGRAPHIC = 0;
+    const PERSPECTIVE = 1;
+    let views = [];
+    let rootContainer;
+    let scene;
+    
+    /**
+     * Format a point for display as a lat,long
+     */
+    function wgsCoords(p) {
+        return Units.stringify(Units.IN, p, Units.LATLON);
+    }
+    
+    function wgsBox(b) {
+        return `${wgsCoords(b.min)} -> ${wgsCoords(b.max)}`;
+    }
 
-        // Create the three.js scene. This is shared between the canvases.
-        let scene = new Three.Scene();
-        scene.background = new Three.Color(0xF0F0F0);
+    function enableSave() {
+        $("#save").prop("disabled", !saver);
+    }
 
-        let rootContainer = new Container("root");
-        let orthographic = new OrthographicController(
-            $("#orthographic"), rootContainer, scene);
-        let perspective = new PerspectiveController(
-            $("#perspective"), rootContainer, scene);
-        orthographic.animate();
-        perspective.animate();
+    function bindHandlers() {
+        $(".disable_submit").on("submit", () => false);
 
         $(window).on("resize", function() {
             // Resize the canvases
             let $a = $("#orthographic");
             let w = $a.parent().innerWidth();
             let h = $a.parent().innerHeight();
-            orthographic.resize(w, h);
-            perspective.resize(w, h);
+            for (let v of views)
+                v.resize(w, h);
         });
           
-        /**
-         * Format a point for display as a lat,long
-         */
-        function wgsCoords(p) {
-            return Units.stringify(Units.IN, p, Units.LATLON);
-        }
-
-        function wgsBox(b) {
-            return `${wgsCoords(b.min)} -> ${wgsCoords(b.max)}`;
-        }
-
-        function enableSave() {
-            $("#save").prop("disabled", !saver);
-        }
-        
         $("#load").on("change", function(evt) {
             let f = evt.target.files[0];
             let fn = f.name;
@@ -81,8 +69,8 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
                             result.addToScene(scene);
                             console.log("Loaded", fn);
                             $("#scene").html(wgsBox(rootContainer.boundingBox));
-                            orthographic.fit();
-                            perspective.fit();
+                            for (let v of views)
+                                v.fit();
                             enableSave();
                         })
                         .catch((err) => {
@@ -100,51 +88,20 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
                 });
         });
 
-        // Information tab
-        $(document).on("cursorchanged", function() {
-            try {
-                $("#cursor_wgs").html(wgsCoords(orthographic.cursor));
-            } catch (e) {
-            }
-            $("#cursor_length").text(orthographic.rulerLength);
-            $("#cursor_bearing").text(orthographic.rulerBearing);
-        });
-
         // Controls - do something smarter with these, a la inkscape
         $("#refocus").on("click", function() {
-            orthographic.fit();
-            perspective.fit();
-            return false;
-        });
-
-        $("#zoomin").on("click", function() {
-            orthographic.zoom(1.2);
-            return false;
-        });
-        
-        $("#zoomout").on("click", function() {
-            orthographic.zoom(0.8);
+            for (let v of views)
+                v.fit();
             return false;
         });
 
         $("#toggle").on("click", function() {
-            $("#perspective").toggle();
-            $("#orthographic").toggle();
+            // SMELL: three views?
+            for (let v of views)
+                v.toggle();
             return false;
         });
 
-        $("#addpoint").on("click", function() {
-            orthographic.addPoint();
-        });
-        
-        $("#addcontour").on("click", function() {
-            orthographic.addContour();
-        });
-        
-        $("#splitedges").on("click", function() {
-            orthographic.splitSelectedEdges();
-        });
-        
         $("#save").prop("disabled", true);
 
         // Cannot set the saver from inside the save handler because
@@ -180,7 +137,37 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
             // Pass on for native event handling
             return true;
         });
+    }
+    
+    $(function() {
+        $(".dialog").dialog({
+            autoOpen: false,
+            modal: true,
+            show: "blind",
+            hide: "blind"
+        });
 
-        $("#perspective").toggle();
+        let saver;
+
+        // Create the three.js scene. This is shared between the canvases.
+        scene = new Three.Scene();
+        scene.background = new Three.Color(0xF0F0F0);
+
+        rootContainer = new Container("root");
+
+        views = [
+            new OrthographicController(
+                "orthographic", rootContainer, scene),
+            new PerspectiveController(
+                "perspective", rootContainer, scene)
+        ];
+
+        bindHandlers();
+
+        // Switch off perspective view
+        views[PERSPECTIVE].toggle();
+        
+        for (let v of views)
+            v.animate();
     });
 });

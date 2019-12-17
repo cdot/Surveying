@@ -6,9 +6,15 @@ define("js/Materials", ["three"], function(Three) {
     Materials.RULER
     = new Three.LineBasicMaterial({ color: 0xFF0F0F });
     
-    let handle = new Three.TextureLoader().load("images/handle.png");
-    Materials.HANDLE
-    = new Three.SpriteMaterial({ map: handle, color: 0xffffff });
+    Materials.HANDLE = new Three.SpriteMaterial({
+        map: new Three.TextureLoader().load("images/handle.png"),
+        color: 0xffffff
+    });
+
+    Materials.CURSOR = new Three.SpriteMaterial({
+        map: new Three.TextureLoader().load("images/cursor.png"),
+        color: 0xffffff
+    });
     
     Materials.POI
     = new Three.MeshBasicMaterial({ color: 0x00FF00 });

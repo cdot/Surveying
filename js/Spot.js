@@ -56,12 +56,13 @@ define("js/Spot", ["js/Visual", "three"], function(Visual, Three) {
         }
 
         // @Override Visual
-        setHandleScale(s) {
-            super.setHandleScale(s);
+        resizeHandles() {
+            super.resizeHandles();
             if (this.object3D) {
-                this.object3D.scale.x = this.handleScale;
-                this.object3D.scale.y = this.handleScale;
-                this.object3D.scale.z = this.handleScale;
+                let s = this.scene.userData.handleSize();
+                this.object3D.scale.x = s;
+                this.object3D.scale.y = s;
+                this.object3D.scale.z = s;
             }
         }
         

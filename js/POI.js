@@ -8,6 +8,7 @@ define("js/POI", ["js/Spot", "three", "js/Units", "js/Materials"], function(Spot
 
         // @Override Visual
         addToScene(scene) {
+            super.addToScene(scene);
             if (!this.object3D) {
                 // Once created, we keep the handle object around as it
                 // will be useful again
@@ -16,9 +17,7 @@ define("js/POI", ["js/Spot", "three", "js/Units", "js/Materials"], function(Spot
 
                 let v = this.mPosition;
                 this.object3D.position.set(v.x, v.y, v.z);
-                this.object3D.scale.x = this.handleScale;
-                this.object3D.scale.y = this.handleScale;
-                this.object3D.scale.z = this.handleScale;
+                super.resizeHandles();
             }
             scene.add(this.object3D);
         }

@@ -9,6 +9,7 @@ define("js/Sounding", ["js/Spot", "three", "js/Materials"], (Spot, Three, Materi
 
         // @Override Visual
         addToScene(scene) {
+            super.addToScene(scene);
             if (!this.object3D) {
                 // Once created, we keep the handle object around as it
                 // will be useful again
@@ -16,11 +17,9 @@ define("js/Sounding", ["js/Spot", "three", "js/Materials"], (Spot, Three, Materi
 
                 let v = this.mPosition;
                 this.object3D.position.set(v.x, v.y, v.z);
-                this.object3D.scale.x = 2 * this.handleScale;
-                this.object3D.scale.y = 2 * this.handleScale;
-                this.object3D.scale.z = 2 * this.handleScale;
             }
             scene.add(this.object3D);
+            this.resizeHandles();
         }
         
         // @Override Visual

@@ -90,9 +90,9 @@ define("js/Selection", function() {
         /**
          * Set the handle size on selected items
          */
-        setHandleScale(scale) {
+        resizeHandles() {
             for (let s of this.mItems)
-                s.setHandleScale(scale);
+                s.resizeHandles();
         }
     }
     return Selection;

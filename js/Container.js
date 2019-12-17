@@ -26,6 +26,7 @@ define("js/Container", ["js/Visual", "three"], function(Visual, Three) {
         
         // @Override Visual
         addToScene(scene) {
+            super.addToScene(scene);
             for (let o of this.mChildren)
                 o.addToScene(scene);
         }
@@ -37,10 +38,10 @@ define("js/Container", ["js/Visual", "three"], function(Visual, Three) {
         }
 
         // @Override Visual
-        setHandleScale(s) {
-            super.setHandleScale(s);
+        resizeHandles() {
+            super.resizeHandles();
             for (let g of this.mChildren)
-                g.setHandleScale(s);
+                g.resizeHandles();
         }
 
         /**

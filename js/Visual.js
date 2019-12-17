@@ -13,7 +13,6 @@ define("js/Visual", function() {
             if (name)
                 this.mName = name;
             this.mHandleScale = 1;
-            this.mProp = {};
         }
 
         // @private
@@ -24,25 +23,18 @@ define("js/Visual", function() {
         
         /**
          * Get the name of this visual. Names are not necessarily unique.
+         * @return {String} user-assigned name of the Visual
          */
         get name() {
             return this.mName;
         }
 
         /**
-         * Get the handle size for visuals that
-         * have handles in 3-space
+         * Reset the handle size for visuals that have handles in 3-space.
+         * The handle size in 3spece is determined using the handleSize
+         * method attached to the scene userData.
          */
-        get handleScale() {
-            return this.mHandleScale;
-        }
-
-        /**
-         * Define the handle size for visuals that have handles in 3-space
-         */
-        setHandleScale(s) {
-            this.mHandleScale = s;
-        }
+        resizeHandles() { }
 
         /**
          * Get the volume the object occupies
@@ -93,16 +85,26 @@ define("js/Visual", function() {
          * Add the Object3D used to display this Visual (if it has one)
          * to the scene
          */
-        addToScene(scene) { }
+        addToScene(scene) {
+            this.mScene = scene;
+            // There is no default mObject3D
+        }
 
+        /**
+         * If the Visual has a secene representation, return the scene
+         */
+        get scene() {
+            return this.mScene;
+        }
+        
         /**
          * Remove the Object3D associated with this visual from the scene.
          * The object is NOT deleted, just removed from the parent, and the
          * link between the Three.Object and the Visual is retained.
          */
         removeFromScene() {
-            if (this.mObject3D && this.mObject3D.parent)
-                this.mObject3D.parent.remove(this.mObject3D);
+            if (this.scene)
+                this.scene.remove(this.mObject3D);
         }
 
         /**

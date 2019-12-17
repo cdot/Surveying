@@ -1,6 +1,6 @@
 /* @preserve Copyright 2019 Crawford Currie - All rights reserved */
 /* eslint-env jquery, browser */
-define("js/OrthographicController", ["js/CanvasController", "three", "js/Selection", "js/POI", "js/Contour", "js/Spot", "js/Units", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Selection, POI, Contour, Spot, Units, UTM, Materials) {
+define("js/OrthographicController", ["js/CanvasController", "three", "js/Selection", "js/POI", "js/Path", "js/Contour", "js/Sounding", "js/Spot", "js/Units", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Selection, POI, Path, Contour, Sounding, Spot, Units, UTM, Materials) {
 
     /**
      * Interactive orthographic projection
@@ -21,37 +21,52 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 (UTM.MIN_NORTHING + UTM.MAX_NORTHING) / 2,
                 0);
 
-            // Set up ruler geometry. Note that z=0 is maintained.
+            // Size of a handle in world coordinates = 50cm
+            this.mHandleSize = Units.UPM[Units.IN] / 2;
+            let self = this;
+            this.scene.userData.handleSize = () => {
+                return self.mHandleSize / self.mCamera.zoom;
+            }
+
+            // Set up cursor and ruler geometry.
+            this.mCursorSprite = new Three.Sprite(Materials.CURSOR);
+            this.mCursorSprite.position.set(3, 3, 3);
+            scene.add(this.mCursorSprite);
             this.mRulerGeom = new Three.Geometry();
-            // Ruler doesn't get rendered unless there are at least
-            // 3 unique points on the line
+
             this.mRulerGeom.vertices.push(
                 new Three.Vector3(1, 1, 1),
-                new Three.Vector3(3, 3, 3));
+                this.mCursorSprite.position);
             let rulerLine = new Three.Line(this.mRulerGeom, Materials.RULER);
             scene.add(rulerLine);
-
+            
             this.rulerStart = this.mLookAt;
 
             this.mCamera.position.set(this.mLookAt.x, this.mLookAt.y, 10);
             
-            // Size of a handle in world coordinates = 50cm
-            this.mHandleSize = Units.UPM[Units.IN] / 2;
-
-            let self = this;
-            this.$mToolbar.find("[name='addpoint']")
+            this.$mToolbar.find("[name='addpoi']")
             .on("click", () => {
-                self.addPOI();
+                self._addPOI();
             });
             
+            this.$mToolbar.find("[name='addsounding']")
+            .on("click", () => {
+                self._addSounding();
+            });
+
             this.$mToolbar.find("[name='addcontour']")
             .on("click", () => {
-                self.addContour();
+                self._addContour();
+            });
+
+            this.$mToolbar.find("[name='addpath']")
+            .on("click", () => {
+                self._addPath();
             });
 
             this.$mToolbar.find("[name='splitedges']")
             .on("click", () => {
-                self.splitSelectedEdges();
+                self._splitSelectedEdges();
             });
             
             function makeControl(scheme) {
@@ -98,8 +113,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             this.mSelection = new Selection((sln) => {
                 let $report = $("<ul></ul>");
                 for (let sel of sln.items) {
-                    if (sln.setHandleScale)
-                        sln.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+                    if (sln.resizeHandles)
+                        sln.resizeHandles();
                     let $s = makeControls(sel.scheme(""));
                     if ($s)
                         $report.append($s);
@@ -214,17 +229,18 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
          * Split all edges that are selected by virtue of their
          * endpoints being selected. Edges are split at their midpoint.
          */
-        splitSelectedEdges() {
+        _splitSelectedEdges() {
             if (this.mSelection.isEmpty)
                 return;
             let sel = this.mSelection.items;
             // Split edges where both end points are in the selection
             let split = [];
+
             for (let i = 0; i < sel.length; i++) {
-                let s = sel.items[i];
+                let s = sel[i];
                 if (s instanceof Spot) {
                     for (let j = i + 1; j < sel.length; j++) {
-                        let ss = sel.items[j];
+                        let ss = sel[j];
                         if (ss !== s
                             && ss.parent === s.parent
                             && s.parent.hasEdge
@@ -238,12 +254,14 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 if (v)
                     this.mSelection.add(v);
             }
-            this.mSelection.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+            this.mSelection.resizeHandles();
         }
         
         zoom(factor) {
             this.mCamera.zoom *= factor;
-            this.mVisual.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+            this.mCursorSprite.scale.x /= factor;
+            this.mCursorSprite.scale.y /= factor;
+            this.mVisual.resizeHandles();
             this.mCamera.updateProjectionMatrix();
         }
 
@@ -283,7 +301,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             // Scale handles appropriately so they appear as
             // a fraction of the canvas width
             this.mHandleSize = viewSize / 50;
-            this.mVisual.setHandleScale(this.mHandleSize);
+            this.mCursorSprite.scale.x = this.mCursorSprite.scale.y
+            = viewSize / 30;
 
             let c = this.mCamera;
             c.zoom = 1;
@@ -298,6 +317,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             c.lookAt(this.mLookAt);
             c.updateProjectionMatrix();
 
+            this.mVisual.resizeHandles();
+
             // Ruler/cursor
             this.rulerStart = this.mLookAt;
             this.cursor.copy(this.rulerStart);
@@ -308,7 +329,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
          * Add a new contour, three points centred on the start of the
          * ruler, 1m radius
          */
-        addContour() {
+        _addContour() {
             let visual = new Contour("New point");
             visual.addVertex(
                 {
@@ -329,18 +350,47 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             visual.setZ(0);
             this.mVisual.addChild(visual);
             visual.addToScene(this.scene);
-            visual.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+            visual.resizeHandles();
+            this.mSelection.add(visual);
+        }
+
+        /**
+         * Add a new path, two points, one at the rulerStart, the other
+         * nearby
+         */
+        _addPath() {
+            let visual = new Path("New path");
+            visual.addVertex(this.rulerStart);
+            visual.addVertex({
+                x: this.rulerStart.x + 2 * Units.UPM[Units.IN],
+                y: this.rulerStart.y + 2 * Units.UPM[Units.IN],
+                z: this.rulerStart.z
+            });
+            this.mVisual.addChild(visual);
+            visual.addToScene(this.scene);
+            visual.resizeHandles();
             this.mSelection.add(visual);
         }
 
         /**
          * Add a new point under the ruler start
          */
-        addPOI() {
+        _addPOI() {
             let pt = new POI(this.rulerStart, "New POI");
             this.mVisual.addChild(pt);
             pt.addToScene(this.scene);
-            pt.setHandleScale(this.mHandleSize / this.mCamera.zoom);
+            pt.resizeHandles();
+            this.mSelection.add(pt);
+        }
+        
+        /**
+         * Add a new Sounding under the ruler start
+         */
+        _addSounding() {
+            let pt = new Sounding(this.rulerStart, "New sounding");
+            this.mVisual.addChild(pt);
+            pt.addToScene(this.scene);
+            pt.resizeHandles();
             this.mSelection.add(pt);
         }
         
@@ -403,15 +453,23 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             switch (e.key) {
             case "v":
                 // Split selected edges and add a new vertex
-                this.splitSelectedEdges();
+                this._splitSelectedEdges();
                 return false;
                 
             case ".":
-                this.addPOI();
+                this._addPOI();
+                return false;
+
+            case "s":
+                this._addSounding();
                 return false;
 
             case "c":
-                this.addContour();
+                this._addContour();
+                return false;
+                
+            case "p":
+                this._addPath();
                 return false;
                 
             case "-":

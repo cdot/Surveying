@@ -52,13 +52,6 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Spot", "js/Material
                 this.mEdges.splice(i, 1);
         }
         
-        // @Override Visual
-        addToScene(scene) {
-            // A vertex only has a visual representation when
-            // it is highlighted
-            this.mScene = scene;
-        }
-
         // @Override Spot
         remove() {
             let es = this.mEdges.slice();
@@ -67,7 +60,7 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Spot", "js/Material
                 let p1 = es[1].otherEnd(this);
                 let nedge = this.parent.addEdge(p0, p1);
                 if (this.object3D)
-                    nedge.addToScene(this.object3D.parent);
+                    nedge.addToScene(this.scene);
             }
             for (let e of es)
                 e.remove();
@@ -87,20 +80,20 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Spot", "js/Material
         // @Override Visual
         highlight(on) {
             if (!on) {
-                if (this.object3D && this.object3D.parent)
-                    this.object3D.parent.remove(this.object3D);
+                if (this.scene)
+                    this.scene.remove(this.object3D);
                 return;
             }
 
-            if (!this.mScene)
+            if (!this.scene)
                 return;
 
             if (this.object3D)
-                this.mScene.add(this.object3D);
+                this.scene.add(this.object3D);
             else {
                 // Once created, we keep the handle object around as it
                 // will be useful again
-                super.addToScene(this.mScene);
+                super.addToScene(this.scene);
             }
         }
 
@@ -159,6 +152,7 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Spot", "js/Material
 
         // @Override Visual
         addToScene(scene) {
+            super.addToScene(scene);
             if (!this.mObject3D) {
                 this.mGeometry = new Three.Geometry();
                 this.mGeometry.vertices.push(this.mP1.position);
@@ -312,10 +306,10 @@ define("js/Mesh", ["js/Container", "three", "js/Visual", "js/Spot", "js/Material
             let e1 = this.addEdge(a, v);
             let e2 = this.addEdge(v, b);
             this.removeEdge(e);
-            if (e.object3D) {
-                e1.addToScene(e.object3D.parent);
-                e2.addToScene(e.object3D.parent);
-                v.addToScene(e.object3D.parent);
+            if (e.scene) {
+                e1.addToScene(e.scene);
+                e2.addToScene(e.scene);
+                v.addToScene(e.scene);
             }
             return v;
         }

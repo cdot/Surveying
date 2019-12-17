@@ -3,13 +3,6 @@ define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], (Contain
 
     class PathVertex extends Spot {
         
-        // @Override Visual
-        addToScene(scene) {
-            // A vertex only has a visual representation when
-            // it is highlighted
-            this.mScene = scene;
-        }
-
         // @Override Spot
         setPosition(p) {
             super.setPosition(p);
@@ -25,7 +18,7 @@ define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], (Contain
                 return;
             }
 
-            if (!this.mScene)
+            if (!this.scene)
                 return;
 
             // Once created, we keep the handle object around as it
@@ -37,11 +30,9 @@ define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], (Contain
 
                 let v = this.mPosition;
                 this.object3D.position.set(v.x, v.y, v.z);
-                this.object3D.scale.x = this.handleScale;
-                this.object3D.scale.y = this.handleScale;
-                this.object3D.scale.z = this.handleScale;
             }
-            this.mScene.add(this.object3D);
+            this.scene.add(this.object3D);
+            this.resizeHandles();
         }
 
         // @Override Spot
@@ -90,16 +81,14 @@ define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], (Contain
         }
 
         removeVertex(v) {
-            if (this.mGeometry) {
-                for (let i = 0; i < this.children.length; i++) {
-                    if (this.children[i] === v) {
-                        this.mGeometry.vertices.splice(i, 1);
-                        this.mGeometry.verticesNeedUpdate = true;
-                        break;
-                    }
-                }
-            }
+            let scene = this.scene;
+            if (scene)
+                this.scene.remove(this.mObject3D);
+            delete this.mObject3D;
+            delete this.mGeometry;
             this.removeChild(v);
+            if (scene)
+                this.addToScene(scene);
         }
         
         get isClosed() {
@@ -144,7 +133,13 @@ define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], (Contain
             return this._findEdge(v1, v2) >= 0;
         }
         
-        // @Override Container
+        /**
+         * Mesh and Path support this method, which splits an edge in
+         * the visual.
+         * @param {Spot} v1
+         * @param {Spot} v2
+         * @return {PathVertex} the midpoint vertex created
+         */
         splitEdge(v1, v2) {
             let i1 = this._findEdge(v1, v2);
             if (i1 < 0)
@@ -152,13 +147,29 @@ define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], (Contain
             let i2 = (i1 + 1) % this.children.length;
             let a = this.children[i1];
             let b = this.children[i2];
-
+            // Can't use addChild because it always adds to the end
+            let scene = this.scene;
+            if (scene)
+                // DON'T remove the existing vertices, they host the
+                // selection representation
+                this.scene.remove(this.mObject3D);
+            delete this.mObject3D;
+            delete this.mGeometry;
             let vclass = this.Vertex;
             let v = new vclass(a.position.clone().lerp(b.position, 0.5));
+            v.setParent(this);
             this.children.splice(i2, 0, v);
-            if (this.mGeometry) {
-                this.mGeometry.vertices.splice(i2, v.position);
-                this.mGeometry.verticesNeedUpdate = true;
+            if (scene)
+                this.addToScene(scene);
+
+            return v;
+        }
+
+        // @Override Container
+        removeFromScene() {
+            if (this.scene) {
+                super.removeFromScene();
+                this.scene.remove(this.mObject3D);
             }
         }
         

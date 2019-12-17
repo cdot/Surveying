@@ -23,6 +23,7 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
     let views = [];
     let rootContainer;
     let scene;
+    let saver;
     
     /**
      * Format a point for display as a lat,long
@@ -146,8 +147,6 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
             show: "blind",
             hide: "blind"
         });
-
-        let saver;
 
         // Create the three.js scene. This is shared between the canvases.
         scene = new Three.Scene();

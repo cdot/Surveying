@@ -8,31 +8,58 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
      */
     class CanvasController {
         
-        constructor(selector, visual, scene, camera) {
+        constructor(selector, controller, camera) {
             this.$mView = $(`#${selector}`);
             this.$mCanvas = $(`#${selector} > .canvas`);
             this.$mToolbar = $(`#${selector} > .toolbar`);
+            this.$mMenubar = $(`#${selector} > .menubar`);
 
             this.$mCanvas.data("controller", this);
             this.$mToolbar.data("controller", this);
 
-            this.mVisual = visual;
-            this.mCamera = camera;
-            this.mScene = scene;
-
-            scene.add(camera);
+            this.mSceneController = controller;
             
+            this.mCamera = camera;
+
+            controller.scene.add(camera);
+
             this.mRenderer = new Three.WebGLRenderer();
             this.resize(
                 this.$mCanvas.innerWidth(),
                 this.$mCanvas.innerHeight());
             
             this.$mCanvas.append(this.mRenderer.domElement);
+
+            let self = this;
+            $(".menu", this.$mView)
+            .on("menuselect", function (e, ui) {
+                self.onCmd(ui.item.data("cmd"));
+            });
+            
+            $("button", this.$mToolbar)
+            .on("click", () => {
+                self.onCmd($(this).data("cmd"));
+            });
         }
 
-        toggle() {
-            this.$mView.toggle();
+        onCmd(fn) {
+            if (this[fn])
+                this[fn].call(this);
+            else if (this.sceneController[fn])
+                this.sceneController[fn].call(this.sceneController);
+            else
+                console.debug(`Missing command ${fn}`);
         }
+            
+        get sceneController() { return this.mSceneController; }
+        
+        get isVisible() { return this.$mView.is(":visible"); }
+            
+        hide() { return this.$mView.hide(); }
+            
+        show() { return this.$mView.show(); }
+            
+        nextView() { $(document).trigger("nextView", this); }
         
         /**
          * Resize the canvas; called during construction and in
@@ -47,36 +74,32 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
         }
 
         /**
-         * Get the Three.Scene generated from the visual in this canvas
-         * @return {Three.Scene} the scene
+         * Convert an event on the canvas into
+         * a 3D line projecting into the scene
+         * @param e event
+         * @return {Three.Line} ray
          */
-        get scene() {
-            return this.mScene;
-        }
-
-        /**
-         * Get the Visual being displayed in this canvas
-         * @return {VBisual} the root visual
-         */
-        get visual() {
-            return this.mVisual;
-        }
-
-        /**
-         * Set the Visual being displayed in this canvas
-         * @param {Visual} the new visual
-         */
-        setVisual(visual) {
-            this.mVisual = visual;
-            this.fit();
+        event2ray(e) {
+            let x = e.pageX - $(e.target).offset().left; // e.clientX
+            let y = e.pageY - $(e.target).offset().top; // e.clientY
+            let pt = {
+                x: (x / this.$mCanvas.innerWidth() * 2 - 1),
+                y: 1 - (y / this.$mCanvas.innerHeight()) * 2
+            };
+            let pos = new Three.Vector3(pt.x, pt.y, 0).unproject(this.mCamera);
+            this.sceneController.cursor = pos;
+            pos.z = this.mCamera.position.z;
+            return new Three.Ray(pos, new Three.Vector3(0, 0, -1));
         }
 
         /**
          * Fit the scene
-         * @abstract
          */
-        fit() {
-        }
+        fit() { }
+
+        upload() { $("#upload_dialog").dialog("open"); }
+        
+        download() { $("#download_dialog").dialog("open"); }
 
         /**
          * Animation loop
@@ -85,7 +108,7 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
             requestAnimationFrame(() => {
                 this.animate();
             });
-            this.mRenderer.render(this.mScene, this.mCamera);
+            this.mRenderer.render(this.mSceneController.scene, this.mCamera);
         }
     }
     return CanvasController;

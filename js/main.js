@@ -16,7 +16,7 @@ requirejs.config({
     }
 });
 
-requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveController", "js/Container", "jquery", "jquery-ui", "jquery-mousewheel"], function(Three, Units, OrthographicController, PerspectiveController, Container) {
+requirejs(["three", "js/Units", "js/SceneController", "js/OrthographicController", "js/PerspectiveController", "js/Container", "jquery", "jquery-ui", "jquery-mousewheel"], function(Three, Units, SceneController, OrthographicController, PerspectiveController, Container) {
 
     const ORTHOGRAPHIC = 0;
     const PERSPECTIVE = 1;
@@ -37,7 +37,8 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
     }
 
     function enableSave() {
-        $("#save").prop("disabled", !saver);
+        if (saver)
+            $("#save").removeProp("disabled");
     }
 
     function bindHandlers() {
@@ -51,12 +52,22 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
             for (let v of views)
                 v.resize(w, h);
         });
-          
+        
+        $(document).on("nextView", function() {
+            for (let i = 0; i < views.length; i++) {
+                if (views[i].isVisible) {
+                    views[i].hide();
+                    views[(i + 1) % views.length].show();
+                    break;
+                }
+            }
+        });
+
         $("#load").on("change", function(evt) {
             let f = evt.target.files[0];
             let fn = f.name;
             let type = fn.replace(/^.*\./u, "").toLowerCase();
-
+            $("#upload_dialog").dialog("close");
             requirejs(
                 [`js/FileFormats/${type}`],
                 (Loader) => {
@@ -85,25 +96,9 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
                 (err) => {
                     $("#alert_message")
                     .html(`Error loading js/FileFormats/${type} - is the file format supported?`);
-                    $("#alert").dialog("open");
+                    $("#alert_dialog").dialog("open");
                 });
         });
-
-        // Controls - do something smarter with these, a la inkscape
-        $("#refocus").on("click", function() {
-            for (let v of views)
-                v.fit();
-            return false;
-        });
-
-        $("#toggle").on("click", function() {
-            // SMELL: three views?
-            for (let v of views)
-                v.toggle();
-            return false;
-        });
-
-        $("#save").prop("disabled", true);
 
         // Cannot set the saver from inside the save handler because
         // loading a FileFormat requires a promise, but the native
@@ -141,6 +136,8 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
     }
     
     $(function() {
+        $(".menu").menu();
+
         $(".dialog").dialog({
             autoOpen: false,
             modal: true,
@@ -154,19 +151,16 @@ requirejs(["three", "js/Units", "js/OrthographicController", "js/PerspectiveCont
 
         rootContainer = new Container("root");
 
+        let sceneController = new SceneController(rootContainer, scene);
         views = [
-            new OrthographicController(
-                "orthographic", rootContainer, scene),
-            new PerspectiveController(
-                "perspective", rootContainer, scene)
+            new OrthographicController("orthographic", sceneController),
+            new PerspectiveController("perspective", sceneController)
         ];
-
+        
         bindHandlers();
 
-        // Switch off perspective view
-        views[PERSPECTIVE].toggle();
-        
-        for (let v of views)
-            v.animate();
+        $(".menubar").show();
+        views[PERSPECTIVE].hide();
+        views[ORTHOGRAPHIC].show();
     });
 });

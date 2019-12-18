@@ -1,16 +1,16 @@
 /* @preserve Copyright 2019 Crawford Currie - All rights reserved */
 /* eslint-env jquery, browser */
-define("js/OrthographicController", ["js/CanvasController", "three", "js/Selection", "js/POI", "js/Path", "js/Contour", "js/Sounding", "js/Spot", "js/Units", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Selection, POI, Path, Contour, Sounding, Spot, Units, UTM, Materials) {
+define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units", "js/UTM", "jquery"], function(CanvasController, Three, Units, UTM) {
 
     /**
      * Interactive orthographic projection
      */
     class OrthographicController extends CanvasController {
 
-        constructor(selector, visual, scene) {
+        constructor(selector, controller) {
             // Default 1km/1km scene
             super(
-                selector, visual, scene,
+                selector, controller,
                 new Three.OrthographicCamera(-500, 500, 500, -500));
             
             // Set up the camera
@@ -21,112 +21,18 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 (UTM.MIN_NORTHING + UTM.MAX_NORTHING) / 2,
                 0);
 
-            // Size of a handle in world coordinates = 50cm
-            this.mHandleSize = Units.UPM[Units.IN] / 2;
             let self = this;
-            this.scene.userData.handleSize = () => {
+            this.sceneController.setHandleSizer(() => {
                 return self.mHandleSize / self.mCamera.zoom;
-            }
+            });
 
-            // Set up cursor and ruler geometry.
-            this.mCursorSprite = new Three.Sprite(Materials.CURSOR);
-            this.mCursorSprite.position.set(3, 3, 3);
-            scene.add(this.mCursorSprite);
-            this.mRulerGeom = new Three.Geometry();
-
-            this.mRulerGeom.vertices.push(
-                new Three.Vector3(1, 1, 1),
-                this.mCursorSprite.position);
-            let rulerLine = new Three.Line(this.mRulerGeom, Materials.RULER);
-            scene.add(rulerLine);
-            
-            this.rulerStart = this.mLookAt;
+            this.sceneController.rulerStart = this.mLookAt;
 
             this.mCamera.position.set(this.mLookAt.x, this.mLookAt.y, 10);
             
-            this.$mToolbar.find("[name='addpoi']")
-            .on("click", () => {
-                self._addPOI();
-            });
-            
-            this.$mToolbar.find("[name='addsounding']")
-            .on("click", () => {
-                self._addSounding();
-            });
-
-            this.$mToolbar.find("[name='addcontour']")
-            .on("click", () => {
-                self._addContour();
-            });
-
-            this.$mToolbar.find("[name='addpath']")
-            .on("click", () => {
-                self._addPath();
-            });
-
-            this.$mToolbar.find("[name='splitedges']")
-            .on("click", () => {
-                self._splitSelectedEdges();
-            });
-            
-            function makeControl(scheme) {
-                if (scheme instanceof Array)
-                    return makeControls(scheme);
-
-                if (scheme.type === "ignore")
-                    return null;
-                
-                let $li = $("<li></li>");
-                if (typeof scheme === "string") {
-                    $li.text(scheme);
-                    return $li;
-                }
-                $li.append(`${scheme.title} `);
-                if (scheme.type !== "label") {
-                    let $in = $("<input class='property'/>");
-                    $in.attr("type", scheme.type);
-                    $in.attr("value", scheme.get());
-                    $in.on("change", function() {
-                        let v = $(this).val();
-                        if (scheme.type === "number")
-                            v = parseFloat(v);
-                        scheme.set(v);
-                    });
-                    $li.append($in);
-                }
-                return $li;
-            }
-            
-            function makeControls(schemes) {
-                if (schemes.length === 0)
-                    return null;
-                let $block = $("<ul></ul>");
-                for (let scheme of schemes) {
-                    let c = makeControl(scheme);
-                    if (c)
-                        $block.append(c);
-                }
-                return $block;
-            }
-            
-            // Set up the selection manager
-            this.mSelection = new Selection((sln) => {
-                let $report = $("<ul></ul>");
-                for (let sel of sln.items) {
-                    if (sln.resizeHandles)
-                        sln.resizeHandles();
-                    let $s = makeControls(sel.scheme(""));
-                    if ($s)
-                        $report.append($s);
-                }
-                $("#report").empty()
-                .append($report);
-            });
-
             // Connect event handlers
             this.mMouseDownPt = null; // button flags
             this.mIsDragging = false;
-            this.mLastCanvasPt = null;
             this.mLastRayPt = null;
 
             for (let event of [
@@ -140,56 +46,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             }
 
             this.mConstructed = true;
-        }
-
-        get rulerStart() {
-            return this.mRulerGeom.vertices[0];
-        }
-        
-        set rulerStart(v) {
-            this.mRulerGeom.vertices[0].copy(v);
-            this.mRulerGeom.verticesNeedUpdate = true;
-            this.cursorChanged();
-        }
-        
-        get cursor() {
-            return this.mRulerGeom.vertices[1];
-        }
-
-        set cursor(v) {
-            this.mRulerGeom.vertices[1].copy(v);
-            this.mRulerGeom.verticesNeedUpdate = true;
-            this.cursorChanged();
-        }
-
-        // Information tab
-        cursorChanged() {
-            try {
-                $("#cursor_wgs").html(wgsCoords(this.cursor));
-            } catch (e) {
-            }
-            $("#cursor_length").text(this.rulerLength);
-            $("#cursor_bearing").text(this.rulerBearing);
-        }
-
-        /**
-         * Convert an event on the canvas into
-         * a 3D line projecting into the scene
-         * @param e event
-         * @return {Three.Line} ray
-         */
-        event2ray(e) {
-            let x = e.pageX - $(e.target).offset().left; // e.clientX
-            let y = e.pageY - $(e.target).offset().top; // e.clientY
-            let pt = {
-                x: (x / this.$mCanvas.innerWidth() * 2 - 1),
-                y: 1 - (y / this.$mCanvas.innerHeight()) * 2
-            };
-            let pos = new Three.Vector3(pt.x, pt.y, 0).unproject(this.mCamera);
-            this.cursor = pos;
-            this.cursorChanged();
-            pos.z = this.mCamera.position.z;
-            return new Three.Ray(pos, new Three.Vector3(0, 0, -1));
+            this.animate();
         }
 
         panBy(delta) {
@@ -201,67 +58,10 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             this.mCamera.updateProjectionMatrix();
         }
 
-        /**
-         * Measure the planar distance between the start of the ruler
-         * and the cursor
-         */
-        get rulerLength() {
-            let dx = this.cursor.x - this.rulerStart.x;
-            let dy = this.cursor.y - this.rulerStart.y;
-            let dist = Math.sqrt(dx * dx + dy * dy) / Units.UPM[Units.IN];
-            return dist.toFixed(2);
-        }
-
-        /**
-         * Get the compass bearing between the start of the ruler and
-         * the cursor
-         */
-        get rulerBearing() {
-            let dx = this.cursor.x - this.rulerStart.x;
-            let dy = this.cursor.y - this.rulerStart.y;
-            if (dy === 0)
-                return dx < 0 ? 270 : 90;
-            let quad = (dx > 0) ? ((dy > 0) ? 0 : 180) : ((dy > 0) ? 360 : 180);
-            return Math.round(quad + 180 * Math.atan(dx / dy) / Math.PI);
-        }
-
-        /**
-         * Split all edges that are selected by virtue of their
-         * endpoints being selected. Edges are split at their midpoint.
-         */
-        _splitSelectedEdges() {
-            if (this.mSelection.isEmpty)
-                return;
-            let sel = this.mSelection.items;
-            // Split edges where both end points are in the selection
-            let split = [];
-
-            for (let i = 0; i < sel.length; i++) {
-                let s = sel[i];
-                if (s instanceof Spot) {
-                    for (let j = i + 1; j < sel.length; j++) {
-                        let ss = sel[j];
-                        if (ss !== s
-                            && ss.parent === s.parent
-                            && s.parent.hasEdge
-                            && s.parent.hasEdge(s, ss))
-                            split.push({ p: ss.parent, a: s, b: ss });
-                    }
-                }
-            }
-            for (let e of split) {
-                let v = e.p.splitEdge(e.a, e.b);
-                if (v)
-                    this.mSelection.add(v);
-            }
-            this.mSelection.resizeHandles();
-        }
-        
         zoom(factor) {
             this.mCamera.zoom *= factor;
-            this.mCursorSprite.scale.x /= factor;
-            this.mCursorSprite.scale.y /= factor;
-            this.mVisual.resizeHandles();
+            this.mSceneController.resizeCursor(factor);
+            this.mSceneController.resizeHandles();
             this.mCamera.updateProjectionMatrix();
         }
 
@@ -272,37 +72,15 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             
             // Reposition the cameras so they are looking down on the
             // entire scene
-            let bounds = this.mVisual.boundingBox;
-
-            if (bounds.isEmpty() && !this.parent) {
-                // Deal with an empty visual
-                // A roughly 1nm square block of sea in the English Channel
-                let ll = Units.convert(
-                    Units.LATLON,
-                    { lon: -0.5, lat: 50 },
-                    Units.IN);
-                ll = new Three.Vector3(ll.x, ll.y, -10);
-                
-                let ur = Units.convert(
-                    Units.LATLON,
-                    { lon: -0.483, lat: 50.017 },
-                    Units.IN);
-                ur = new Three.Vector3(ur.x, ur.y, 10);
-                
-                bounds = new Three.Box3(ll, ur);
-            }
+            let bounds = this.sceneController.boundingBox;
 
             // Look at the centre of the scene
             bounds.getCenter(this.mLookAt);
-
+            
             let sz = bounds.getSize(new Three.Vector3());
             let viewSize = Math.max(sz.x, sz.y)
 
-            // Scale handles appropriately so they appear as
-            // a fraction of the canvas width
-            this.mHandleSize = viewSize / 50;
-            this.mCursorSprite.scale.x = this.mCursorSprite.scale.y
-            = viewSize / 30;
+            this.sceneController.resizeHandles(viewSize);
 
             let c = this.mCamera;
             c.zoom = 1;
@@ -317,159 +95,32 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             c.lookAt(this.mLookAt);
             c.updateProjectionMatrix();
 
-            this.mVisual.resizeHandles();
-
             // Ruler/cursor
-            this.rulerStart = this.mLookAt;
-            this.cursor.copy(this.rulerStart);
-            this.mRulerGeom.verticesNeedUpdate = true;
+            this.sceneController.resetRuler(this.mLookAt);
         }
 
-        /**
-         * Add a new contour, three points centred on the start of the
-         * ruler, 1m radius
-         */
-        _addContour() {
-            let visual = new Contour("New point");
-            visual.addVertex(
-                {
-                    x: this.rulerStart.x,
-                    y: this.rulerStart.y + Units.UPM[Units.IN]
-                });
-            visual.addVertex(
-                {
-                    x: this.rulerStart.x + 0.866 * Units.UPM[Units.IN],
-                    y: this.rulerStart.y - 0.5 * Units.UPM[Units.IN]
-                });
-            visual.addVertex(
-                {
-                    x: this.rulerStart.x - 0.866 * Units.UPM[Units.IN],
-                    y: this.rulerStart.y - 0.5 * Units.UPM[Units.IN]
-                });
-            visual.close();
-            visual.setZ(0);
-            this.mVisual.addChild(visual);
-            visual.addToScene(this.scene);
-            visual.resizeHandles();
-            this.mSelection.add(visual);
-        }
-
-        /**
-         * Add a new path, two points, one at the rulerStart, the other
-         * nearby
-         */
-        _addPath() {
-            let visual = new Path("New path");
-            visual.addVertex(this.rulerStart);
-            visual.addVertex({
-                x: this.rulerStart.x + 2 * Units.UPM[Units.IN],
-                y: this.rulerStart.y + 2 * Units.UPM[Units.IN],
-                z: this.rulerStart.z
-            });
-            this.mVisual.addChild(visual);
-            visual.addToScene(this.scene);
-            visual.resizeHandles();
-            this.mSelection.add(visual);
-        }
-
-        /**
-         * Add a new point under the ruler start
-         */
-        _addPOI() {
-            let pt = new POI(this.rulerStart, "New POI");
-            this.mVisual.addChild(pt);
-            pt.addToScene(this.scene);
-            pt.resizeHandles();
-            this.mSelection.add(pt);
-        }
-        
-        /**
-         * Add a new Sounding under the ruler start
-         */
-        _addSounding() {
-            let pt = new Sounding(this.rulerStart, "New sounding");
-            this.mVisual.addChild(pt);
-            pt.addToScene(this.scene);
-            pt.resizeHandles();
-            this.mSelection.add(pt);
-        }
-        
-        // Canvas event handlers - private
-
-        _handleLeftKey() {
-            let sel = this.mSelection.items.slice();
-            for (let s of sel) {
-                if (s.prev) {
-                    this.mSelection.remove(s);
-                    this.mSelection.add(s.prev);
-                }
-            }
-            return false;
-        }
-
-        _handleUpKey() {
-            let sel = this.mSelection.items.slice();
-            for (let s of sel) {
-                if (s.parent !== this.mVisual) {
-                    this.mSelection.remove(s);
-                    this.mSelection.add(s.parent);
-                }
-            }
-            return false;
-        }
-
-        _handleRightKey() {
-            let sel = this.mSelection.items.slice();
-            for (let s of sel) {
-                if (s.next) {
-                    this.mSelection.remove(s);
-                    this.mSelection.add(s.next);
-                }
-            }
-            return false;
-        }
-
-        _handleDownKey() {
-            let sel = this.mSelection.items.slice();
-            for (let s of sel) {
-                if (s.children && s.children.length > 0) {
-                    this.mSelection.remove(s);
-                    this.mSelection.add(s.children[0]);
-                }
-            }
-            return false;
-        }
-
-        _handleDeleteKey() {
-            for (let sel of this.mSelection.items)
-                // Remove the item completely
-                sel.remove();
-            this.mSelection.clear();
-            return false;
-        }
-        
         _handle_keydown(e) {
             // Keys on mobile are going to need buttons or menu items
             switch (e.key) {
             case "v":
                 // Split selected edges and add a new vertex
-                this._splitSelectedEdges();
+                this.onCmd("splitEdges");
                 return false;
                 
             case ".":
-                this._addPOI();
+                this.onCmd("addPOI");
                 return false;
 
             case "s":
-                this._addSounding();
+                this.onCmd("addSounding");
                 return false;
 
             case "c":
-                this._addContour();
+                this.onCmd("addContour");
                 return false;
                 
             case "p":
-                this._addPath();
+                this.onCmd("addPath");
                 return false;
                 
             case "-":
@@ -481,7 +132,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 return false;
 
             case "m": // m, set measure point
-                this.rulerStart = this.cursor;
+                this.sceneController.resetRuler();
                 return false;
 
             default:
@@ -491,19 +142,19 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             switch (e.keyCode) {
                 
             case 37: // left, prev sibling
-                return this._handleLeftKey();
+                return this.onCmd("selPrev");
                 
             case 38: // up, move up in selection
-                return this._handleUpKey();
+                return this.onCmd("selParent");
 
             case 39: // right
-                return this._handleRightKey();
+                return this.onCmd("selNext");
 
             case 40: // down, select first child
-                return this._handleDownKey();
+                return this.onCmd("selFirstChild");
 
             case 46: // delete selected items
-                return this._handleDeleteKey();
+                return this.onCmd("selDelete");
                 
             default:
                 return true;
@@ -527,11 +178,10 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
             this.mMouseDownPt = { x: e.offsetX, y: e.offsetY };
             let ray = this.event2ray(e);
             this.mLastRayPt = ray.origin.clone();
-            this.mLastCanvasPt = { x: e.offsetX, y: e.offsetY };
-            if (this.mSelection.size > 0) {
-                let hit = this.mVisual.projectRay(
+            if (!this.sceneController.selection.isEmpty) {
+                let hit = this.sceneController.visual.projectRay(
                     ray, Units.UPM[Units.IN] * Units.UPM[Units.IN]);
-                if (hit && this.mSelection.contains(hit.closest))
+                if (hit && this.sceneController.selection.contains(hit.closest))
                     this.mIsDragging = true;
             }
             return true; // Get focus behaviour
@@ -543,17 +193,17 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 if (e.offsetX === this.mMouseDownPt.x
                     && e.offsetY === this.mMouseDownPt.y) {
                     if (!e.shiftKey)
-                        this.mSelection.clear();
-                    let hit = this.mVisual.projectRay(
+                        this.sceneController.selection.clear();
+                    let hit = this.sceneController.visual.projectRay(
                         ray, Units.UPM[Units.IN] * Units.UPM[Units.IN]);
                     if (hit) {
-                        this.mSelection.add(hit.closest);
+                        this.sceneController.selection.add(hit.closest);
                         if (hit.closest2)
-                            this.mSelection.add(hit.closest2);
+                            this.sceneController.selection.add(hit.closest2);
                     } else
-                        this.mSelection.clear();
+                        this.sceneController.selection.clear();
                 } else
-                    this.mSelection.clear();
+                    this.sceneController.selection.clear();
             }
             this.mMouseDownPt = null;
             this.mIsDragging = false;
@@ -568,11 +218,10 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Selecti
                 if (this.mIsDragging) {
                     let mat = new Three.Matrix4().makeTranslation(
                         delta.x, delta.y, 0);
-                    this.mSelection.applyTransform(mat);
+                    this.sceneController.selection.applyTransform(mat);
                 } else
                     this.panBy(delta.negate());
                 this.mLastRayPt = p;
-                this.mLastCanvasPt = { x: e.offsetX, y: e.offsetY };
             }
             return true;
         }

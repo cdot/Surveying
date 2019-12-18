@@ -6,9 +6,9 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
      */
     class PerspectiveController extends CanvasController {
 
-        constructor(selector, visual, scene) {
+        constructor(selector, controller) {
             super(
-                selector, visual, scene,
+                selector, controller,
                 new Three.PerspectiveCamera(45, 1, 1, -1));
             this.mCamera.position.set(0, 0, 10);
             this.mCamera.up.set(0, 0, 1);
@@ -20,6 +20,7 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
             this.mControls.update();
 
             this.mConstructed = true;
+            this.animate();
         }
 
         // @Override CanvasController
@@ -27,7 +28,7 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
             if (!this.mConstructed)
                 return;
  
-            let bounds = this.mVisual.boundingBox;
+            let bounds = this.sceneController.boundingBox;
 
             // Look at the centre of the scene
             this.mControls.target = bounds.getCenter(new Three.Vector3());

@@ -179,6 +179,12 @@ define("js/SceneController", ["three", "js/Selection", "js/POI", "js/Path", "js/
             this.mRulerGeom.verticesNeedUpdate = true;
             this.cursorChanged();
         }
+
+        projectRay(ray) {
+            return this.mVisual.projectRay(
+                ray,
+                Units.UPM[Units.IN] * Units.UPM[Units.IN]);
+        }
         
         /**
          * Measure the planar distance between the start of the ruler

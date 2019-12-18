@@ -30,9 +30,15 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
  
             let bounds = this.sceneController.boundingBox;
 
+            let sz = bounds.getSize(new Three.Vector3());
+            let viewSize = Math.max(sz.x, sz.y, sz.z)
+
+            this.sceneController.resizeHandles(viewSize);
+
             // Look at the centre of the scene
             this.mControls.target = bounds.getCenter(new Three.Vector3());
             this.mCamera.position.set(bounds.max.x, bounds.max.y, bounds.max.z);
+            this.sceneController.resetRuler(this.mControls.target);
         }
 
         animate() {

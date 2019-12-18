@@ -179,8 +179,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
             let ray = this.event2ray(e);
             this.mLastRayPt = ray.origin.clone();
             if (!this.sceneController.selection.isEmpty) {
-                let hit = this.sceneController.visual.projectRay(
-                    ray, Units.UPM[Units.IN] * Units.UPM[Units.IN]);
+                let hit = this.sceneController.projectRay(ray);
                 if (hit && this.sceneController.selection.contains(hit.closest))
                     this.mIsDragging = true;
             }
@@ -194,8 +193,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
                     && e.offsetY === this.mMouseDownPt.y) {
                     if (!e.shiftKey)
                         this.sceneController.selection.clear();
-                    let hit = this.sceneController.visual.projectRay(
-                        ray, Units.UPM[Units.IN] * Units.UPM[Units.IN]);
+                    let hit = this.sceneController.projectRay(ray);
                     if (hit) {
                         this.sceneController.selection.add(hit.closest);
                         if (hit.closest2)

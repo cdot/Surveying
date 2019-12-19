@@ -6,10 +6,11 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
      */
     class PerspectiveController extends CanvasController {
 
-        constructor(selector, controller) {
+        constructor($cb, controller) {
             super(
-                selector, controller,
-                new Three.PerspectiveCamera(45, 1, 1, -1));
+                $cb, controller,
+                new Three.PerspectiveCamera(45, 1, 1, -1),
+                false);
             this.mCamera.position.set(0, 0, 10);
             this.mCamera.up.set(0, 0, 1);
             this.mCamera.aspect = this.mAspectRatio;
@@ -22,23 +23,23 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
             this.mConstructed = true;
             this.animate();
         }
-
+        
         // @Override CanvasController
         fit() {
             if (!this.mConstructed)
                 return;
  
-            let bounds = this.sceneController.boundingBox;
+            let bounds = this.mSceneController.boundingBox;
 
             let sz = bounds.getSize(new Three.Vector3());
             let viewSize = Math.max(sz.x, sz.y, sz.z)
 
-            this.sceneController.resizeHandles(viewSize);
+            this.mSceneController.resizeHandles(viewSize);
 
             // Look at the centre of the scene
             this.mControls.target = bounds.getCenter(new Three.Vector3());
             this.mCamera.position.set(bounds.max.x, bounds.max.y, bounds.max.z);
-            this.sceneController.resetRuler(this.mControls.target);
+            this.mSceneController.resetRuler(this.mControls.target);
         }
 
         animate() {
@@ -46,7 +47,6 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
             super.animate();
         }
 
-        
         /**
          * TODO: do something sensible with this
          * Construct a new Mesh object that contains a Delaunay

@@ -8,67 +8,72 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
      */
     class CanvasController {
         
-        constructor(selector, controller, camera) {
-            this.$mView = $(`#${selector}`);
-            this.$mCanvas = $(`#${selector} > .canvas`);
-            this.$mToolbar = $(`#${selector} > .toolbar`);
-            this.$mMenubar = $(`#${selector} > .menubar`);
-
-            this.$mCanvas.data("controller", this);
-            this.$mToolbar.data("controller", this);
-
+        constructor($canvasBox, controller, camera, ruler) {
+            this.$mCanvasBox = $canvasBox;
             this.mSceneController = controller;
+            this.mHasRuler = ruler;
             
             this.mCamera = camera;
 
             controller.scene.add(camera);
 
             this.mRenderer = new Three.WebGLRenderer();
-            this.resize(
-                this.$mCanvas.innerWidth(),
-                this.$mCanvas.innerHeight());
+            this.resize();
             
-            this.$mCanvas.append(this.mRenderer.domElement);
-
-            let self = this;
-            $(".menu", this.$mView)
-            .on("menuselect", function (e, ui) {
-                self.onCmd(ui.item.data("cmd"));
-            });
-            
-            $("button", this.$mToolbar)
-            .on("click", () => {
-                self.onCmd($(this).data("cmd"));
-            });
+            this.$mCanvasBox.append(this.mRenderer.domElement);
         }
 
         onCmd(fn) {
             if (this[fn])
                 this[fn].call(this);
-            else if (this.sceneController[fn])
-                this.sceneController[fn].call(this.sceneController);
+            else if (this.mSceneController[fn])
+                this.mSceneController[fn].call(this.mSceneController);
             else
                 console.debug(`Missing command ${fn}`);
         }
             
-        get sceneController() { return this.mSceneController; }
-        
-        get isVisible() { return this.$mView.is(":visible"); }
+        get isVisible() { return this.$mCanvasBox.is(":visible"); }
             
-        hide() { return this.$mView.hide(); }
+        hide() {
+            this.mSceneController.enableRuler(!this.mHasRuler);
+            return this.$mCanvasBox.hide();
+        }
             
-        show() { return this.$mView.show(); }
+        show() {
+            this.mSceneController.enableRuler(this.mHasRuler);
+            let self = this;
+            this.mSceneController.setZoomGetter(() => {
+                return self.mCamera.zoom;
+            });
+            return this.$mCanvasBox.show();
+        }
             
-        nextView() { $(document).trigger("nextView", this); }
+        nextView() {
+            $(document).trigger("nextView", this);
+            return false;
+        }
+
+        registerEventHandlers(h) {
+            let self = this;
+            for (let event of h) {
+                this.$mCanvasBox.on(event, function() {
+                    let fn = `_handle_${event}`;
+                    if (self[fn])
+                        return self[fn].apply(self, arguments);
+                });
+            }
+        }
         
         /**
          * Resize the canvas; called during construction and in
          * response to a window resize event
          */
-        resize(w, h) {
+        resize() {
+            let w = this.$mCanvasBox.innerWidth();
+            let h = this.$mCanvasBox.innerHeight();
             this.mAspectRatio = w / h;
-            this.$mCanvas.find("canvas").height(h);
-            this.$mCanvas.find("canvas").width(w);
+            this.$mCanvasBox.find("canvas").height(h);
+            this.$mCanvasBox.find("canvas").width(w);
             this.mRenderer.setSize(w, h);
             this.fit();
         }
@@ -83,11 +88,11 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
             let x = e.pageX - $(e.target).offset().left; // e.clientX
             let y = e.pageY - $(e.target).offset().top; // e.clientY
             let pt = {
-                x: (x / this.$mCanvas.innerWidth() * 2 - 1),
-                y: 1 - (y / this.$mCanvas.innerHeight()) * 2
+                x: (x / this.$mCanvasBox.innerWidth() * 2 - 1),
+                y: 1 - (y / this.$mCanvasBox.innerHeight()) * 2
             };
             let pos = new Three.Vector3(pt.x, pt.y, 0).unproject(this.mCamera);
-            this.sceneController.cursor = pos;
+            this.mSceneController.cursor = pos;
             pos.z = this.mCamera.position.z;
             return new Three.Ray(pos, new Three.Vector3(0, 0, -1));
         }

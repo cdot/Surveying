@@ -774,10 +774,10 @@ define("js/OrbitControls", ["three"], function(Three) {
                 
                 // Manually set the focus since calling preventDefault above
                 // prevents the browser from setting it automatically.
-                if (self.domElement.focus)
+                /*if (self.domElement.focus) {
                     self.domElement.focus();
-                else
-                    window.focus();
+                } else
+                    window.focus();*/
                 
                 if (event.button === 0)
                     self._handleMouseLeftDown(event);
@@ -791,7 +791,7 @@ define("js/OrbitControls", ["three"], function(Three) {
                 if (self.enabled === false) return;
                 
                 event.preventDefault();
-                
+
                 if (self.mState === STATE.ROTATE && self.enableRotate)
                     self._mouseMoveRotate(event);
                 else if (self.mState === STATE.DOLLY && self.enableDollying)

@@ -1,50 +1,17 @@
 /* @preserve Copyright 2019 Crawford Currie - All rights reserved */
 /* eslint-env jquery, browser */
-define("js/SceneController", ["three", "js/Selection", "js/POI", "js/Path", "js/Contour", "js/Sounding", "js/Spot", "js/Units", "js/UTM", "js/Materials", "jquery"], function(Three, Selection, POI, Path, Contour, Sounding, Spot, Units, UTM, Materials) {
+define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI", "js/Path", "js/Contour", "js/Sounding", "js/Spot", "js/Units", "js/UTM", "js/Materials", "jquery"], function(Three, Selection, Container, POI, Path, Contour, Sounding, Spot, Units, UTM, Materials) {
 
-    class SceneController {
-        constructor(visual, scene) {
-            this.mVisual = visual;
-            this.mScene = scene;
+     // Given a schema, make the HTML controls that support editing of that schema
+    function makeControls(schemes) {
 
-            // Size of a handle in world coordinates = 50cm
-            this.mHandleSize = Units.UPM[Units.IN] / 2;
-
-            // Set up cursor and ruler geometry.
-            this.mCursorSprite = new Three.Sprite(Materials.CURSOR);
-            this.mCursorSprite.position.set(3, 3, 3);
-            scene.add(this.mCursorSprite);
-            this.mRulerGeom = new Three.Geometry();
-
-            this.mRulerGeom.vertices.push(
-                new Three.Vector3(1, 1, 1),
-                this.mCursorSprite.position);
-            let rulerLine = new Three.Line(this.mRulerGeom, Materials.RULER);
-            scene.add(rulerLine);
-
-            let self = this;
-            // Set up the selection manager
-            this.mSelection = new Selection((sln) => {
-                let $report = $("<ul></ul>");
-                for (let sel of sln.items) {
-                    if (sln.resizeHandles)
-                        sln.resizeHandles();
-                    let $s = self._makeControls(sel.scheme(""));
-                    if ($s)
-                        $report.append($s);
-                }
-                $("#report").empty()
-                .append($report);
-            });
-        }
-        
-        _makeControl(scheme) {
+        function makeControl(scheme) {
             if (scheme instanceof Array)
-                return makeControls(scheme);
-
+                return this._makeControls(scheme);
+            
             if (scheme.type === "ignore")
                 return null;
-                
+            
             let $li = $("<li></li>");
             if (typeof scheme === "string") {
                 $li.text(scheme);
@@ -65,23 +32,145 @@ define("js/SceneController", ["three", "js/Selection", "js/POI", "js/Path", "js/
             }
             return $li;
         }
-            
-        _makeControls(schemes) {
-            if (schemes.length === 0)
-                return null;
-            let $block = $("<ul></ul>");
-            for (let scheme of schemes) {
-                let c = makeControl(scheme);
-                if (c)
-                    $block.append(c);
-            }
-            return $block;
+        
+        if (schemes.length === 0)
+            return null;
+        let $block = $("<ul></ul>");
+        for (let scheme of schemes) {
+            let c = makeControl(scheme);
+            if (c)
+                $block.append(c);
         }
+        return $block;
+    }
+
+    class SceneController {
+        constructor() {
+            this.mVisual = new Container("root");
+            this.mScene = new Three.Scene();
+            this.mScene.background = new Three.Color(0xF0F0F0);
+            this.mScene.userData.controller = this;
+ 
+            // Size of a handle in world coordinates = 50cm
+            this.mHandleSize = Units.UPM[Units.IN] / 2;
+
+            // Set up cursor and ruler geometry.
+            this.mCursorSprite = new Three.Sprite(Materials.CURSOR);
+            this.mCursorSprite.position.set(3, 3, 3);
+            this.mRulerGeom = new Three.Geometry();
+
+            this.mRulerGeom.vertices.push(
+                new Three.Vector3(1, 1, 1),
+                this.mCursorSprite.position);
+            this.mRulerLine = new Three.Line(this.mRulerGeom, Materials.RULER);
+
+            let self = this;
+            // Set up the selection manager
+            this.mSelection = new Selection((sln) => {
+                let $report = $("<ul></ul>");
+                for (let sel of sln.items) {
+                    if (sln.resizeHandles)
+                        sln.resizeHandles();
+                    let $s = makeControls(sel.scheme(""));
+                    if ($s)
+                        $report.append($s);
+                }
+                $(".information")
+                .empty()
+                .append($report);
+            });
             
+            this._bindDialogHandlers();
+        }
+        
+        _bindDialogHandlers() {
+            let self = this;
+            
+            $("#upload_dialog .upload_input").on("change", function(evt) {
+                let f = evt.target.files[0];
+                let fn = f.name;
+                let type = fn.replace(/^.*\./u, "").toLowerCase();
+                $("#upload_dialog").dialog("close");
+                requirejs(
+                    [`js/FileFormats/${type}`],
+                    (Loader) => {
+                        let reader = new FileReader();
+
+                        reader.onload = (e) => {
+                            let data = e.target.result;
+                            new Loader().load(fn, data)
+                            .then((result) => {
+                                self.mVisual.addChild(result);
+                                result.addToScene(self.mScene);
+                                let bb = self.mVisual.boundingBox;
+                                let min = Units.stringify(Units.IN, bb.min, Units.LATLON);
+                                let max = Units.stringify(Units.IN, bb.max, Units.LATLON);
+                                console.log(`Loaded ${fn}, ${min} -> ${max}`);
+                                $(document).trigger("fitViews");
+                            })
+                            .catch((err) => {
+                                console.debug(err);
+                            });
+                        };
+
+                        // Read in the image file as a data URL.
+                        reader.readAsText(f);
+                    },
+                    (err) => {
+                        $("#alert_message")
+                        .html(`Error loading js/FileFormats/${type} - is the file format supported?`);
+                        $("#alert_dialog").dialog("open");
+                    });
+            });
+
+            // Cannot set the saver from inside the save handler because
+            // loading a FileFormat requires a promise, but the native
+            // click event on the download link is required to trigger the download,
+            // which requires a true return from the handler.
+            // So have to do it in two steps. Setting the save format
+            // loads the saver and enables the save button if successful.
+            // Clicking the save button saves using that saver.
+        
+            $("#download_dialog .format").on("change", function() {
+                let type = $(this).val();
+                requirejs(
+                    [`js/FileFormats/${type}`],
+                    (Format) => {
+                        self.mSaver = new Format();
+                        $("#download_dialog .download_button").removeProp("disabled");
+                    });
+            });
+        
+            $("#download_dialog .download_button").on("click", function() {
+                let str = self.mSaver.save(self.mVisual);
+                // If saver.save() returns null, then it has used a dialog and we
+                // don't require native event handling
+                if (!str)
+                    return false; // suppress native event handling
+                
+                // The format wants to use the Save button to trigger the save
+                this.href = URL.createObjectURL(new Blob([str]));
+                let fmt = $("#download_dialog .format").val();
+                this.download = `survey.${fmt}`;
+
+                // Pass on for native event handling
+                return true;
+            });
+        }
+        
         get cursor() {
             return this.mRulerGeom.vertices[1];
         }
 
+        get cursorWGS() {
+            try {
+                return Units.stringify(Units.IN, this.cursor, Units.LATLON);
+            } catch (e) {
+                //console.debug(e);
+                return "Unknown";
+            }
+        }
+        
         set cursor(v) {
             this.mRulerGeom.vertices[1].copy(v);
             this.mRulerGeom.verticesNeedUpdate = true;
@@ -90,22 +179,23 @@ define("js/SceneController", ["three", "js/Selection", "js/POI", "js/Path", "js/
 
         // Information tab
         cursorChanged() {
-            try {
-                $("#cursor_wgs").html(wgsCoords(this.cursor));
-            } catch (e) {
-            }
-            $("#cursor_length").text(this.rulerLength);
-            $("#cursor_bearing").text(this.rulerBearing);
+            $(".cursor_wgs").html(this.cursorWGS);
+            $(".cursor_length").text(this.rulerLength);
+            $(".cursor_bearing").text(this.rulerBearing);
         }
 
         get selection() {
             return this.mSelection;
         }
 
-        setHandleSizer(fn) {
-            this.mScene.userData.handleSize = fn;
+        setZoomGetter(fn) {
+            this.mZoomGetter = fn;
         }
 
+        get handleSize() {
+            return this.mHandleSize / this.mZoomGetter.call();
+        }
+        
         resizeHandles(viewSize) {
             // Scale handles appropriately so they appear as
             // a fraction of the view
@@ -131,6 +221,16 @@ define("js/SceneController", ["three", "js/Selection", "js/POI", "js/Path", "js/
             this.mRulerGeom.verticesNeedUpdate = true;
         }
 
+        enableRuler(enable) {
+            if (enable)  {
+                this.mScene.add(this.mCursorSprite);
+                this.mScene.add(this.mRulerLine);
+            } else {
+                this.mScene.remove(this.mCursorSprite);
+                this.mScene.remove(this.mRulerLine);
+            }
+        }
+        
         get boundingBox() {
             let bounds = this.mVisual.boundingBox;
             
@@ -215,8 +315,8 @@ define("js/SceneController", ["three", "js/Selection", "js/POI", "js/Path", "js/
          */
         addPOI() {
             let pt = new POI(this.rulerStart, "New POI");
-            this.sceneController.visual.addChild(pt);
-            pt.addToScene(this.sceneController.scene);
+            this.mVisual.addChild(pt);
+            pt.addToScene(this.scene);
             pt.resizeHandles();
             this.mSelection.add(pt);
         }
@@ -226,8 +326,8 @@ define("js/SceneController", ["three", "js/Selection", "js/POI", "js/Path", "js/
          */
         addSounding() {
             let pt = new Sounding(this.rulerStart, "New sounding");
-            this.sceneController.visual.addChild(pt);
-            pt.addToScene(this.sceneController.scene);
+            this.mVisual.addChild(pt);
+            pt.addToScene(this.scene);
             pt.resizeHandles();
             this.mSelection.add(pt);
         }
@@ -257,7 +357,7 @@ define("js/SceneController", ["three", "js/Selection", "js/POI", "js/Path", "js/
         selParent() {
             let sel = this.mSelection.items.slice();
             for (let s of sel) {
-                if (s.parent !== this.sceneController.visual) {
+                if (s.parent !== this.mVisual) {
                     this.mSelection.remove(s);
                     this.mSelection.add(s.parent);
                 }
@@ -296,8 +396,8 @@ define("js/SceneController", ["three", "js/Selection", "js/POI", "js/Path", "js/
                 y: this.rulerStart.y + 2 * Units.UPM[Units.IN],
                 z: this.rulerStart.z
             });
-            this.sceneController.visual.addChild(visual);
-            visual.addToScene(this.sceneController.scene);
+            this.mVisual.addChild(visual);
+            visual.addToScene(this.mScene);
             visual.resizeHandles();
             this.mSelection.add(visual);
         }
@@ -325,8 +425,8 @@ define("js/SceneController", ["three", "js/Selection", "js/POI", "js/Path", "js/
                 });
             visual.close();
             visual.setZ(0);
-            this.sceneController.visual.addChild(visual);
-            visual.addToScene(this.sceneController.scene);
+            this.mVisual.addChild(visual);
+            visual.addToScene(this.mScene);
             visual.resizeHandles();
             this.mSelection.add(visual);
         }

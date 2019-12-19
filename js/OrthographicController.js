@@ -7,11 +7,12 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
      */
     class OrthographicController extends CanvasController {
 
-        constructor(selector, controller) {
+        constructor($cb, controller) {
             // Default 1km/1km scene
             super(
-                selector, controller,
-                new Three.OrthographicCamera(-500, 500, 500, -500));
+                $cb, controller,
+                new Three.OrthographicCamera(-500, 500, 500, -500),
+                true);
             
             // Set up the camera
             // Centre of the viewing frustum - will be set when
@@ -21,12 +22,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
                 (UTM.MIN_NORTHING + UTM.MAX_NORTHING) / 2,
                 0);
 
-            let self = this;
-            this.sceneController.setHandleSizer(() => {
-                return self.mHandleSize / self.mCamera.zoom;
-            });
-
-            this.sceneController.rulerStart = this.mLookAt;
+            this.mSceneController.rulerStart = this.mLookAt;
 
             this.mCamera.position.set(this.mLookAt.x, this.mLookAt.y, 10);
             
@@ -35,15 +31,10 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
             this.mIsDragging = false;
             this.mLastRayPt = null;
 
-            for (let event of [
+            this.registerEventHandlers([
                 "keydown", "mousenter", "mouseleave",
-                "mousedown", "mouseup", "mousewheel",
-                "mousemove"
-            ]) {
-                this.$mCanvas.on(event, function() {
-                    return self[`_handle_${event}`].apply(self, arguments);
-                });
-            }
+                "mousedown", "mouseup", "mousewheel", "mousemove"
+            ]);
 
             this.mConstructed = true;
             this.animate();
@@ -72,7 +63,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
             
             // Reposition the cameras so they are looking down on the
             // entire scene
-            let bounds = this.sceneController.boundingBox;
+            let bounds = this.mSceneController.boundingBox;
 
             // Look at the centre of the scene
             bounds.getCenter(this.mLookAt);
@@ -80,7 +71,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
             let sz = bounds.getSize(new Three.Vector3());
             let viewSize = Math.max(sz.x, sz.y)
 
-            this.sceneController.resizeHandles(viewSize);
+            this.mSceneController.resizeHandles(viewSize);
 
             let c = this.mCamera;
             c.zoom = 1;
@@ -96,7 +87,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
             c.updateProjectionMatrix();
 
             // Ruler/cursor
-            this.sceneController.resetRuler(this.mLookAt);
+            this.mSceneController.resetRuler(this.mLookAt);
         }
 
         _handle_keydown(e) {
@@ -132,7 +123,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
                 return false;
 
             case "m": // m, set measure point
-                this.sceneController.resetRuler();
+                this.mSceneController.resetRuler();
                 return false;
 
             default:
@@ -178,9 +169,9 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
             this.mMouseDownPt = { x: e.offsetX, y: e.offsetY };
             let ray = this.event2ray(e);
             this.mLastRayPt = ray.origin.clone();
-            if (!this.sceneController.selection.isEmpty) {
-                let hit = this.sceneController.projectRay(ray);
-                if (hit && this.sceneController.selection.contains(hit.closest))
+            if (!this.mSceneController.selection.isEmpty) {
+                let hit = this.mSceneController.projectRay(ray);
+                if (hit && this.mSceneController.selection.contains(hit.closest))
                     this.mIsDragging = true;
             }
             return true; // Get focus behaviour
@@ -192,16 +183,16 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
                 if (e.offsetX === this.mMouseDownPt.x
                     && e.offsetY === this.mMouseDownPt.y) {
                     if (!e.shiftKey)
-                        this.sceneController.selection.clear();
-                    let hit = this.sceneController.projectRay(ray);
+                        this.mSceneController.selection.clear();
+                    let hit = this.mSceneController.projectRay(ray);
                     if (hit) {
-                        this.sceneController.selection.add(hit.closest);
+                        this.mSceneController.selection.add(hit.closest);
                         if (hit.closest2)
-                            this.sceneController.selection.add(hit.closest2);
+                            this.mSceneController.selection.add(hit.closest2);
                     } else
-                        this.sceneController.selection.clear();
+                        this.mSceneController.selection.clear();
                 } else
-                    this.sceneController.selection.clear();
+                    this.mSceneController.selection.clear();
             }
             this.mMouseDownPt = null;
             this.mIsDragging = false;
@@ -216,7 +207,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
                 if (this.mIsDragging) {
                     let mat = new Three.Matrix4().makeTranslation(
                         delta.x, delta.y, 0);
-                    this.sceneController.selection.applyTransform(mat);
+                    this.mSceneController.selection.applyTransform(mat);
                 } else
                     this.panBy(delta.negate());
                 this.mLastRayPt = p;

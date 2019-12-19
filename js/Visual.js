@@ -31,8 +31,6 @@ define("js/Visual", function() {
 
         /**
          * Reset the handle size for visuals that have handles in 3-space.
-         * The handle size in 3spece is determined using the handleSize
-         * method attached to the scene userData.
          */
         resizeHandles() { }
 
@@ -77,7 +75,6 @@ define("js/Visual", function() {
          * Set the Object3D used to display this Visual
          */
         setObject3D(o3d) {
-            o3d.userData.visual = this;
             this.mObject3D = o3d;
         }
         

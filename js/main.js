@@ -21,120 +21,7 @@ requirejs(["three", "js/Units", "js/SceneController", "js/OrthographicController
     const ORTHOGRAPHIC = 0;
     const PERSPECTIVE = 1;
     let views = [];
-    let rootContainer;
-    let scene;
-    let saver;
-    
-    /**
-     * Format a point for display as a lat,long
-     */
-    function wgsCoords(p) {
-        return Units.stringify(Units.IN, p, Units.LATLON);
-    }
-    
-    function wgsBox(b) {
-        return `${wgsCoords(b.min)} -> ${wgsCoords(b.max)}`;
-    }
 
-    function enableSave() {
-        if (saver)
-            $("#save").removeProp("disabled");
-    }
-
-    function bindHandlers() {
-        $(".disable_submit").on("submit", () => false);
-
-        $(window).on("resize", function() {
-            // Resize the canvases
-            let $a = $("#orthographic");
-            let w = $a.parent().innerWidth();
-            let h = $a.parent().innerHeight();
-            for (let v of views)
-                v.resize(w, h);
-        });
-        
-        $(document).on("nextView", function() {
-            for (let i = 0; i < views.length; i++) {
-                if (views[i].isVisible) {
-                    views[i].hide();
-                    views[(i + 1) % views.length].show();
-                    break;
-                }
-            }
-        });
-
-        $("#load").on("change", function(evt) {
-            let f = evt.target.files[0];
-            let fn = f.name;
-            let type = fn.replace(/^.*\./u, "").toLowerCase();
-            $("#upload_dialog").dialog("close");
-            requirejs(
-                [`js/FileFormats/${type}`],
-                (Loader) => {
-                    let reader = new FileReader();
-
-                    reader.onload = (e) => {
-                        let data = e.target.result;
-                        new Loader().load(fn, data)
-                        .then((result) => {
-                            rootContainer.addChild(result);
-                            result.addToScene(scene);
-                            console.log("Loaded", fn);
-                            $("#scene").html(wgsBox(rootContainer.boundingBox));
-                            for (let v of views)
-                                v.fit();
-                            enableSave();
-                        })
-                        .catch((err) => {
-                            console.debug(err);
-                        });
-                    };
-
-                    // Read in the image file as a data URL.
-                    reader.readAsText(f);
-                },
-                (err) => {
-                    $("#alert_message")
-                    .html(`Error loading js/FileFormats/${type} - is the file format supported?`);
-                    $("#alert_dialog").dialog("open");
-                });
-        });
-
-        // Cannot set the saver from inside the save handler because
-        // loading a FileFormat requires a promise, but the native
-        // click event on #save is required to trigger the download,
-        // which requires a true return from the handler.
-        // So have to do it in two steps. Setting the save format
-        // loads the saver and enables the save button if successful.
-        // Clicking the save button saves using that saver.
-        
-        $("#save_format").on("change", function() {
-            let type = $(this).val();
-            requirejs(
-                [`js/FileFormats/${type}`],
-                (Format) => {
-                    saver = new Format();
-                    enableSave();
-                });
-        });
-        
-        $("#save").on("click", function() {
-            let str = saver.save(rootContainer);
-            // If saver.save() returns null, then it has used a dialog and we
-            // don't require native event handling
-            if (!str)
-                return false; // suppress native event handling
-
-            // The format wants to use the Save button to trigger the save
-            this.href = URL.createObjectURL(new Blob([str]));
-            let fmt = $("#save_format").val();
-            this.download = `survey.${fmt}`;
-
-            // Pass on for native event handling
-            return true;
-        });
-    }
-    
     $(function() {
         $(".menu").menu();
 
@@ -144,22 +31,54 @@ requirejs(["three", "js/Units", "js/SceneController", "js/OrthographicController
             show: "blind",
             hide: "blind"
         });
-
-        // Create the three.js scene. This is shared between the canvases.
-        scene = new Three.Scene();
-        scene.background = new Three.Color(0xF0F0F0);
-
-        rootContainer = new Container("root");
-
-        let sceneController = new SceneController(rootContainer, scene);
+        
+        let sceneController = new SceneController();
         views = [
-            new OrthographicController("orthographic", sceneController),
-            new PerspectiveController("perspective", sceneController)
+            new OrthographicController($("#orthographic"), sceneController),
+            new PerspectiveController($("#perspective"), sceneController)
         ];
         
-        bindHandlers();
+        $(".disable_submit").on("submit", () => false);
+
+        $(window).on("resize", function() {
+            for (let v of views)
+                v.resize();
+        });
+
+        function activeView() {
+            for (let i = 0; i < views.length; i++)
+                if (views[i].isVisible)
+                    return views[i];
+            return null;
+        }
+        
+        $(document)
+        .on("nextView", function() {
+            for (let i = 0; i < views.length; i++) {
+                if (views[i].isVisible) {
+                    views[i].hide();
+                    views[(i + 1) % views.length].show();
+                    break;
+                }
+            }
+        })
+        .on("fitViews", function() {
+            for (let v of views)
+                v.fit();
+        });
+
+        $(".menu")
+        .on("menuselect", function (e, ui) {
+            activeView().onCmd(ui.item.data("cmd"));
+        });
+            
+        $(".toolbar button")
+        .on("click", () => {
+            activeView().onCmd($(this).data("cmd"));
+        });
 
         $(".menubar").show();
+
         views[PERSPECTIVE].hide();
         views[ORTHOGRAPHIC].show();
     });

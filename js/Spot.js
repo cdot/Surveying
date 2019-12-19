@@ -59,7 +59,7 @@ define("js/Spot", ["js/Visual", "three"], function(Visual, Three) {
         resizeHandles() {
             super.resizeHandles();
             if (this.object3D) {
-                let s = this.scene.userData.handleSize();
+                let s = this.scene.userData.controller.handleSize;
                 this.object3D.scale.x = s;
                 this.object3D.scale.y = s;
                 this.object3D.scale.z = s;

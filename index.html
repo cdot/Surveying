@@ -12,64 +12,58 @@
   </head>
 
   <body>
-    <div id="orthographic" class="view">
-      <ul class="menubar menu">
-        <li data-cmd="fit"><div>Fit</div></li>
-        <li data-cmd="nextView"><div>Next View</div></li>
-        <li><div>Import</div>
-          <ul class="menu">
-            <li data-cmd="upload"><div>Upoad from disk</div></li>
-            <li data-cmd="loadURL"><div>Get from URL</div></li>
-          </ul>
-        </li>
-        <li data-cmd="download"><div>Export</div></li>
-      </ul>
+
+    <div class="views">
+      
+      <header class="topbar">
+        <ul class="menubar menu">
+          <li data-cmd="fit"><div>Fit</div></li>
+          <li data-cmd="nextView"><div>Next View</div></li>
+          <li><div>Import</div>
+            <ul class="menu">
+              <li data-cmd="upload"><div>Upoad from disk</div></li>
+              <li data-cmd="loadURL"><div>Get from URL</div></li>
+            </ul>
+          </li>
+            <li data-cmd="download"><div>Export</div></li>
+        </ul>
+        
+        <div class="locationbar">
+          Lat/Long: <span class="cursor_wgs"></span>
+          Ruler: <span class="cursor_length"></span>m
+          <span class="cursor_bearing"></span>&deg;
+        </div>
+      </header>
+
+      <div class="middle">
+        
+        <aside class="toolbar">
+          <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-add-poi" data-cmd="addPOI" title="Add POI">
+          </button>
+          <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-add-sounding" data-cmd="addSounding" title="Add Sounding">
+          </button>
+          <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-add-contour" data-cmd="addContour" title="Add Contour">
+          </button>
+          <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-add-path" data-cmd="addPath" title="Add Path">
+          </button>
+          <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-split-edges" data-cmd="splitEdges" title="Split edges">
+          </button>
+        </aside><!-- /toolbar -->
+
+        <div class="canvases">
+          <div id="orthographic" class="canvasbox" tabindex="1"></div>
+          <div id="perspective" class="canvasbox"></div>
+        </div>
+        
+        <aside class="infobar">
+          Selection
+          <div class="information"></div>
+        </aside>
+        
+      </div><!-- middle -->
+      
+    </div><!-- views -->
     
-      <div class="infobar">
-        Lat/Long: <span id="cursor_wgs"></span>
-        Ruler: <span id="cursor_length"></span>m
-        <span id="cursor_bearing"></span>&deg;
-      </div>
-
-      <div class="toolbar">
-        <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-add-poi" data-cmd="addPOI" title="Add POI">
-        </button>
-        <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-add-sounding" data-cmd="addSounding" title="Add Sounding">
-        </button>
-        <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-add-contour" data-cmd="addContour" title="Add Contour">
-        </button>
-        <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-add-path" data-cmd="addPath" title="Add Path">
-        </button>
-        <button class="ui-button ui-corner-all ui-widget ui-button-icon-only survey-icon icon-split-edges" data-cmd="splitEdges" title="Split edges">
-        </button>
-      </div>
-
-      <div class="canvas" tabindex="1"></div>
-    </div>
-    
-    <div id="perspective" class="view">
-      <ul class="menubar menu">
-        <li data-cmd="fit"><div>Fit</div></li>
-        <li data-cmd="nextView"><div>Next View</div></li>
-      </ul>
-
-      <div class="infobar"></div>
-
-      <div class="toolbar"></div>
-
-      <div class="canvas"></div>
-    </div>
-    
-    <div class="controls">
-      <!-- form not submitted, just there to get correct behaviours from
-           jquery for the load and save buttons -->
-      <div>
-        Scene: <span id="scene"></span>
-      </div>
-      <div id="report">
-      </div>
-    </div>
-
     <div id="alert_dialog" class="dialog" title="Alert!">
       <h1>Alert</h1>
       <div id="alert_message">
@@ -77,20 +71,21 @@
     </div>
 
     <div id="upload_dialog" class="dialog" title="Import">
+      Select the file to upload:
       <form class="disable_submit">
-        <input id="load" type="file"/>
+        <input class="upload_input" type="file"/>
       </form>
     </div>
 
     <div id="download_dialog" class="dialog" title="Export">
-      <label for="save_format">Format</label>
-      <select id="save_format">
+      Choose the format to save in:
+      <select class="format">
         <option></option>
         <option>json</option>
         <option>svg</option>
         <option>csv</option>
       </select>
-      <a class="ui-button ui-corner-all ui-widget" target="_blank" id="save" disabled="true">Download</a>
+      <a class="download_button ui-button ui-corner-all ui-widget" target="_blank" disabled="true">Download</a>
     </div>
 
     <div id="svg_dialog" class="dialog">

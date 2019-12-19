@@ -1,16 +1,12 @@
 html {
-  box-sizing: border-box;
   height: 100%;
-}
-
-*, *:before, *:after {
-  box-sizing: inherit;
 }
 
 body {
     margin: 0;
     font-family: lucida grande, lucida, sans-serif;
     height: 100%;
+    line-height: 1;
 }
 
 input.property {
@@ -46,46 +42,73 @@ input.property {
     border-image: initial;
 }
 
-.view {
-    width: 70%;
+.views {
+    width: 100%;
     height: 100%;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    /* rows will not stretch vertically, but can shrink */
+    /* rows will stretch to fill the width */
 }
 
-.view > .toolbar {
-    float: left;
+/* .topbar container for .menubar and .locationbar */
+/* Should stretch to fill the row */
+.topbar {
+    background-color: #f2f1f0;
+    flex-grow: 0
 }
 
-.view > .toolbar > button {
+.locationbar {
+    clear: both;
+    font-size: small;
+}
+
+.middle {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 200px;
+    display: flex;
+    flex-direction: row;
+}
+
+.toolbar {
+    flex-grow: 0;
+}
+
+.toolbar > button {
     /* Force break between toolbar button elements to layout vertically */
     display: block;
 }
 
-.view > .infobar {
-    width: 100%;
-    font-size: small;
+.canvases {
+    flex-grow: 1;
+    border: 1px solid black;
 }
 
-.view > .canvas {
-    border: 1px solid black;
+.canvasbox {
+    width: 100%;
     height: 100%;
-    overflow: hidden;
+}
+
+#orthographic {
     cursor: none;
 }
 
-.controls {
+.infobar {
+    flex-grow: 0;
     background-color:#666;
     color: white;
     padding: 0.5em;
-    position: absolute;
-    right: 0;
-    top: 0;
-    font-size: large;
-    /*width: 30%;*/
-    height: 100%;
+    float: right;
+    width: 200px;
 }
 
-#report li {
+.information ul {
+    padding-left: 0;
+    list-style-type: none;
+}
+
+.information li {
     padding-left: 1em;
 }
 

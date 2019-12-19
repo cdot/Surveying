@@ -45,7 +45,6 @@ define("js/Selection", function() {
          */
         add(item) {
             if (!this.contains(item)) {
-                debugger;
                 item.highlight(true);
                 this.mItems.push(item);
                 this._changed();

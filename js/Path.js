@@ -134,8 +134,7 @@ define("js/Path", ["js/Container", "three", "js/Spot", "js/Materials"], (Contain
         }
         
         /**
-         * Mesh and Path support this method, which splits an edge in
-         * the visual.
+         * Splits an edge in the visual.
          * @param {Spot} v1
          * @param {Spot} v2
          * @return {PathVertex} the midpoint vertex created

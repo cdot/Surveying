@@ -51,12 +51,13 @@ define("js/Contour", ["three", "js/Units", "js/Materials", "js/Path"], function(
         }
 
         // @Override Visual
-        condense(coords, mapBack) {
-            for (let c of this.children) {
-                // console.log("Condensed vertex");
-                // TODO: condense from the Contour object
-                coords.push([c.position.x, c.position.y]);
-                mapBack.push(c);
+        condense(v, e) {
+            let start = v.length;
+            let i = 0;
+            let l = this.children.length;
+            for (let i = 0; i < l; i++) {
+                v.push(this.children[i].position);
+                e.push([start + i, start + (i + 1) % l]);
             }
         }
 

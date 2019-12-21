@@ -144,9 +144,9 @@ define("js/Container", ["js/Visual", "three"], function(Visual, Three) {
         }
 
         // @Override Visual
-        condense(coords, mapBack) {
+        condense(v, e) {
             for (let g of this.mChildren)
-                g.condense(coords, mapBack);
+                g.condense(v, e);
         }
     }
 

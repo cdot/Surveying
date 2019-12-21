@@ -73,6 +73,7 @@ input.property {
 
 .toolbar {
     flex-grow: 0;
+    flex-shrink: 0;
 }
 
 .toolbar > button {
@@ -96,6 +97,7 @@ input.property {
 
 .infobar {
     flex-grow: 0;
+    flex-shrink: 0;
     background-color:#666;
     color: white;
     padding: 0.5em;

@@ -1,7 +1,7 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
 /* eslint-env jquery, browser */
 
-define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/POI", "js/Container", "js/Mesh", "js/Path", "js/Contour", "js/Sounding", "js/Units", "jquery-ui"], function(XML, Three, POI, Container, Mesh, Path, Contour, Sounding, Units) {
+define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/POI", "js/Container", "js/Path", "js/Contour", "js/Sounding", "js/Units", "jquery-ui"], function(XML, Three, POI, Container, Path, Contour, Sounding, Units) {
 
     /**
      * Specialised loader/saver for an SVG used to carry survey information.
@@ -581,35 +581,6 @@ define("js/FileFormats/svg", ["js/FileFormats/XML", "three", "js/POI", "js/Conta
                     }
                     if (visual.isClosed)
                         lines.push("z");
-                    path.setAttribute("d", lines.join(" "));
-                    path.setAttribute("style", PATH_STYLE);
-                    container.appendChild(path);
-                } else if (visual instanceof Mesh) {
-                    // Serialise the network as individual edges in a
-                    // path
-                    let path = makeEl("path", visual, props);
-                    let lines = [];
-                    let last;
-                    for (let e of visual.edges) {
-                        if (e.p1 === last) {
-                            let v2 = Units.convert(
-                                Units.IN, e.p2.position, Units.EX);
-                            lines.push(`${v2.x} ${v2.y}`);
-                            last = v2;
-                        } else if (e.p2 === last) {
-                            let v1 = Units.convert(
-                                Units.IN, e.p1.position, Units.EX);
-                            lines.push(`${v1.x} ${v1.y}`);
-                            last = v1;
-                        } else {
-                            let v1 = Units.convert(
-                                Units.IN, e.p1.position, Units.EX);
-                            let v2 = Units.convert(
-                                Units.IN, e.p2.position, Units.EX);
-                            lines.push(`M ${v1.x} ${v1.y} ${v2.x} ${v2.y}`);
-                            last = e.p2;
-                        }
-                    }
                     path.setAttribute("d", lines.join(" "));
                     path.setAttribute("style", PATH_STYLE);
                     container.appendChild(path);

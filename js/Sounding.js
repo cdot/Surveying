@@ -31,10 +31,9 @@ define("js/Sounding", ["js/Spot", "three", "js/Materials"], (Spot, Three, Materi
         }
 
         // @Override Visual
-        condense(coords, mapBack) {
+        condense(v, e) {
             // console.log("Condensed ", this.name);
-            coords.push([this.position.x, this.position.y]);
-            mapBack.push(this);
+            v.push(this.position);
         }
     }
 

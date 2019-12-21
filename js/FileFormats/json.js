@@ -1,5 +1,5 @@
 /* @copyright 2019 Crawford Currie - All rights reserved */
-define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Container", "js/Mesh", "js/Path", "js/Contour", "js/POI", "js/Sounding"], function(FileFormat, Three, Units, Container, Mesh, Path, Contour, POI, Sounding) {
+define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Container", "js/Path", "js/Contour", "js/POI", "js/Sounding"], function(FileFormat, Three, Units, Container, Path, Contour, POI, Sounding) {
 
     // 1 = round to 0 decimal places. Since the internal coordinate system
     // is in millimetres, 0 should give us more than enough accuracy.
@@ -48,19 +48,6 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Contain
                         y: js.v[1],
                         z: js.v[2]
                     }), js.name);
-                    break;
-
-                case "mesh":
-                    visual = new Mesh(js.name);
-                    for (c = 0; c < js.v.length; c += 3)
-                        visual.addVertex(e2i({
-                            x: js.v[c],
-                            y: js.v[c + 1],
-                            z: js.v[c + 2]
-                        }));
-                    for (c = 0; c < js.e.length; c += 2)
-                        visual.addEdge(
-                            visual.children[c], visual.children[c + 1]);
                     break;
 
                 case "path":
@@ -123,26 +110,6 @@ define("js/FileFormats/json", ["js/FileFormat", "three", "js/Units", "js/Contain
                         name: visual.name,
                         v: [round(p.x), round(p.y), round(p.z)]
                     };
-                }
-
-                if (visual instanceof Mesh) {
-                    let el = {
-                        type: "mesh",
-                        name: visual.name,
-                        v: [],
-                        e: []
-                    };
-                    let vid2i = {};
-                    for (let g of visual.children) {
-                        vid2i[g.vid] = el.children.length;
-                        el.v.push(
-                            round(g.position.x),
-                            round(g.position.y),
-                            round(g.position.z));
-                    }
-                    for (let e of visual.edges)
-                        el.e.push(vid2i[e.p1.vid], vid2i[e.p2.vid]);
-                    return el;
                 }
 
                 if (visual instanceof Contour) {

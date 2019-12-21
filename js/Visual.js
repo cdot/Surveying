@@ -182,16 +182,12 @@ define("js/Visual", function() {
         }
 
         /**
-         * Add the points in visuals that have the properties
-         * type:contour or type:point to a flat array suitable for
-         * passing to delaunator, with a map back to the actual Spot
-         * object.
-         * @param coords array of [x0, y0, x1, y1, ...] 
-         * @param mapBack array indexed by the index into coords/2, mapping
-         * to the visual object.
+         * Add the points in visuals that contribute to the surface of
+         * the mesh managed by the SceneController.
+         * @param v array of Three.Vector3
+         * @param e array of edges, as pairs of indices into v [p1, p2]
          */
-        condense(coords, mapBack) {
-        }
+        condense(v, e) { }
     }
     return Visual;
 });

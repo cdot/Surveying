@@ -47,43 +47,6 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
             super.animate();
         }
 
-        /**
-         * TODO: do something sensible with this
-         * Construct a new Mesh object that contains a Delaunay
-         * triangulation of all the vertices in the mesh
-         * @param a Visual to recursively meshify
-         * @return the resulting network
-         */
-        meshify(visual) {
-            function nextHalfedge(e) {
-                return (e % 3 === 2) ? e - 2 : e + 1;
-            }
-
-            // Condense Contours and Soundings into a cloud of points
-            let coords = [];
-            let mapBack = [];
-            visual.condense(coords, mapBack);
-
-            let del = Delaunator.from(coords);
-            let result = new Mesh("Triangulation");
-
-            // Construct a mesh, adding condensed points back in as vertices
-            for (let i in mapBack)
-                mapBack[i] = result.addVertex(mapBack[i]);
-            
-            // Iterate over the forward edges
-            for (let e = 0; e < del.triangles.length; e++) {
-                if (e > del.halfedges[e]) {
-                    // Not a back-edge
-                    let p = mapBack[del.triangles[e]];
-                    let q = mapBack[del.triangles[nextHalfedge(e)]];
-                    if (!p || !q)
-                        throw new Error("Internal error");
-                    result.addEdge(p, q);
-                }
-            }
-            return result;
-        }
     }
     return PerspectiveController;
 });

@@ -1,7 +1,13 @@
 /* @preserve Copyright 2019 Crawford Currie - All rights reserved */
 /* eslint-env jquery, browser */
-define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units", "js/UTM", "jquery"], function(CanvasController, Three, Units, UTM) {
+define("js/OrthographicController", ["js/CanvasController", "three", "js/Units", "js/UTM", "js/Materials", "jquery"], function(CanvasController, Three, Units, UTM, Materials) {
 
+    const State = {
+        NONE: 0,
+        DRAGGING: 1,
+        MEASURING: 2
+    };
+    
     /**
      * Interactive orthographic projection
      */
@@ -11,8 +17,7 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
             // Default 1km/1km scene
             super(
                 $cb, controller,
-                new Three.OrthographicCamera(-500, 500, 500, -500),
-                true);
+                new Three.OrthographicCamera(-500, 500, 500, -500));
             
             // Set up the camera
             // Centre of the viewing frustum - will be set when
@@ -22,13 +27,24 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
                 (UTM.MIN_NORTHING + UTM.MAX_NORTHING) / 2,
                 0);
 
-            this.mSceneController.rulerStart = this.mLookAt;
+            // Set up cursor
+            this.mCursorSprite = new Three.Sprite(Materials.CURSOR);
+            this.mCursorSprite.position.copy(this.mLookAt);
+ 
+            this.mRulerGeom = new Three.Geometry();
+            this.mRulerGeom.vertices.push(
+                // Make sure it's initially different to the cursor pos!
+                this.mLookAt.clone().addScalar(-Units.UPM[Units.IN]),
+                this.cursor);
+
+            this.mRulerLine = new Three.Line(this.mRulerGeom, Materials.RULER);
+            this.mRulerEnabled = false;
 
             this.mCamera.position.set(this.mLookAt.x, this.mLookAt.y, 10);
             
             // Connect event handlers
             this.mMouseDownPt = null; // button flags
-            this.mIsDragging = false;
+            this.mState = State.NONE;
             this.mLastRayPt = null;
 
             this.registerEventHandlers([
@@ -36,8 +52,131 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
                 "mousedown", "mouseup", "mousewheel", "mousemove"
             ]);
 
+            let self = this;
+            $(document).on("cursorchanged", function() {
+                $(".cursor_wgs").html(self.cursorWGS);
+                if (self.mRulerEnabled) {
+                    self.mRulerGeom.verticesNeedUpdate = true;
+                    $(".ruler .length").text(self.rulerLength);
+                    $(".ruler .bearing").text(self.rulerBearing);
+                    $(".ruler").show();
+                } else {
+                    $(".ruler").hide();
+                }
+            });
+
             this.mConstructed = true;
             this.animate();
+        }
+
+        // @Override CanvasController
+        show() {
+            super.show();
+            this.showCursor();
+        }
+        
+        // @Override CanvasController
+        hide() {
+            super.hide();
+            this.disableRuler();
+            this.hideCursor();
+        }
+
+        /**
+         * Add the ruler to the scene
+         */
+        showRuler() {
+            if (!this.mRulerEnabled)
+                this.mSceneController.scene.add(this.mRulerLine);
+            this.mRulerEnabled = true;
+        }
+        
+        /**
+         * Remove the ruler from the scene
+         */
+        disableRuler() {
+            if (this.mRulerEnabled)
+                this.mSceneController.scene.remove(this.mRulerLine);
+            this.mRulerEnabled = false;
+        }
+        
+        /**
+         * Get the scene cursor position, shared between all views
+         */
+        get cursor() {
+            return this.mCursorSprite.position;
+        }
+
+        /**
+         * Get WGS coords for the cursor as a string
+         */
+        get cursorWGS() {
+            try {
+                return Units.stringify(Units.IN, this.cursor, Units.LATLON);
+            } catch (e) {
+                //console.debug(e);
+                return "Unknown";
+            }
+        }
+
+        /**
+         * Set the scene cursor
+         */
+        set cursor(v) {
+            this.cursor.set(v.x, v.y, 0);
+            $(document).trigger("cursorchanged");
+        }
+
+        /**
+         * Enable/disable the cursor
+         */
+        showCursor() {
+            this.mSceneController.scene.add(this.mCursorSprite);
+        }
+
+        hideCursor() {
+            this.mSceneController.scene.remove(this.mCursorSprite);
+        }
+
+        /**
+         * Get the start position of the ruler
+         */
+        get rulerStart() {
+            return this.mRulerGeom.vertices[0];
+        }
+
+        /**
+         * Set the start position of the ruler
+         */
+        set rulerStart(v) {
+            this.mRulerGeom.vertices[0].copy(v);
+            this.mRulerGeom.verticesNeedUpdate = true;
+            
+            $(document).trigger("cursorchanged");
+        }
+
+        /**
+         * Measure the planar distance between the start of the ruler
+         * and the cursor
+         */
+        get rulerLength() {
+            let dx = this.mRulerGeom.vertices[1].x - this.rulerStart.x;
+            let dy = this.mRulerGeom.vertices[1].y - this.rulerStart.y;
+            let dist = Math.sqrt(dx * dx + dy * dy) / Units.UPM[Units.IN];
+            return dist.toFixed(2);
+        }
+
+        /**
+         * Get the compass bearing between the start of the ruler and
+         * the cursor
+         */
+        get rulerBearing() {
+            let dx = this.mRulerGeom.vertices[1].x - this.rulerStart.x;
+            let dy = this.mRulerGeom.vertices[1].y - this.rulerStart.y;
+            if (dy === 0)
+                return dx < 0 ? 270 : 90;
+            let quad = (dx > 0) ? ((dy > 0) ? 0 : 180) : ((dy > 0) ? 360 : 180);
+            return Math.round(quad + 180 * Math.atan(dx / dy) / Math.PI);
         }
 
         panBy(delta) {
@@ -45,13 +184,14 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
             this.mLookAt.y += delta.y;
             this.mCamera.position.set(
                 this.mLookAt.x, this.mLookAt.y, this.mCamera.position.z);
-            this.mCamera.lookAt(this.mLookAt);
+            this.mCamera.lookAt(this.mLooAt);
             this.mCamera.updateProjectionMatrix();
         }
 
         zoom(factor) {
             this.mCamera.zoom *= factor;
-            this.mSceneController.resizeCursor(factor);
+            this.mCursorSprite.scale.x /= factor;
+            this.mCursorSprite.scale.y /= factor;
             this.mSceneController.resizeHandles();
             this.mCamera.updateProjectionMatrix();
         }
@@ -71,6 +211,8 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
             let sz = bounds.getSize(new Three.Vector3());
             let viewSize = Math.max(sz.x, sz.y)
 
+            this.mCursorSprite.scale.x = this.mCursorSprite.scale.y
+            = viewSize / 30;
             this.mSceneController.resizeHandles(viewSize);
 
             let c = this.mCamera;
@@ -85,9 +227,6 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
             c.position.set(this.mLookAt.x, this.mLookAt.y, viewSize);
             c.lookAt(this.mLookAt);
             c.updateProjectionMatrix();
-
-            // Ruler/cursor
-            this.mSceneController.resetRuler(this.mLookAt);
         }
 
         _handle_keydown(e) {
@@ -122,8 +261,10 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
                 this.zoom(1.2);
                 return false;
 
-            case "m": // m, set measure point
-                this.mSceneController.resetRuler();
+            case "m": // enable ruler
+                this.rulerStart = this.cursor;
+                this.showRuler();
+                this.mState = State.MEASURING;
                 return false;
 
             default:
@@ -155,30 +296,36 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
         _handle_mouseenter() {
             this.$mCanvas.focus();
             this.mMouseDownPt = false;
-            this.mIsDragging = false;
             return true;
         }
 
         _handle_mouseleave() {
             this.mMouseDownPt = false;
-            this.mIsDragging = false;
+            if (this.mState === State.DRAGGING)
+                this.mState = State.NONE;
             return true;
         }
 
         _handle_mousedown(e) {
+            if (this.mState === State.MEASURING) {
+                this.disableRuler();
+                return true;
+            }
             this.mMouseDownPt = { x: e.offsetX, y: e.offsetY };
             let ray = this.event2ray(e);
+            this.cursor = ray.origin;
             this.mLastRayPt = ray.origin.clone();
             if (!this.mSceneController.selection.isEmpty) {
                 let hit = this.mSceneController.projectRay(ray);
                 if (hit && this.mSceneController.selection.contains(hit.closest))
-                    this.mIsDragging = true;
+                    this.mState = State.DRAGGING;
             }
             return true; // Get focus behaviour
         }
 
         _handle_mouseup(e) {
             let ray = this.event2ray(event);
+            this.cursor = ray.origin;
             if (this.mMouseDownPt && !this.mIsDragging) {
                 if (e.offsetX === this.mMouseDownPt.x
                     && e.offsetY === this.mMouseDownPt.y) {
@@ -195,12 +342,13 @@ define("js/OrthographicController", ["js/CanvasController", "three", , "js/Units
                     this.mSceneController.selection.clear();
             }
             this.mMouseDownPt = null;
-            this.mIsDragging = false;
+            this.mState = State.NONE;
             return true;
         }
 
         _handle_mousemove(e) {
             let ray = this.event2ray(e);
+            this.cursor = ray.origin;
             if (this.mMouseDownPt && ray) {
                 let p = ray.origin;
                 let delta = p.clone().sub(this.mLastRayPt);

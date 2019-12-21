@@ -9,12 +9,11 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
         constructor($cb, controller) {
             super(
                 $cb, controller,
-                new Three.PerspectiveCamera(45, 1, 1, -1),
-                false);
+                new Three.PerspectiveCamera(45, 1, 1, -1));
             this.mCamera.position.set(0, 0, 10);
             this.mCamera.up.set(0, 0, 1);
             this.mCamera.aspect = this.mAspectRatio;
-
+            
             this.mControls = new OrbitControls(
                 this.mCamera, this.mRenderer.domElement);
             this.mControls.target.set(0, 0, 0);
@@ -22,6 +21,12 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
 
             this.mConstructed = true;
             this.animate();
+        }
+
+        // @Override CanvasController
+        show() {
+            super.show();
+            this.mSceneController.hideCursor();
         }
         
         // @Override CanvasController
@@ -39,7 +44,6 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
             // Look at the centre of the scene
             this.mControls.target = bounds.getCenter(new Three.Vector3());
             this.mCamera.position.set(bounds.max.x, bounds.max.y, bounds.max.z);
-            this.mSceneController.resetRuler(this.mControls.target);
         }
 
         animate() {

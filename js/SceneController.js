@@ -62,16 +62,6 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
             // Size of a handle in world coordinates = 50cm
             this.mHandleSize = Units.UPM[Units.IN] / 2;
 
-            // Set up cursor and ruler geometry.
-            this.mCursorSprite = new Three.Sprite(Materials.CURSOR);
-            this.mCursorSprite.position.set(3, 3, 3);
-            this.mRulerGeom = new Three.Geometry();
-
-            this.mRulerGeom.vertices.push(
-                new Three.Vector3(1, 1, 1),
-                this.mCursorSprite.position);
-            this.mRulerLine = new Three.Line(this.mRulerGeom, Materials.RULER);
-
             let self = this;
             // Set up the selection manager
             this.mSelection = new Selection((sln) => {
@@ -87,10 +77,6 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
                 .empty()
                 .append($report);
             });
-            
-            this.mSun = new Three.PointLight();
-            this.mSun.position.set(0, 0, 1000 * Units.UPM[Units.IN]);
-            this.mScene.add(this.mSun);
             
             this._bindDialogHandlers();
         }
@@ -186,117 +172,6 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
         }
         
         /**
-         * Get the scene cursor, shared between all views
-         */
-        get cursor() {
-            return this.mRulerGeom.vertices[1];
-        }
-
-        /**
-         * Get WGS coords for the cursor as a string
-         */
-        get cursorWGS() {
-            try {
-                return Units.stringify(Units.IN, this.cursor, Units.LATLON);
-            } catch (e) {
-                //console.debug(e);
-                return "Unknown";
-            }
-        }
-
-        /**
-         * Set the scene cursor
-         */
-        set cursor(v) {
-            this.mRulerGeom.vertices[1].copy(v);
-            this.mRulerGeom.verticesNeedUpdate = true;
-            this.cursorChanged();
-        }
-
-        /**
-         * Update the cursor information when the cursor is changed
-         */
-        cursorChanged() {
-            $(".cursor_wgs").html(this.cursorWGS);
-            $(".cursor_length").text(this.rulerLength);
-            $(".cursor_bearing").text(this.rulerBearing);
-        }
-
-        /**
-         * Change the scaling factor for the cursor. CanvasControllers
-         * will use this to resize the cursor appropriate to the view.
-         */
-        resizeCursor(factor) {
-            this.mCursorSprite.scale.x /= factor;
-            this.mCursorSprite.scale.y /= factor;
-        }
-        /**
-         * Restart the ruler to a location or to the cursor if no
-         * location is given
-         */
-        resetRuler(pos) {
-            if (pos)
-                this.cursor.copy(pos);
-            else
-                pos = this.cursor;
-            this.rulerStart = pos;
-            this.mRulerGeom.verticesNeedUpdate = true;
-        }
-
-        /**
-         * Enable/disable the cursor. Used in CanvasControllers
-         */
-        enableRuler(enable) {
-            if (enable)  {
-                this.mScene.add(this.mCursorSprite);
-                this.mScene.add(this.mRulerLine);
-            } else {
-                this.mScene.remove(this.mCursorSprite);
-                this.mScene.remove(this.mRulerLine);
-            }
-        }
-
-        /**
-         * Get the start position of the ruler
-         */
-        get rulerStart() {
-            return this.mRulerGeom.vertices[0];
-        }
-
-        /**
-         * Set the start position of the ruler
-         */
-        set rulerStart(v) {
-            this.mRulerGeom.vertices[0].copy(v);
-            this.mRulerGeom.verticesNeedUpdate = true;
-            this.cursorChanged();
-        }
-
-        /**
-         * Measure the planar distance between the start of the ruler
-         * and the cursor
-         */
-        get rulerLength() {
-            let dx = this.cursor.x - this.rulerStart.x;
-            let dy = this.cursor.y - this.rulerStart.y;
-            let dist = Math.sqrt(dx * dx + dy * dy) / Units.UPM[Units.IN];
-            return dist.toFixed(2);
-        }
-
-        /**
-         * Get the compass bearing between the start of the ruler and
-         * the cursor
-         */
-        get rulerBearing() {
-            let dx = this.cursor.x - this.rulerStart.x;
-            let dy = this.cursor.y - this.rulerStart.y;
-            if (dy === 0)
-                return dx < 0 ? 270 : 90;
-            let quad = (dx > 0) ? ((dy > 0) ? 0 : 180) : ((dy > 0) ? 360 : 180);
-            return Math.round(quad + 180 * Math.atan(dx / dy) / Math.PI);
-        }
-
-        /**
          * Canvas controllers use this to publicise the current method
          * for getting the zoom factor. This is required to set handle
          * and cursor sizes.
@@ -319,8 +194,6 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
             // Scale handles appropriately 
             if (viewSize) {
                 this.mHandleSize = viewSize / 50;
-                this.mCursorSprite.scale.x = this.mCursorSprite.scale.y
-                = viewSize / 30;
             }
             this.mVisual.resizeHandles();
         }
@@ -593,12 +466,7 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
             geom.computeFaceNormals();
             geom.computeVertexNormals();
             
-            if (true) {
-                geom = new Three.WireframeGeometry(geom);
-                this.mMesh = new Three.LineSegments(geom, Materials.WIREFRAME);
-            } else {
-                this.mMesh = new Three.Mesh(geom, Materials.MESH);
-            }
+            this.mMesh = new Three.Mesh(geom, Materials.MESH);
             this.mScene.add(this.mMesh);
         }
     }

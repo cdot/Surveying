@@ -8,16 +8,16 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
      */
     class CanvasController {
         
-        constructor($canvasBox, controller, camera, ruler) {
+        constructor($canvasBox, controller, camera) {
             this.$mCanvasBox = $canvasBox;
             this.mSceneController = controller;
-            this.mHasRuler = ruler;
             
             this.mCamera = camera;
 
             controller.scene.add(camera);
 
             this.mRenderer = new Three.WebGLRenderer();
+        this.mRenderer.shadowMap.enabled = true;
             this.resize();
             
             this.$mCanvasBox.append(this.mRenderer.domElement);
@@ -35,12 +35,10 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
         get isVisible() { return this.$mCanvasBox.is(":visible"); }
             
         hide() {
-            this.mSceneController.enableRuler(!this.mHasRuler);
             return this.$mCanvasBox.hide();
         }
             
         show() {
-            this.mSceneController.enableRuler(this.mHasRuler);
             let self = this;
             this.mSceneController.setZoomGetter(() => {
                 return self.mCamera.zoom;
@@ -92,7 +90,6 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
                 y: 1 - (y / this.$mCanvasBox.innerHeight()) * 2
             };
             let pos = new Three.Vector3(pt.x, pt.y, 0).unproject(this.mCamera);
-            this.mSceneController.cursor = pos;
             pos.z = this.mCamera.position.z;
             return new Three.Ray(pos, new Three.Vector3(0, 0, -1));
         }

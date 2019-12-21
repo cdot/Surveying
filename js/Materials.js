@@ -30,11 +30,8 @@ define("js/Materials", ["three"], function(Three) {
     = new Three.SpriteMaterial({ map: smap, color: 0xff0000 });
     
     Materials.MESH
-    new Three.MeshStandardMaterial({ color : 0x23120B });
+    = new Three.MeshDepthMaterial({color: 0xffffff});
 
-    Materials.WIREFRAME
-    new Three.LineBasicMaterial({ color : 0x23120B });
-    
     Materials.PATH
     = new Three.LineBasicMaterial({ color: 0x000000 });
     

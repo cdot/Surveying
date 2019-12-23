@@ -17,7 +17,6 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
             controller.scene.add(camera);
 
             this.mRenderer = new Three.WebGLRenderer();
-        this.mRenderer.shadowMap.enabled = true;
             this.resize();
             
             this.$mCanvasBox.append(this.mRenderer.domElement);

@@ -21,7 +21,29 @@ requirejs(["three", "js/Units", "js/SceneController", "js/OrthographicController
     const ORTHOGRAPHIC = 0;
     const PERSPECTIVE = 1;
     let views = [];
+    let sceneController;
+    
+    function activeView() {
+        for (let i = 0; i < views.length; i++)
+            if (views[i].isVisible)
+                return views[i];
+        return null;
+    }
 
+    function onCmd(cmd) {
+	if (activeView().onCmd(cmd) || sceneController.onCmd(cmd))
+	    return true;
+
+	let m = /^showView([0-9]+)$/.exec(cmd);
+	if (m) {
+	    let av = activeView();
+	    if (av !== null) av.hide();
+	    views[m[1]].show();
+	    return true;
+	}
+	return false;
+    }
+   
     $(function() {
         $(".menu").menu();
 
@@ -32,12 +54,12 @@ requirejs(["three", "js/Units", "js/SceneController", "js/OrthographicController
             hide: "blind"
         });
         
-        let sceneController = new SceneController();
+        sceneController = new SceneController();
         views = [
             new OrthographicController($("#orthographic"), sceneController),
             new PerspectiveController($("#perspective"), sceneController)
         ];
-        
+	
         $(".disable_submit").on("submit", () => false);
 
         $(window).on("resize", function() {
@@ -45,23 +67,7 @@ requirejs(["three", "js/Units", "js/SceneController", "js/OrthographicController
                 v.resize();
         });
 
-        function activeView() {
-            for (let i = 0; i < views.length; i++)
-                if (views[i].isVisible)
-                    return views[i];
-            return null;
-        }
-        
         $(document)
-        .on("nextView", function() {
-            for (let i = 0; i < views.length; i++) {
-                if (views[i].isVisible) {
-                    views[i].hide();
-                    views[(i + 1) % views.length].show();
-                    break;
-                }
-            }
-        })
         .on("fitViews", function() {
             for (let v of views)
                 v.fit();
@@ -69,17 +75,16 @@ requirejs(["three", "js/Units", "js/SceneController", "js/OrthographicController
 
         $(".menu")
         .on("menuselect", function (e, ui) {
-            activeView().onCmd(ui.item.data("cmd"));
+            onCmd(ui.item.data("cmd"));
         });
             
         $(".toolbar button")
         .on("click", () => {
-            activeView().onCmd($(this).data("cmd"));
+            onCmd($(this).data("cmd"));
         });
 
         $(".menubar").show();
 
-        views[PERSPECTIVE].hide();
-        views[ORTHOGRAPHIC].show();
+        views[0].show();
     });
 });

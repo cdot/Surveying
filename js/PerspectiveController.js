@@ -26,9 +26,14 @@ define("js/PerspectiveController", ["js/CanvasController", "three", "js/OrbitCon
         // @Override CanvasController
         show() {
             super.show();
-            this.mSceneController.hideCursor();
+	    this.mSceneController.addMeshToScene();
         }
-        
+
+	hide() {
+	    super.hide();
+	    this.mSceneController.removeMeshFromScene();
+	}
+	
         // @Override CanvasController
         fit() {
             if (!this.mConstructed)

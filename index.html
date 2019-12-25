@@ -18,10 +18,15 @@
       <header class="topbar">
         <ul class="menubar menu">
           <li data-cmd="fit"><div>Fit</div></li>
-          <li data-cmd="nextView"><div>Next View</div></li>
+          <li><div>View</div>
+	    <ul class="menu">
+	      <li data-cmd="showView0"><div>2D</div></li>
+	      <li data-cmd="showView1"><div>3D</div></li>
+	    </ul>
+	  </li>
           <li><div>Import</div>
             <ul class="menu">
-              <li data-cmd="upload"><div>Upoad from disk</div></li>
+              <li data-cmd="loadFile"><div>Upload from disk</div></li>
               <li data-cmd="loadURL"><div>Get from URL</div></li>
             </ul>
           </li>
@@ -72,10 +77,18 @@
       </div>
     </div>
 
-    <div id="upload_dialog" class="dialog" title="Import">
+    <div id="loadFile_dialog" class="dialog" title="Import from File">
       Select the file to upload:
       <form class="disable_submit">
-        <input class="upload_input" type="file"/>
+        <input class="load" type="file"/>
+      </form>
+    </div>
+
+    <div id="loadURL_dialog" class="dialog" title="Import from URL">
+      Select the URL to import:
+      <form class="disable_submit">
+        <input class="url" type="text"/>
+	<button class="load">Import</button>
       </form>
     </div>
 

@@ -22,13 +22,13 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
             this.$mCanvasBox.append(this.mRenderer.domElement);
         }
 
+	// Command handler, returns true if the command was handled
         onCmd(fn) {
-            if (this[fn])
+            if (this[fn]) {
                 this[fn].call(this);
-            else if (this.mSceneController[fn])
-                this.mSceneController[fn].call(this.mSceneController);
-            else
-                console.debug(`Missing command ${fn}`);
+		return true;
+	    }
+	    return false;
         }
             
         get isVisible() { return this.$mCanvasBox.is(":visible"); }
@@ -97,10 +97,6 @@ define("js/CanvasController", ["js/Container", "three", "jquery"], function(Cont
          * Fit the scene
          */
         fit() { }
-
-        upload() { $("#upload_dialog").dialog("open"); }
-        
-        download() { $("#download_dialog").dialog("open"); }
 
         /**
          * Animation loop

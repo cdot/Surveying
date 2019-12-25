@@ -234,23 +234,23 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Units",
             switch (e.key) {
             case "v":
                 // Split selected edges and add a new vertex
-                this.onCmd("splitEdges");
+                this.mSceneController.splitEdges();
                 return false;
                 
             case ".":
-                this.onCmd("addPOI");
+                this.mSceneController.addPOI();
                 return false;
 
             case "s":
-                this.onCmd("addSounding");
+                this.mSceneController.addSounding();
                 return false;
 
             case "c":
-                this.onCmd("addContour");
+                this.mSceneController.addContour();
                 return false;
                 
             case "p":
-                this.onCmd("addPath");
+                this.mSceneController.addPath();
                 return false;
                 
             case "-":
@@ -274,19 +274,19 @@ define("js/OrthographicController", ["js/CanvasController", "three", "js/Units",
             switch (e.keyCode) {
                 
             case 37: // left, prev sibling
-                return this.onCmd("selPrev");
+                return this.mSceneController.selPrev();
                 
             case 38: // up, move up in selection
-                return this.onCmd("selParent");
+                return this.mSceneController.selParent();
 
             case 39: // right
-                return this.onCmd("selNext");
+                return this.mSceneController.selNext();
 
             case 40: // down, select first child
-                return this.onCmd("selFirstChild");
+                return this.mSceneController.selFirstChild();
 
             case 46: // delete selected items
-                return this.onCmd("selDelete");
+                return this.mSceneController.selDelete();
                 
             default:
                 return true;

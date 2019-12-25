@@ -81,13 +81,22 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
             this._bindDialogHandlers();
         }
 
+	// Command handler, returns true if the command is handled
+	onCmd(fn) {
+	    if (this[fn]) {
+                this[fn].call(this);
+		return true;
+	    }
+            return false;
+	}
+	
         /**
          * Finish up after leading a new visual
          */
         _onLoadedVisual(fn, visual) {
             this.mVisual.addChild(visual);
             visual.addToScene(this.mScene);
-            this.meshify();
+            this.refrshMesh();
             let bb = this.mVisual.boundingBox;
             let min = Units.stringify(Units.IN, bb.min, Units.LATLON);
             let max = Units.stringify(Units.IN, bb.max, Units.LATLON);
@@ -101,12 +110,34 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
         _bindDialogHandlers() {
             let self = this;
 
+	    // URL load
+	    $("#loadURL_dialog .load").on("click", function(evt) {
+		let url = $("#loadURL_dialog .url").val();
+                let type = url.replace(/^.*\./u, "").toLowerCase();
+                $("#loadURL_dialog").dialog("close");
+                requirejs(
+                    [`js/FileFormats/${type}`],
+                    (Loader) => {
+			$.get(url,
+			      function(data) {
+				  new Loader().load(url, data)
+				      .then((visual) => {
+					  self._onLoadedVisual(url, visual);
+				      })
+				      .catch((err) => {
+					  console.debug(err);
+				      });
+			      },
+			      "text");
+		    });
+	    });
+	    
             // Local file upload
-            $("#upload_dialog .upload_input").on("change", function(evt) {
+            $("#loadFile_dialog .load").on("change", function(evt) {
                 let f = evt.target.files[0];
                 let fn = f.name;
                 let type = fn.replace(/^.*\./u, "").toLowerCase();
-                $("#upload_dialog").dialog("close");
+                $("#loadFile_dialog").dialog("close");
                 requirejs(
                     [`js/FileFormats/${type}`],
                     (Loader) => {
@@ -135,6 +166,7 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
 
             // Download to local file
             let saver;
+
             $("#download_dialog .download_button").on("click", function() {
                 let str = saver.save(self.mVisual);
                 // If saver.save() returns null, then it has used a dialog and we
@@ -151,13 +183,14 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
                 return true;
             });
 
-            // Cannot set the saver from inside the save handler because
-            // loading a FileFormat requires a promise, but the native
-            // click event on the download link is required to trigger the download,
-            // which requires a true return from the handler.
-            // So have to do it in two steps. Setting the save format
-            // loads the saver and enables the save button if successful.
-            // Clicking the save button saves using that saver.
+            // Cannot set the saver from inside the save handler
+            // because loading a FileFormat requires a promise, but
+            // the native click event on the download link is required
+            // to trigger the download, which requires a true return
+            // from the handler.  So have to do it in two
+            // steps. Setting the save format loads the saver and
+            // enables the save button if successful.  Clicking the
+            // save button saves using that saver.
         
             $("#download_dialog .format").on("change", function() {
                 let type = $(this).val();
@@ -256,7 +289,24 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
                 ray,
                 Units.UPM[Units.IN] * Units.UPM[Units.IN]);
         }
-        
+
+        // Command handlers
+
+	/**
+	 * Import scene data by uploading a file from local disk
+	 */
+	loadFile() { $("#loadFile_dialog").dialog("open"); }
+
+	/**
+	 * Import scene data from a URL
+	 */
+	loadURL() { $("#loadURL_dialog").dialog("open"); }
+
+	/**
+	 * Download the current scene
+	 */
+        download() { $("#download_dialog").dialog("open"); }
+
         /**
          * Add a new POI under the ruler start
          */
@@ -277,7 +327,7 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
             pt.addToScene(this.scene);
             pt.resizeHandles();
             this.mSelection.add(pt);
-            this.meshify();
+            this.refreshMesh();
         }
 
         /**
@@ -396,7 +446,7 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
             visual.addToScene(this.mScene);
             visual.resizeHandles();
             this.mSelection.add(visual);
-            this.meshify();
+            this.refreshMesh();
         }
 
         /**
@@ -430,17 +480,41 @@ define("js/SceneController", ["three", "js/Selection", "js/Container", "js/POI",
                     v.resizeHandles();
                 }
             }
-            this.meshify();
+            this.refreshMesh();
         }
 
-        /**
-         * Update the Delaunay triangulation of all the vertices in
-         * the visual
-         */
-        meshify() {
-            if (this.mMesh)
-                this.mScene.remove(this.mMesh);
+	/**
+	 * Remove the currently computed mesh from the scene.
+	 */
+	// Does not delete the mesh.
+	removeMeshFromScene() {
+	    if (this.mMesh)
+		this.mScene.remove(this.mMesh);
+	}
 
+	/**
+	 * If there is a currently computed mesh, delete it
+	 * and recompute a fresh mesh.
+	 */
+	refreshMesh() {
+            if (this.mMesh) {
+                this.mScene.remove(this.mMesh);
+		this.mMesh = null;
+		this.addMeshToScene();
+	    }
+	}
+
+	/**
+	 * Add a mesh to the scene. The mesh is built by condensing
+	 * Contour and Sounding points into a point cloud and then
+	 * computing a Delaunay triangulation.
+	 */
+	addMeshToScene() {
+	    if (this.mMesh) {
+		this.mScene.add(this.mMesh);
+		return;
+	    }
+	    
             // Condense Contours and Soundings into a cloud of points
             // and edges - @see Visual
             let v = [];
